@@ -1,7 +1,7 @@
 import unittest
 import mock
 
-from pydcomm.infra import Connection
+from pydcomm.connection import Connection
 
 
 class UnitTestDeviceUtils(unittest.TestCase):
