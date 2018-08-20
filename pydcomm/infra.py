@@ -99,6 +99,9 @@ def add_samsung_quirks(connection):
 
 #############################################
 
+def reboot_connection_fix(connection):
+    "adb disconnect"
+    "adb connect"
 
 
 
@@ -142,7 +145,8 @@ class ConnectionFactory:
     def get_connection(self, rooted=False, automated_recovery=False, interactive_recovery=False, special_samsung=False, multi_device=MultiDeviceBehavior.CHOOSE_FIRST):
         con = Connection(AggregateErrorHandler(error_handlers))
         if automated_recovery:
-            con = add_automated_recovery(con)
+            con.fixes.append(reboot_connection)
+            # con = add_automated_recovery(con)
         if interactive_recovery:
             con = add_interactive_troubleshooting_recovery()
         if rooted:
@@ -308,9 +312,9 @@ class Serializer:
 
 
 class FileBridge:
-    def __init__(self, device_utilos, serializer, device_base_folder='/sdcard/tmp/'):
+    def __init__(self, device_utils, serializer, device_base_folder='/sdcard/tmp/'):
         """
-        :type connection: ConnectionMonitor family
+        :type device_utils: DeviceUtils
         :type serializer: Serializer
         :type device_base_folder: str
         """
