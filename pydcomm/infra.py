@@ -1,17 +1,18 @@
 import os
 
+# region Connection
 
-#############################################
-
-
-class ConnectionMonitor:
+class Connection:
     """
     Connects to a device and maintains the connection.
     """
 
-    def __init__(self, device_id_or_ip=None):
+    def __init__(self, device_id=None):
+        """
+        :type device_id: str
+        """
         # Connect to device
-        self.device_id = device_id_or_ip
+        self.device_id = device_id
         pass
 
     def get_connection_status(self):
@@ -20,9 +21,9 @@ class ConnectionMonitor:
             is_connected: bool
             is_wireless: bool
             connection_type: string in ('usb_debugging', 'mtp', 'file_transfer')
-            device_id_or_ip: string
+            device_id: string
         """
-        return dict(is_connected=True, is_wireless=False, connection_type='usb_debugging')
+        pass
 
     def disconnect(self):
         """
@@ -30,16 +31,9 @@ class ConnectionMonitor:
         """
         pass
 
-    def _handle_exception(self, exc_info):
-        """
-        Handles an exception or raises it if it couldn't be handled.
-        :param exc_info: value of os.exc_info()
-        """
-        pass
-
     def adb(self, *args):
         """
-        :type args: list(str)
+        :type args: list[str]
         :param args: array of splitted args to adb command
         """
         pass
@@ -52,48 +46,93 @@ class ConnectionMonitor:
         pass
 
 
-class AutoRecoveringConnectionMonitor(ConnectionMonitor):
-    def _handle_exception(self, exc_info):
-        pass
+#############################################
 
 
-class TroubleshootingConnectionMonitor(AutoRecoveringConnectionMonitor):
-    def _handle_exception(self, exc_info):
-        pass
+def add_rooted(connection):
+    # make connection also rooted
+    # modify "connect" function
+    # ...
+    return connection
+
+
+def add_automated_recovery(connection):
+    # ...
+    return connection
+
+
+def add_interactive_troubleshooting_recovery(connection):
+    # ...
+    return connection
+
+
+def add_choose_first_device(connection):
+    # ...
+    return connection
+
+
+def add_user_choise_device(connection):
+    # ...
+    return connection
+
+
+def add_samsung_quirks(connection):
+    # add samsung special fixes to connection
+    # modify "connect" function
+    # ...
+    return connection
 
 
 #############################################
 
 
-class RootedDecorator:
-    """
-    Adds remount to ConnectionMonitor objects
-    """
-
-    def __init__(self, decoratee):
+class ConnectionFactory:
+    def get_rooted_wireless_interactive_connection(self):
         """
-        :param decoratee: of the ConnectionMonitor family
+        Returns a connection for rooted (Oppo) devices that communicates wirelessly to the phone
+         and when the phone disconnects asks the user for action to help reconnect the phone.
         """
-        self.decoratee = decoratee
-        self._remount()
+        return self.get_connection(rooted=True, automated_recovery=True, interactive_recovery=True)
 
-    def check_connection(self):
-        self._remount()
-        self.decoratee.check_connection()
+    def get_rooted_wireless_automated_connection(self):
+        """
+        Returns a connection for rooted (Oppo) devices that communicates wirelessly to the phone
+         and when the phone disconnects it automatically tries to reconnect and if it can't it throws an exception.
+        """
+        return self.get_connection(rooted=True, automated_recovery=True, interactive_recovery=False)
 
-    def __getattr__(self, item):
-        return getattr(self.decoratee, item)
+    def get_samsung_automated_connection(self):
+        """
+        If for some reason connecting to Samsung devices is different (eg. it doesn't require wifi, or
+        it has some special automated recovery), this function wll create the connection.
+        """
+        return self.get_connection(automated_recovery=True, interactive_recovery=True,special_samsung=True)
 
-    def __setattr__(self, item, value):
-        return setattr(self.decoratee, item, value)
+    def get_connection(self, rooted=False, automated_recovery=False, interactive_recovery=False, special_samsung=False, multi_device=MultiDeviceBehavior.CHOOSE_FIRST):
+        con = Connection(AggregateErrorHandler(error_handlers))
+        if automated_recovery:
+            con = add_automated_recovery(con)
+        if interactive_recovery:
+            con = add_interactive_troubleshooting_recovery()
+        if rooted:
+            con = add_rooted(con)
+        if special_samsung:
+            con = add_samsung_quirks(con)
+        if multi_device == MultiDeviceBehavior.CHOOSE_FIRST:
+            con = add_choose_first_device(con)
+        elif multi_device == MultiDeviceBehavior.USER_CHOICE:
+            con = add_user_choise_device(con)
+        return con
 
 
+# endregion
 #############################################
-
+# region DeviceUtils
 
 class DeviceUtils:
     def __init__(self, connection):
         self.connection = connection
+
 
     ## Probably non-device specific ##
 
@@ -176,7 +215,9 @@ class DeviceUtils:
         """
         pass
 
+
     ## Possibly device specific ##
+
     def is_earphone_connected(self):
         """
         :rtype: bool
@@ -202,7 +243,9 @@ class DeviceUtils:
         pass
 
 
+# endregion
 #############################################
+# region FileBridge
 
 
 class Serializer:
@@ -236,16 +279,15 @@ class Serializer:
 
 
 class FileBridge:
-    def __init__(self, connection, serializer, device_base_folder='/sdcard/tmp/'):
+    def __init__(self, device_utilos, serializer, device_base_folder='/sdcard/tmp/'):
         """
         :type connection: ConnectionMonitor family
         :type serializer: Serializer
         :type device_base_folder: str
         """
-        self.tmp_dir = os.join(device_base_folder, 'filebridge.0000000001.2018_08_17_09_45_00_000')
+        self.tmp_dir = self._make_tmp_dir_path(device_base_folder)
         self.serializer = serializer
-        self.connection = connection
-        self.device_utils = DeviceUtils(connection)
+        self.device_utils = device_utilos
 
     def send_data(self, data, path_on_device=None):
         """
@@ -254,7 +296,7 @@ class FileBridge:
         :return:
         """
         if path_on_device is None:
-            path_on_device = os.join(self.tmp_dir, '0000000353.2018_08_17_09_45_03_001')
+            path_on_device = self._make_tmp_file_path()
         bytes = self.serializer.serialize(data)
         with self._tmp_file(bytes) as tmp_local_file:
             self._write_to_local_file(tmp_local_file, bytes)
@@ -266,16 +308,31 @@ class FileBridge:
         :type path_on_device: str
         :rtype output of Serializer.deserialize()
         """
-        with self._tmp_file() as tmp_local_file:
+        with self._tmp_local_file() as tmp_local_file:
             self.device_utils.pull(path_on_device, tmp_local_file)
             bytes = self._read_from_local_file(tmp_local_file)
         data = self.serializer.deserialize(bytes)
         return data
 
+    def _make_tmp_dir_path(self, base_folder):
+        return os.join(base_folder, 'filebridge.0000000001.2018_08_17_09_45_00_000')
+
+    def _make_tmp_file_path(self, dir_path=None):
+        dir_path = dir_path or self.tmp_dir
+        return os.join(dir_path, "0000000353.2018_08_17_09_45_03_001")
+
+    def _tmp_local_file(self):
+        """
+        :return: A context that returns a path string and deletes the file in the end
+        """
+        pass
+
     # Other possible methods: send/receive_data_chunked, send/receive_file, send/receive_data_async,
 
 
+# endregion
 #############################################
+# region App controller
 
 
 class LoopBackAppController:
@@ -363,8 +420,11 @@ class LoopbackAudioInterface:
         mock this for testing, replace this for optimization, etc...
         :return:
         """
-        return FileDataBridge(self.connection, self.serializer, self.device_base_folder)
+        return FileBridge(self.connection, self.serializer, self.device_base_folder)
 
     def record_and_play(self, song):
         for audio in self.app_ctrl.play_audio(song, with_record=True):
-            self._process(audeio)
+            self._process(audio)
+
+
+# endregion
