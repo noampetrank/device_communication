@@ -1,5 +1,6 @@
 import os
 
+
 # region Connection
 
 class Connection:
@@ -13,6 +14,7 @@ class Connection:
         """
         # Connect to device
         self.device_id = device_id
+        self.fixes = []
         pass
 
     def get_connection_status(self):
@@ -31,12 +33,23 @@ class Connection:
         """
         pass
 
+    def _test_connection(self):
+        return check_output("adb shell echo hi") == "hi"
+
+    def _handle_error(self):
+        for f in self.fixes:
+            f()
+            if self._test_connection():
+                break
+
     def adb(self, *args):
         """
         :type args: list[str]
         :param args: array of splitted args to adb command
         """
-        pass
+        if not self._test_connection():
+            self._handle_error()
+        subprocess("adb")
 
     @staticmethod
     def restart_adb_server():
@@ -44,6 +57,7 @@ class Connection:
         adb kill-server & adb start-start
         """
         pass
+
 
 
 #############################################
@@ -86,6 +100,23 @@ def add_samsung_quirks(connection):
 #############################################
 
 
+
+
+def fix1():
+    pass
+
+
+def fix2():
+    pass
+
+
+def add_recovery(conn):
+    conn.fixes.extend([fix1, fix2])
+    return conn
+
+
+add_recovery(Connection())
+
 class ConnectionFactory:
     def get_rooted_wireless_interactive_connection(self):
         """
@@ -106,7 +137,7 @@ class ConnectionFactory:
         If for some reason connecting to Samsung devices is different (eg. it doesn't require wifi, or
         it has some special automated recovery), this function wll create the connection.
         """
-        return self.get_connection(automated_recovery=True, interactive_recovery=True,special_samsung=True)
+        return self.get_connection(automated_recovery=True, interactive_recovery=True, special_samsung=True)
 
     def get_connection(self, rooted=False, automated_recovery=False, interactive_recovery=False, special_samsung=False, multi_device=MultiDeviceBehavior.CHOOSE_FIRST):
         con = Connection(AggregateErrorHandler(error_handlers))
@@ -132,7 +163,6 @@ class ConnectionFactory:
 class DeviceUtils:
     def __init__(self, connection):
         self.connection = connection
-
 
     ## Probably non-device specific ##
 
@@ -214,7 +244,6 @@ class DeviceUtils:
         """
         """
         pass
-
 
     ## Possibly device specific ##
 
@@ -425,6 +454,5 @@ class LoopbackAudioInterface:
     def record_and_play(self, song):
         for audio in self.app_ctrl.play_audio(song, with_record=True):
             self._process(audio)
-
 
 # endregion
