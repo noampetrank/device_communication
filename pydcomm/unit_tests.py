@@ -18,6 +18,6 @@ class UnitTestDeviceUtils(unittest.TestCase):
         """
         pass
 
-    # @mock.patch.object(Connection., 'adb')
+    @mock.patch.object(Connection, 'adb')
     def test_ls_ok(self, mock_shell):
         pass
