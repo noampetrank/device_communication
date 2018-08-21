@@ -23,33 +23,35 @@ Real tests
 """
 
 
-def test_connection_is_working(connection):
-    return connection.adb("shell echo hi") == "hi"
+class ConnectionBencmark(TestCase):
 
+    def _test_connection_is_working(self, connection):
+        return connection.adb("shell echo hi") == "hi"
 
-def test_connection_and_disconnect(connection):
-    if not test_connection_is_working(connection):
+    def _test_connection_and_disconnect(self, connection):
+        if not self._test_connection_is_working(connection):
+            connection.disconnect()
+            return False
         connection.disconnect()
-        return False
-    connection.disconnect()
-    if test_connection_is_working(connection):
-        raise Exception("Could not disconnect")
+        if self._test_connection_is_working(connection):
+            raise Exception("Could not disconnect")
+
+    def repeat_test_connection(self, connect_from_ip, recovery, rounds, sleep_between_connections):
+        connection_factory = ConnectionFactory()
+        # User intervention
+        connection = connection_factory.get_connected(auto_recovery=recovery)
+        ip = connection.get_connection_status()["ip"]
+        connection.disconnect()
+        fail = 0
+        for i in range(rounds):
+            if connect_from_ip:
+                connection = Connection(ip)
+            else:
+                connection = connection_factory.get_connected(auto_recovery=recovery)
+            fail += self._test_connection_and_disconnect(connection)
+            time.sleep(sleep_between_connections)
+        return fail, rounds
 
 
-def repeat_test_connection(connect_from_ip, recovery, rounds, sleep_between_connections):
-    connection_factory = ConnectionFactory()
-    # User intervention
-    connection = connection_factory.get_connected(auto_recovery=recovery)
-    ip = connection.get_connection_status()["ip"]
-    connection.disconnect()
-    fail = 0
-    for i in range(rounds):
-        if connect_from_ip:
-            connection = Connection(ip)
-        else:
-            connection = connection_factory.get_connected(auto_recovery=recovery)
-        fail += test_connection_and_disconnect(connection)
-        time.sleep(sleep_between_connections)
-    return fail, rounds
-
-
+class ConnectionUnitTests(TestCase):
+    pass
