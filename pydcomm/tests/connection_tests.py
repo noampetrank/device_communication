@@ -3,24 +3,37 @@ from unittest import TestCase
 from pydcomm.connection import ConnectionFactory, Connection, MultiDeviceBehavior
 
 """
-TODO:
-# Benchmark table
-#   Wired
-#       No recovery
-#       With recovery
-#   Wireless
-#       No recovery - from ip
-#       No recovery - from device
-#       With recovery - from ip
-#       With recovery - from device
-#   
-#   Long run
-#   Many short connections
-#   Adb shell multiple times
-Mock tests
-  Failing tests
-Real tests
-  Stress tests
+Sample Benchmark:
+Device:                      Oppo Find X
+Connection (Wired|Wireless): Wireless
+Short connections: 
+    Total: 100
+    Successful:90
+    Auto recover: 8
+    Manual recover: 2
+    Fail: 0
+Long connection, echo command every 10s:  
+    Success: 100/100
+    Average connection duration: 60m
+    Total: 100
+    Successful:90
+    Auto recover: 8
+    Manual recover: 2
+    Fail: 0
+Long connection, echo command every 120s: 100/100
+    Success: 100/100
+    Average connection duration: 60m
+    Total: 100
+    Successful:90
+    Auto recover: 8
+    Manual recover: 2
+    Fail: 0
+Simulate disconnect device (wired, wireless):
+    Total: 100
+    Recovery: 100
+    Failed: 0
+* All numbers are not final
+
 """
 
 
@@ -118,6 +131,7 @@ class AutomatedRecoveryTests(TestCase):
 class InteractiveRecoveryTests(TestCase):
     # Tests that verify the interactive behaviors that were not decided yet
     pass
+
 
 # Will be defined later when wired and wireless adb connections are specified better.
 # Basically it will make sure that "adb connect" is being called and that an exception
