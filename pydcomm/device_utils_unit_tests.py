@@ -69,7 +69,7 @@ class UnitTestDeviceUtils(unittest.TestCase):
     # region DeviceUtils.send_intent() unit tests
 
     @mock.patch.object(Connection, 'adb')
-    def test_pull_ok(self, mock_adb):
+    def test_send_intent_ok(self, mock_adb):
         # TODO: Invoke device_utils.intent() and expect no exceptions and no output.
         pass
 

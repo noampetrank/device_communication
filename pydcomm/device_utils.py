@@ -28,7 +28,7 @@ class DeviceUtils:
         pass
 
     @staticmethod
-    def expand_intent_params(**params):
+    def expand_intent_params_into_list(**params):
         """
         Transform params to a list of str containing --ei/--ef etc.
         :type options: dict[str: str]
@@ -38,28 +38,18 @@ class DeviceUtils:
 
     def send_intent(self, action, name, *params_list):
         """
+        see also: expand_intent_params_into_list() for convenience
         :type action:  str ('start', 'force-stop')
         :type name: str
         :type args: dict[str, str]
-        :return:
         """
-        self.connection.adb("am" + command)
         pass
 
     def _shell(self, *args):
         """
         :type args: list(str)
         """
-        self.send_intent("myaction",frequency=float(freq),action_od=int(action_id))
-        self.send_intent("myaction",[("frequency",float,(freq)),action_od=int(action_id)])
-
         pass
-
-    def do_ac_sthing(self,param1,param2,param3):
-        param1 = float(param1)
-        param2 = str(param2)
-        param3 = int(param3)
-        self.connection.send_intent("asdasd",param1,param2,param3)
 
     def mkdir(self, path_on_device):
         """
@@ -77,7 +67,8 @@ class DeviceUtils:
         """
         According to la -lat output: drwxrwx---   9 system cache     4096 2018-05-16 03:00 cache
         For files with permissions error, ret['permissions'] (and all other filelds except name) will be None.
-        :type path_on_device: list[dict[permissons, n_links, owner, group, size, modified, name]]
+        :type path_on_device: str
+        :rtype list[dict[permissons, n_links, owner, group, size, modified, name]]
         """
         pass
 
