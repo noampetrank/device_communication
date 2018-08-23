@@ -1,0 +1,17 @@
+Interface Requirements:
+1) KaddoshCom handles exceptions and passes them to python side
+2) return values into KaddoshCom are Java POJOs that are seralize to be passed to python
+3) When receiving byte[] in result KaddoshCom will handle appropriately (first implementation save to file and replace w/ path)
+4) To send special types, you will inherit a KaddoshSerializer<T> which should probably have facilities for serializing json AND
+   for sending files over some databridge.
+5) KaddoshCommunicator is responsible for keeping the app open and responsive to messages.
+6) Every call to send_message returns when the operation is finished on the phone.
+7) MessageTransport supports few specified data types (initially the primitives and byte[]). It will not work with other types.
+
+
+
+Implementation Requirements:
+1) The serializer will handle the transition from simple control messages to sending large chunks of data
+2) Control messages will allow python side logging of Kaddosh communication (operation started, finished, failed)
+3) Each message from client to server will have id to identify
+4) Telemetry on operation times will be written to log for future optimization (Code and human)
