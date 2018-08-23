@@ -1,0 +1,11 @@
+iface:
+1) KaddoshCom handles exceptions and passes them to python side
+2) return values into KaddoshCom are Java POJOs that are seralize to be passed to python
+3) When receiving byte[] in result KaddoshCom will handle appropriately (first implementation save to file and replace w/ path)
+
+
+imp:
+1) The serializer will handle the transition from simple control messages to sending large chunks of data
+2) Custom serializers will be added for different ways of transferring files.
+3) Control messages will allow python side logging of Kaddosh communication (operation started, finished, failed)
+4) Each message from client to server will have id to identify
