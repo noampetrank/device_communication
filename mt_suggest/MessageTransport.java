@@ -1,16 +1,16 @@
-class MyAudioInterface : AndroidService{  
+class MyAudioInterface implements AndroidService{  
     KaddoshCommunicator _communicator;
 
     public MyAudioInterface() {
-        List<KaddoshSerializer> serializers = loadSerializers()
+        List<KaddoshSerializer> serializers = loadSerializers();
         _communicator = new KaddoshCommunicator((message)-> {
             switch (message.name) {
                 case "record_and_play":
-                    return doRecordAndPlay(message.get<byte[]>('song'), message.get<string>("times"), message.get<int>("volume"));
+                    return doRecordAndPlay(message.<byte[]>get("song"), message.<string>get("times"), message.<int>get("volume"));
                 case "play":
-                    play(message.get<byte[]>('song'));
+                    play(message.<byte[]>get('song'));
                 case "record":
-                    return record(message.get<int>(numFrames));
+                    return record(message.<int>get(numFrames));
                 case "record_and_play_streaming":
                     KaddoshStream<byte> songStream = message.getStream<byte>("song")
                     return doRecordAndPlayStreaming(songStream);
@@ -90,7 +90,7 @@ class KaddoshSerializer {
 }
 
 class KaddoshCommunicator {
-    public KaddoshCommunicator(KaddoshSerializer ks, MessageHandler h);
+    public KaddoshCommunicator(List<KaddoshSerializer> ks, MessageHandler h);
     public start();
     public stop();
 }
@@ -120,6 +120,12 @@ public class ByteArraySerializer extends StdSerializer<byte[]> {
         jgen.writeStringField("filePath", filePath);
         jgen.writeEndObject();
     }
+}
+
+abstract class BugatoneKaddoshSerializer<T>{
+    public Dictionary<string,string> serialize(T value);
+    public bool canDeserializer(json whatever);
+    public T deserialize(json);
 }
 
 // Inside the Serializer we will register the new ByteArraySerializer

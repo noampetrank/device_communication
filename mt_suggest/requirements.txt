@@ -5,6 +5,7 @@ Interface Requirements:
 4) To send special types, you will inherit a KaddoshSerializer<T> which should probably have facilities for serializing json AND
    for sending files over some databridge.
 5) KaddoshCommunicator is responsible for keeping the app open and responsive to messages.
+6) Every call to send_message returns when the operation is finished on the phone.
 
 
 

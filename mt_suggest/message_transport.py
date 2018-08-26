@@ -18,9 +18,6 @@ class BaseMessageTransport(object):
     def send_message(self, message, **params):
         pass
 
-    def receive_message(self, message, message_id):
-        pass
-
 
 class AdbIntentsMessageTransport(object):
     def __init__(self, connection):
@@ -45,8 +42,5 @@ class AdbIntentsMessageTransport(object):
         files = [(n, p) for n, p in params if self.is_file(p)]
         identifiers = self.send_files(files)
         self.device_utils.send_intent(message, params + identifiers, message_id=message_id)
-        return message_id
-
-    def receive_message(self, message, message_id):
         return_value = self.device_utils.logcat_wait_for_patterns(message + message_id)
         return self.parse_return_value(return_value)
