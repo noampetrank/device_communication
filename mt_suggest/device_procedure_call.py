@@ -1,3 +1,73 @@
+class DeviceProcedureCaller(object):
+    def __init__(self, marshallers, unmarshallers):
+        self.marshallers = marshallers
+        self.unmarshallers = unmarshallers
+
+    def call(self, procedure_name, **params):
+        """
+        Marshalls the params one-by-one and sends them to the callee side. Then receives params that are returned from the callee and unmarshalls them.
+        :type procedure_name: str
+        :type params: dict[str, marshallable]
+        :param params: Can be any marshallable type, including generators that will be converted to streams.
+        :return: Unmarshallod returned params
+        :rtype: dict[str, object]
+        """
+        pass
+
+    def _marshall(self, params):
+        pass
+
+    def _unmarshall(self, params):
+        pass
+
+
+
+
+class AdbIntentsProcedureCaller(DeviceProcedureCaller):
+    def __init__(self, marshallers, unmarshallers, connection, app_name):
+        super(AdbIntentsProcedureCaller, self).__init__(marshallers, unmarshallers)
+        self.connection = connection
+        self.app_name = app_name
+
+
+
+
+class MarshallerBase:
+    def can_marshall(self, obj):
+        pass
+
+    def marshall(self, obj):
+        pass
+
+
+class UnmarshallerBase:
+    def can_unmarshall(self, bytes):
+        pass
+
+    def marshall(self, bytes):
+        pass
+
+
+
+
+class GeneratorMarshaller(MarshallerBase):
+    pass
+
+class GeneratorUnmarshaller(UnmarshallerBase):
+    pass
+
+
+
+
+
+
+
+
+
+
+
+
+
 class IteratorToStream(object):
     """This class does some magic so we can send generators through the MessageTransport"""
     pass
