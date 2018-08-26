@@ -6,6 +6,7 @@ Interface Requirements:
    for sending files over some databridge.
 5) KaddoshCommunicator is responsible for keeping the app open and responsive to messages.
 6) Every call to send_message returns when the operation is finished on the phone.
+7) MessageTransport supports few specified data types (initially the primitives and byte[]). It will not work with other types.
 
 
 
