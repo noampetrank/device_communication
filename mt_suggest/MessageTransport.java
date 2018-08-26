@@ -1,9 +1,9 @@
 class MyAudioInterface implements AndroidService{  
-    KaddoshCommunicator _communicator;
+    DeviceCommunicator _communicator;
 
     public MyAudioInterface() {
-        List<KaddoshSerializer> serializers = loadSerializers();
-        _communicator = new KaddoshCommunicator((message)-> {
+        List<DeviceSerializer> serializers = loadSerializers();
+        _communicator = new DeviceCommunicator((message)-> {
             switch (message.name) {
                 case "record_and_play":
                     return doRecordAndPlay(message.<byte[]>get("song"), message.<string>get("times"), message.<int>get("volume"));
@@ -12,7 +12,7 @@ class MyAudioInterface implements AndroidService{
                 case "record":
                     return record(message.<int>get(numFrames));
                 case "record_and_play_streaming":
-                    KaddoshStream<byte> songStream = message.getStream<byte>("song")
+                    DeviceStream<byte> songStream = message.getStream<byte>("song");
                     return doRecordAndPlayStreaming(songStream);
                     
             }
@@ -47,8 +47,8 @@ class MyAudioInterface implements AndroidService{
         // do record
     }
 
-    public KaddoshStream<byte> doRecordAndPlayStreaming(KaddoshStream<byte> song){
-        recording = KaddoshStream<byte>();
+    public DeviceStream<byte> doRecordAndPlayStreaming(DeviceStream<byte> song){
+        recording = DeviceStream<byte>();
         audioRecord = AudioRecord();
         mediaTrack = MediaTrack();
         while (mediaTrack.play(song.read())){
@@ -59,7 +59,7 @@ class MyAudioInterface implements AndroidService{
 }
 /*
 
-Messages in initial KaddoshCommunicator are passed on adb intents as json
+Messages in initial DeviceCommunicator are passed on adb intents as json
 {
     "type": "RecordAndPlayMessage",
     "name": "action",
@@ -85,12 +85,12 @@ interface MessageHandler {
     object handleMessage(Message message);
 }
 
-class KaddoshSerializer {
+class DeviceSerializer {
     public string serialize(object x);
 }
 
-class KaddoshCommunicator {
-    public KaddoshCommunicator(List<KaddoshSerializer> ks, MessageHandler h);
+class DeviceCommunicator {
+    public DeviceCommunicator(List<DeviceSerializer> ks, MessageHandler h);
     public start();
     public stop();
 }
@@ -122,7 +122,7 @@ public class ByteArraySerializer extends StdSerializer<byte[]> {
     }
 }
 
-abstract class BugatoneKaddoshSerializer<T>{
+abstract class BugatoneDeviceSerializer<T>{
     public Dictionary<string,string> serialize(T value);
     public bool canDeserializer(json whatever);
     public T deserialize(json);
