@@ -78,23 +78,6 @@ Messages in initial DeviceCommunicator are passed on adb intents as json
 }
 */
 
-class Message {
-    T getValue<T>(string name);
-}
-interface MessageHandler {
-    object handleMessage(Message message);
-}
-
-class DeviceSerializer {
-    public string serialize(object x);
-}
-
-class DeviceCommunicator {
-    public DeviceCommunicator(List<DeviceSerializer> ks, MessageHandler h);
-    public start();
-    public stop();
-}
-
 
 // SERIALIZATION
 // Serialization will probably be done with the Jackson library, as such, we will copy how the jackson library adds serializable types
