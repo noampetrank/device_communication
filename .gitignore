@@ -186,3 +186,5 @@ build_*/
 *.iml
 **/.idea/other.xml
 battery_builds
+profiles_settings.xml
+
