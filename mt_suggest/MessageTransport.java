@@ -1,6 +1,9 @@
-class MyAudioInterface {  
+class MyAudioInterface : AndroidService{  
+    KaddoshCommunicator _communicator;
+
     public MyAudioInterface() {
-        KaddoshCommunicator c = new KaddoshCommunicator((message)-> {
+        List<KaddoshSerializer> serializers = loadSerializers()
+        _communicator = new KaddoshCommunicator((message)-> {
             switch (message.name) {
                 case "record_and_play":
                     return doRecordAndPlay(message.get<byte[]>('song'), message.get<string>("times"), message.get<int>("volume"));
@@ -13,13 +16,20 @@ class MyAudioInterface {
                     return doRecordAndPlayStreaming(songStream);
                     
             }
-        });
+        }, serializers);
+    }
+
+    public override onStart(){
+        _communicator.start();
+    }
+    public override onStop(){
+        _communicator.stop();
     }
     
     public byte[] doRecordAndPlay(byte[] song, int times, int volume) {
         recording = record();
         //...
-        return recording
+        return recording;
         
     }
 
