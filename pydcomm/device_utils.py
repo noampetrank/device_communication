@@ -27,16 +27,25 @@ class DeviceUtils:
         """
         pass
 
-    def send_intent(self, action, name, **args):
+    @staticmethod
+    def expand_intent_params_into_list(**params):
         """
-        :type action:  str
-        :type name: str
-        :type args: dict[str, str]
-        :return:
+        Transform params to a list of str containing --ei/--ef etc.
+        :type options: dict[str: str]
+        :return: list[str]
         """
         pass
 
-    def shell(self, *args):
+    def send_intent(self, action, name, *params_list):
+        """
+        see also: expand_intent_params_into_list() for convenience
+        :type action:  str ('start', 'force-stop')
+        :type name: str
+        :type args: dict[str, str]
+        """
+        pass
+
+    def _shell(self, *args):
         """
         :type args: list(str)
         """
@@ -56,7 +65,10 @@ class DeviceUtils:
 
     def ls(self, path_on_device):
         """
+        According to la -lat output: drwxrwx---   9 system cache     4096 2018-05-16 03:00 cache
+        For files with permissions error, ret['permissions'] (and all other filelds except name) will be None.
         :type path_on_device: str
+        :rtype list[dict[permissons, n_links, owner, group, size, modified, name]]
         """
         pass
 
@@ -77,6 +89,12 @@ class DeviceUtils:
         :rtype: str
         """
         pass
+
+    def get_prop(self, prop_name):
+        """
+        :type prop_name: str
+        :rtype: str
+        """
 
     def set_prop(self, prop_name, value):
         """
