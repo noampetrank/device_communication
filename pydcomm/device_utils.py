@@ -16,6 +16,7 @@ class DeviceUtils:
         Push a file/dir to the device.
         :type local_path: str
         :type path_on_device: str
+        :rtype: bool
         """
         pass
 
@@ -24,6 +25,7 @@ class DeviceUtils:
         Pull a file/dir to the device.
         :type path_on_device: str
         :type local_path: str
+        :rtype: bool
         """
         pass
 
@@ -54,10 +56,24 @@ class DeviceUtils:
     def mkdir(self, path_on_device):
         """
         :type path_on_device: str
+        :rtype: bool
         """
         pass
 
+    def rmdir(self, path_on_device):
+        """
+        :type path_on_device: str
+        :rtype: bool
+       """
+        pass
+
     def touch_file(self, path_on_device):
+        """
+        :type path_on_device: str
+        """
+        pass
+
+    def remove(self, path_on_device):
         """
         :type path_on_device: str
         """
@@ -75,12 +91,6 @@ class DeviceUtils:
     def get_time(self):
         """
         :rtype: datetime
-        """
-        pass
-
-    def remove(self, path_on_device):
-        """
-        :type path_on_device: str
         """
         pass
 
@@ -126,11 +136,19 @@ class DeviceUtils:
     def set_volume(self, val):
         """
         :type val: int
+        :rtype: bool
         """
         pass
 
     def is_max_volume(self):
         """
         :rtype: bool
+        """
+        return self.get_volume() == self.get_max_volume()
+
+    def get_max_volume(self):
+        """
+        get the max volume supported on the device
+        :rtype: int
         """
         pass
