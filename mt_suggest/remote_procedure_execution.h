@@ -1,7 +1,7 @@
 typedef Buffer std::vector<uint8>;
 typedef std::map<std::string, std::shared_ptr<Buffer>> MarshalledParams;
 
-class DeviceProcedureCallee {
+class RemoteProcedureExecutor {
 public:
     // Unmarshalls the relevant params, runs the procedure, marshalls the returned params and returns them.
     virtual MarshalledParams on_procedure_called(std::string procedure_name, const MarshalledParams &params) = 0;
@@ -9,7 +9,7 @@ public:
 
 
 // Register for intents and pass relevant messages as calls to the listener.
-void start_listen_to_adb_intent_procedure_calls(DeviceProcedureCallee &listener);
+void start_listen_to_adb_intent_procedure_calls(RemoteProcedureExecutor &listener);
 
 
 
@@ -33,16 +33,12 @@ T unmarshall(const Buffer &buf);
 
 
 
-template <typename T>
 class InputStream {
-    int read(Buffer &buf) = 0;
-    int try_read(Buffer &buf) = 0;
-    int write(const Buffer &buf) = 0;
+    int read(Buffer &buf) = 0;  // Returns the amount of buffers read (0 or 1), or -1 if the stream has ended/closed.
 };
 
-template <typename T>
 class OutputStream {
-    int write(const Buffer &buf) = 0;
+    int write(const Buffer &buf) = 0;  // Returns the amount of buffers written (0 or 1), or -1 if the stream has ended/closed.
 };
 
 
@@ -53,4 +49,3 @@ Buffer marshall<OutputStream>(const OutputStream &p);
 // Stream unmarshaller
 bool can_unmarshall<InputStream>(const Buffer &buf);
 InputStream unmarshall<InputStream>(const Buffer &buf);
-

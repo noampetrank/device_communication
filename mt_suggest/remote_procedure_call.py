@@ -1,4 +1,4 @@
-class DeviceProcedureCaller(object):
+class RemoteProcedureCaller(object):
     def __init__(self, marshallers, unmarshallers):
         self.marshallers = marshallers
         self.unmarshallers = unmarshallers
@@ -7,7 +7,7 @@ class DeviceProcedureCaller(object):
         """
         Marshalls the params one-by-one and sends them to the callee side. Then receives params that are returned from the callee and unmarshalls them.
         :type procedure_name: str
-        :type params: dict[str, marshallable]
+        :type params: dict[str: marshallable]
         :param params: Can be any marshallable type, including generators that will be converted to streams.
         :return: Unmarshallod returned params
         :rtype: dict[str, object]
@@ -15,15 +15,26 @@ class DeviceProcedureCaller(object):
         pass
 
     def _marshall(self, params):
+        """
+        Marshalls the params (protected method for subclasses)
+        :type params: dict[str: marshallable]
+        :return: dict[str: marshalled]
+        """
         pass
 
     def _unmarshall(self, params):
+        """
+        Unmarshalls the params (protected method for subclasses)
+        :type params: dict[str: marshalled]
+        :return: dict[str: marshallable]
+        """
         pass
 
 
 
 
-class AdbIntentsProcedureCaller(DeviceProcedureCaller):
+class AdbIntentsProcedureCaller(RemoteProcedureCaller):
+    # This is an example for a specific implementation that uses ADB and intents to pass the calls.
     def __init__(self, marshallers, unmarshallers, connection, app_name):
         super(AdbIntentsProcedureCaller, self).__init__(marshallers, unmarshallers)
         self.connection = connection
@@ -48,8 +59,7 @@ class UnmarshallerBase:
         pass
 
 
-
-
+# Generators can be marshalled and received as streams on the other side.
 class GeneratorMarshaller(MarshallerBase):
     pass
 
@@ -63,7 +73,7 @@ class GeneratorUnmarshaller(UnmarshallerBase):
 
 
 
-
+################### Ziv's code below ###################
 
 
 
