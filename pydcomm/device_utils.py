@@ -11,6 +11,7 @@ class DeviceUtilsError(Exception):
     """
     basic error class for device utils
     """
+
     def __init__(self, *args):
         super(DeviceUtilsError, self).__init__(*args)
 
@@ -57,7 +58,7 @@ class DeviceUtils:
         cur_type = type(param)
         if cur_type is int:
             return "--ei"
-        elif cur_type  in [float, np.float64]:
+        elif cur_type in [float, np.float64]:
             return "--ef"
         else:  # for now we will default to string
             return "--es"
@@ -131,12 +132,25 @@ class DeviceUtils:
     def ls(self, path_on_device):
         """
         According to ls -lat output: drwxrwx---   9 system cache     4096 2018-05-16 03:00 cache
-        For files with permissions error, ret['permissions'] (and all other filelds except name) will be None.
+        For files with permissions error, ret['permissions'] (and all other flelds except name) will be None.
         :type path_on_device: str
         :rtype list[dict[permissons, n_links, owner, group, size, modified, name]]
         """
         lines, _ = self._shell("ls", "-lat", path_on_device)
-        res = {}  # todo
+        lines = [l for l in lines if (not l.startswith("total") and not l.endswith("."))]
+        res = []
+        for l in lines:
+            vals = l.split()
+            if len(vals) != 8:
+                log.error("Error in ls: unexpected number of values in the line", l)
+                raise DeviceUtilsError("Incorrect string returned from ls: " + l)
+            res.append({'permissions': vals[0],
+                        'n_links': vals[1],
+                        'owner': vals[2],
+                        'group': vals[3],
+                        'size': vals[4],
+                        'modified': ' '.join([vals[5], vals[6]]),
+                        'name': vals[7]})
         return res
 
     def get_time(self):
