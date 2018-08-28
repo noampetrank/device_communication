@@ -6,28 +6,30 @@ struct MarshalledObject {
 typedef std::map<std::string, std::shared_ptr<MarshalledObject>> MarshalledParams;
 
 class RemoteProcedureExecutor {
-    const int VERSION = 1;
+    const std::string VERSION = "1";
 public:
-    MarshalledParams on_procedure_called(std::string procedure_name, const MarshalledParams &params) final {
-        if (procedure_name == "_rpc_get_version") {
+    MarshalledParams onProcedureCalled(std::string procedureName, const MarshalledParams &params) final {
+        if (procedureName == "_rpc_get_version") {
             MarshalledParams ret = start(params);
             ret['version'] = VERSION;
             return ret;
         } else {
-            return execute_procedure(procedure_name, params);
+            return executeProcedure(procedureName, params);
         }
     }
 
-    virtual void start() {} // Do whatever it takes to start listening.
-    virtual void stop() {} // Go to bed.
+    virtual void onStart() {} // Connection established, do whatever initialization is needed after that.
+    virtual void onStop() {} // Connection is about to close.
+
+    virtual std::string getVersion() { return "1"; }
 
     // Unmarshalls the relevant params, runs the procedure, marshalls the returned params and returns them.
-    virtual MarshalledParams execute_procedure(std::string procedure_name const MarshalledParams &params) = 0;
+    virtual MarshalledParams executeProcedure(std::string procedureName const MarshalledParams &params) = 0;
 };
 
 
 // Register for intents and pass relevant messages as calls to the listener.
-void start_listen_to_adb_intent_procedure_calls(RemoteProcedureExecutor &listener);
+void startListenToAdbIntentProcedureCalls(RemoteProcedureExecutor &listener);
 
 
 
@@ -35,7 +37,7 @@ void start_listen_to_adb_intent_procedure_calls(RemoteProcedureExecutor &listene
 
 // Marshaller
 template <class T>
-bool can_marshall(const T &p);
+bool canMarshall(const T &p);
 
 template <class T>
 MarshalledObject marshall(const T &p);
@@ -43,7 +45,7 @@ MarshalledObject marshall(const T &p);
 
 // Unmarshaller
 template <class T>
-bool can_unmarshall(const MarshalledObject &buf);
+bool canUnmarshall(const MarshalledObject &buf);
 
 template <class T>
 T unmarshall(const MarshalledObject &buf);
@@ -61,9 +63,9 @@ class OutputStream {
 
 
 // Stream marshaller
-bool can_marshall<OutputStream>(const  &p);
+bool canMarshall<OutputStream>(const  &p);
 MarshalledObject marshall<OutputStream>(const OutputStream &p);
 
 // Stream unmarshaller
-bool can_unmarshall<InputStream>(const MarshalledObject &buf);
+bool canUnmarshall<InputStream>(const MarshalledObject &buf);
 InputStream unmarshall<InputStream>(const MarshalledObject &buf);
