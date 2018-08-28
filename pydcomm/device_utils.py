@@ -9,7 +9,7 @@ log = logging.getLogger(__name__)
 
 class DeviceUtilsError(Exception):
     """
-    basic error class for device utils
+    error class for device utils
     """
 
     def __init__(self, *args):
@@ -17,6 +17,12 @@ class DeviceUtilsError(Exception):
 
 
 class DeviceUtils:
+    """
+    class exposing basic operations on an android device
+    methods here control the device itself and not a specific app
+    some methods may have to be overriden for a specifc model,
+    mainly due to differences in return valus of adb commands
+    """
     def __init__(self, connection):
         """
         :type connection: Connection
@@ -63,7 +69,7 @@ class DeviceUtils:
         else:  # for now we will default to string
             return "--es"
 
-    def expand_intent_params_into_list(self, **params):
+    def _expand_intent_params_into_list(self, **params):
         """
         Transform params to a list of str containing --ei/--ef etc.
         :type options: dict[str: str]
@@ -74,7 +80,7 @@ class DeviceUtils:
             res.append(key)
             res.append(self._get_intent_type_code(value))
             res.append(str(value))
-        pass
+        return res
 
     def send_intent(self, action, name, *params_list):
         """
@@ -83,7 +89,7 @@ class DeviceUtils:
         :type name: str
         :type args: dict[str, str]
         """
-        return self._shell("am", "broadcast", "-a", name, self.expand_intent_params_into_list(params_list))[0]
+        return self._shell("am", "broadcast", "-a", name, self._expand_intent_params_into_list(params_list))[0]
 
     def _shell(self, *args):
         """
@@ -98,7 +104,7 @@ class DeviceUtils:
         :rtype: bool
         """
         lines, ok = self._shell("mkdir", path_on_device)
-        # in case of failure, nothing is printed...
+        # in case of lines, nothing is printed...
         return ok and len(lines) == 0
 
     def rmdir(self, path_on_device):
@@ -108,7 +114,7 @@ class DeviceUtils:
         :rtype: bool
        """
         lines, ok = self._shell("rm", "-rf", path_on_device)
-        # in case of failure, nothing is printed...
+        # in case of lines, nothing is printed...
         return ok and len(lines) == 0
 
     def touch_file(self, path_on_device):
@@ -117,7 +123,7 @@ class DeviceUtils:
         :type path_on_device: str
         """
         lines, ok = self._shell("touch", path_on_device)
-        # in case of failure, nothing is printed...
+        # in case of lines, nothing is printed...
         return ok and len(lines) == 0
 
     def remove(self, path_on_device):
@@ -126,13 +132,14 @@ class DeviceUtils:
         :type path_on_device: str
         """
         lines, ok = self._shell("rm", "-f", path_on_device)
-        # in case of failure, nothing is printed...
+        # in case of success, nothing is printed...
         return ok and len(lines) == 0
 
     def ls(self, path_on_device):
         """
         According to ls -lat output: drwxrwx---   9 system cache     4096 2018-05-16 03:00 cache
         For files with permissions error, ret['permissions'] (and all other flelds except name) will be None.
+        MIGHT BE DEVICE SPECIFIC (UNLIKELY)
         :type path_on_device: str
         :rtype list[dict[permissons, n_links, owner, group, size, modified, name]]
         """
@@ -157,10 +164,10 @@ class DeviceUtils:
         """
         :rtype: datetime
         """
-        line, ok = self._shell('date', '+"%Y-%m-%d\\', '%H:%M:%S:%N"')
+        lines, ok = self._shell('date', '+"%Y-%m-%d\\', '%H:%M:%S:%N"')
         if not ok:
             raise DeviceUtilsError("failed to get device time")
-        return datetime.datetime.strptime(line, '%Y-%m-%d %H:%M:%S:%f')
+        return datetime.datetime.strptime(lines[0], '%Y-%m-%d %H:%M:%S:%f')
 
     def get_device_name(self):
         """
@@ -179,7 +186,15 @@ class DeviceUtils:
         :type prop_name: str
         :rtype: str
         """
-        res, _ = self._shell("getprop", prop_name)
+        res, ok = self._shell("getprop", prop_name)
+        if not ok:
+            msg = "failed to get value of property: " + prop_name
+            log.error(msg)
+            raise DeviceUtilsError(msg)
+        elif len(res) == 0:
+            msg = "property not found on the device: " + prop_name
+            log.error(msg)
+            raise DeviceUtilsError(msg)
         return res[-1]
 
     def set_prop(self, prop_name, value):
@@ -189,7 +204,7 @@ class DeviceUtils:
         :type prop_name: str
         :type value: str
         """
-        self._shell("getprop", prop_name, value)
+        self._shell("setprop", prop_name, value)
 
     def reboot(self):
         """
