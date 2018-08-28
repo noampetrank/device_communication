@@ -1,18 +1,18 @@
 typedef Buffer std::vector<uint8>;
-struct MarshalledObject {
-    std::shared_ptr<Buffer> bytes;
-    std::map<std::string, std::string> attachments;
-};
-typedef std::map<std::string, std::shared_ptr<MarshalledObject>> MarshalledParams;
+typedef std::shared_ptr<Buffer> MarshalledObject;
+
+template <class T>
+MarshalledObject marshall(const T &p);
+
+template <class T>
+T unmarshall(const MarshalledObject &buf);
+
 
 class RemoteProcedureExecutor {
-    const std::string VERSION = "1";
 public:
-    MarshalledParams onProcedureCalled(std::string procedureName, const MarshalledParams &params) final {
+    MarshalledParams delegateProcedure(std::string procedureName, const MarshalledParams &params) final {
         if (procedureName == "_rpc_get_version") {
-            MarshalledParams ret = start(params);
-            ret['version'] = VERSION;
-            return ret;
+            return marshall(getVersion());
         } else {
             return executeProcedure(procedureName, params);
         }
@@ -24,7 +24,7 @@ public:
     virtual std::string getVersion() { return "1"; }
 
     // Unmarshalls the relevant params, runs the procedure, marshalls the returned params and returns them.
-    virtual MarshalledParams executeProcedure(std::string procedureName const MarshalledParams &params) = 0;
+    virtual MarshalledParams onExecuteProcedure(std::string procedureName const MarshalledParams &params) = 0;
 };
 
 
@@ -33,22 +33,6 @@ void startListenToAdbIntentProcedureCalls(RemoteProcedureExecutor &listener);
 
 
 
-//TODO: can marshalling be implemented using our to/from JSON mechanism?
-
-// Marshaller
-template <class T>
-bool canMarshall(const T &p);
-
-template <class T>
-MarshalledObject marshall(const T &p);
-
-
-// Unmarshaller
-template <class T>
-bool canUnmarshall(const MarshalledObject &buf);
-
-template <class T>
-T unmarshall(const MarshalledObject &buf);
 
 
 
@@ -63,9 +47,7 @@ class OutputStream {
 
 
 // Stream marshaller
-bool canMarshall<OutputStream>(const  &p);
 MarshalledObject marshall<OutputStream>(const OutputStream &p);
 
 // Stream unmarshaller
-bool canUnmarshall<InputStream>(const MarshalledObject &buf);
 InputStream unmarshall<InputStream>(const MarshalledObject &buf);
