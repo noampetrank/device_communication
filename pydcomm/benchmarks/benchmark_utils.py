@@ -26,8 +26,8 @@ def time_it(obj, method, args, expected=None):
 
 def benchmark_it(repeats, obj, method, args, expected=None):
     """
-    time a method repeately, get time and success code for each run
-    :type repeats: repeats
+    Time a method repeatedly, return time and success code for each run
+    :type repeats: int
     :type expected: list
     :type obj: object
     :type method: str

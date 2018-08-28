@@ -82,7 +82,7 @@ def add_choose_first_device(connection):
     return connection
 
 
-def add_user_device_choise(connection):
+def add_user_device_choice(connection):
     # ...
     return connection
 
@@ -138,5 +138,5 @@ class ConnectionFactory:
         if multi_device == MultiDeviceBehavior.CHOOSE_FIRST:
             con = add_choose_first_device(con)
         elif multi_device == MultiDeviceBehavior.USER_CHOICE:
-            con = add_user_device_choise(con)
+            con = add_user_device_choice(con)
         return con

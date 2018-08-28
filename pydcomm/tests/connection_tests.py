@@ -2,69 +2,7 @@ import time
 from unittest import TestCase
 from pydcomm.connection import ConnectionFactory, Connection, MultiDeviceBehavior
 
-"""
-Sample Benchmark:
-Device:                      Oppo Find X
-Connection (Wired|Wireless): Wireless
-Short connections: 
-    Total: 100
-    Successful:90
-    Auto recover: 8
-    Manual recover: 2
-    Fail: 0
-Long connection, echo command every 10s:  
-    Success: 100/100
-    Average connection duration: 60m
-    Total: 100
-    Successful:90
-    Auto recover: 8
-    Manual recover: 2
-    Fail: 0
-Long connection, echo command every 120s: 100/100
-    Success: 100/100
-    Average connection duration: 60m
-    Total: 100
-    Successful:90
-    Auto recover: 8
-    Manual recover: 2
-    Fail: 0
-Simulate disconnect device (wired, wireless):
-    Total: 100
-    Recovery: 100
-    Failed: 0
-* All numbers are not final
 
-"""
-
-
-class ConnectionBencmark(TestCase):
-
-    def _test_connection_is_working(self, connection):
-        return connection.adb("shell echo hi") == "hi"
-
-    def _test_connection_and_disconnect(self, connection):
-        if not self._test_connection_is_working(connection):
-            connection.disconnect()
-            return False
-        connection.disconnect()
-        if self._test_connection_is_working(connection):
-            raise Exception("Could not disconnect")
-
-    def repeat_test_connection(self, connect_from_ip, recovery, rounds, sleep_between_connections):
-        connection_factory = ConnectionFactory()
-        # User intervention
-        connection = connection_factory.get_connected(auto_recovery=recovery)
-        ip = connection.get_connection_status()["ip"]
-        connection.disconnect()
-        fail = 0
-        for i in range(rounds):
-            if connect_from_ip:
-                connection = Connection(ip)
-            else:
-                connection = connection_factory.get_connected(auto_recovery=recovery)
-            fail += self._test_connection_and_disconnect(connection)
-            time.sleep(sleep_between_connections)
-        return fail, rounds
 
 
 # All tests are done with subprocess.check_output/Popen mocked to assert the output
