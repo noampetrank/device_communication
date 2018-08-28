@@ -2,33 +2,61 @@ class RemoteProcedureCaller(object):
     def __init__(self, marshallers, unmarshallers):
         self.marshallers = marshallers
         self.unmarshallers = unmarshallers
+        self.start()
 
-    def call(self, procedure_name, **params):
+    def call(self, procedure_name, explicit_marshallers=None, explicit_unmarshallers=None, **params):
         """
         Marshalls the params one-by-one and sends them to the callee side. Then receives params that are returned from the callee and unmarshalls them.
         :type procedure_name: str
+        :type explicit_marshallers: dict[str: MarshallerBase subclass] or None
+        :type explicit_unmarshallers: dict[str: UnmarshallerBase subclass] or None
         :type params: dict[str: marshallable]
         :param params: Can be any marshallable type, including generators that will be converted to streams.
-        :return: Unmarshallod returned params
-        :rtype: dict[str, object]
+        :return: Unmarshalled returned params (i.e. int, float, objects etc.)
+        :rtype: dict[str: object]
+        """
+        marshalled_params = self._marshall(params, explicit_marshallers)
+        ret = self._send_and_wait_for_return(procedure_name, marshalled_params)
+        return self._unmarshall(ret, explicit_unmarshallers)
+
+    def get_executor_version(self):
+        ret_ver = self._send_and_wait_for_return('_rpc_get_version', {})
+        return self._unmarshall(ret_ver, dict(version=VersionUnmarshaller))['version']
+
+    def start(self):
+        """
+        Do whatever it takes to make the remote executor listen.
+        """
+        # ...
+        xver = self.get_executor_version()
+        # check if we can handle this executor version
+
+    def stop(self):
+        """
+        Put the remote executor to bed.
         """
         pass
 
-    def _marshall(self, params):
+    def _marshall(self, params, explicit_marshallers):
         """
-        Marshalls the params (protected method for subclasses)
+        Marshalls the params using self.marshallers (private method)
         :type params: dict[str: marshallable]
-        :return: dict[str: marshalled]
+        :type explicit_marshallers: dict[str: MarshallerBase subclass] or None
+        :return: dict[str: MarshalledObject]
         """
         pass
 
-    def _unmarshall(self, params):
+    def _unmarshall(self, params, explicit_unmarshallers):
         """
-        Unmarshalls the params (protected method for subclasses)
-        :type params: dict[str: marshalled]
+        Unmarshalls the params using self.unmarshallers (private method)
+        :type params: dict[str: MarshalledObject]
+        :type explicit_unmarshallers: dict[str: UnmarshallerBase subclass] or None
         :return: dict[str: marshallable]
         """
         pass
+
+    def _send_and_wait_for_return(self, procedure_name, marshalled_params):
+        raise NotImplementedError('This method needs to be overridden by subclass')
 
 
 
@@ -40,6 +68,15 @@ class AdbIntentsProcedureCaller(RemoteProcedureCaller):
         self.connection = connection
         self.app_name = app_name
 
+    def _send_and_wait_for_return(self, procedure_name, marshalled_params):
+        pass
+
+
+
+class MarshalledObject:
+    def __init__(self):
+        self.bytes = None
+        self.attachments = {}
 
 
 
@@ -52,10 +89,10 @@ class MarshallerBase:
 
 
 class UnmarshallerBase:
-    def can_unmarshall(self, bytes):
+    def can_unmarshall(self, marshalled_object):
         pass
 
-    def marshall(self, bytes):
+    def marshall(self, marshalled_object):
         pass
 
 
@@ -65,10 +102,6 @@ class GeneratorMarshaller(MarshallerBase):
 
 class GeneratorUnmarshaller(UnmarshallerBase):
     pass
-
-
-
-
 
 
 
