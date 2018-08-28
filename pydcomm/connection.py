@@ -1,4 +1,9 @@
+import subprocess
+
 from enum import IntEnum
+import logging
+
+log = logging.getLogger(__name__)
 
 
 class Connection:
@@ -43,11 +48,20 @@ class Connection:
     def adb(self, *args):
         """
         :type args: list[str]
-        :param args: array of splitted args to adb command
+        :param args: array of split args to adb command
+        :rtype: tuple(list(str), bool)
         """
         if not self._test_connection():
             self._handle_error()
-        subprocess("adb")
+        args = list(args)
+        if args[0] is not 'adb':
+            args = ['adb'] + args
+        try:
+            return subprocess.check_output(args).splitlines(), True
+        except subprocess.CalledProcessError as err:
+            # log the exception
+            log.error("adb return with the following error code, returning output and False", err.returncode, err.message)
+            return err.output.splitlines(), False
 
     @staticmethod
     def restart_adb_server():

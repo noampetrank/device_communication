@@ -1,4 +1,18 @@
+import datetime
+import re
 from connection import Connection
+import numpy as np
+import logging
+
+log = logging.getLogger(__name__)
+
+
+class DeviceUtilsError(Exception):
+    """
+    basic error class for device utils
+    """
+    def __init__(self, *args):
+        super(DeviceUtilsError, self).__init__(*args)
 
 
 class DeviceUtils:
@@ -8,9 +22,6 @@ class DeviceUtils:
         """
         self.connection = connection
 
-
-    ## Probably non-device specific ##
-
     def push(self, local_path, path_on_device):
         """
         Push a file/dir to the device.
@@ -18,7 +29,11 @@ class DeviceUtils:
         :type path_on_device: str
         :rtype: bool
         """
-        pass
+        lines, ok = self.connection.adb("push {} {}".format(local_path, path_on_device).split())
+        if not ok:
+            log.warn("error in device utils push:", lines)
+            return False
+        return any('files pushed' in r for r in lines)
 
     def pull(self, path_on_device, local_path):
         """
@@ -27,15 +42,37 @@ class DeviceUtils:
         :type local_path: str
         :rtype: bool
         """
-        pass
+        lines, ok = self.connection.adb("push {} {}".format(path_on_device, local_path).split())
+        if not ok:
+            log.warn("error in device utils pull:", lines)
+            return False
+        return any('files pulled' in r for r in lines)
 
-    @staticmethod
-    def expand_intent_params_into_list(**params):
+    def _get_intent_type_code(self, param):
+        """
+        return intent "Type" string according to type of param
+        :param param:
+        :rtype: str
+        """
+        cur_type = type(param)
+        if cur_type is int:
+            return "--ei"
+        elif cur_type  in [float, np.float64]:
+            return "--ef"
+        else:  # for now we will default to string
+            return "--es"
+
+    def expand_intent_params_into_list(self, **params):
         """
         Transform params to a list of str containing --ei/--ef etc.
         :type options: dict[str: str]
         :return: list[str]
         """
+        res = []
+        for key, value in params.iteritems():
+            res.append(key)
+            res.append(self._get_intent_type_code(value))
+            res.append(str(value))
         pass
 
     def send_intent(self, action, name, *params_list):
@@ -45,100 +82,151 @@ class DeviceUtils:
         :type name: str
         :type args: dict[str, str]
         """
-        pass
+        return self._shell("am", "broadcast", "-a", name, self.expand_intent_params_into_list(params_list))[0]
 
     def _shell(self, *args):
         """
         :type args: list(str)
         """
-        pass
+        return self.connection.adb("shell", *args)
 
     def mkdir(self, path_on_device):
         """
+        create a folder on the device
         :type path_on_device: str
         :rtype: bool
         """
-        pass
+        lines, ok = self._shell("mkdir", path_on_device)
+        # in case of failure, nothing is printed...
+        return ok and len(lines) == 0
 
     def rmdir(self, path_on_device):
         """
+        remove a folder on the device
         :type path_on_device: str
         :rtype: bool
        """
-        pass
+        lines, ok = self._shell("rm", "-rf", path_on_device)
+        # in case of failure, nothing is printed...
+        return ok and len(lines) == 0
 
     def touch_file(self, path_on_device):
         """
+        touch a file on the device
         :type path_on_device: str
         """
-        pass
+        lines, ok = self._shell("touch", path_on_device)
+        # in case of failure, nothing is printed...
+        return ok and len(lines) == 0
 
     def remove(self, path_on_device):
         """
+        remove a file from the device
         :type path_on_device: str
         """
-        pass
+        lines, ok = self._shell("rm", "-f", path_on_device)
+        # in case of failure, nothing is printed...
+        return ok and len(lines) == 0
 
     def ls(self, path_on_device):
         """
-        According to la -lat output: drwxrwx---   9 system cache     4096 2018-05-16 03:00 cache
+        According to ls -lat output: drwxrwx---   9 system cache     4096 2018-05-16 03:00 cache
         For files with permissions error, ret['permissions'] (and all other filelds except name) will be None.
         :type path_on_device: str
         :rtype list[dict[permissons, n_links, owner, group, size, modified, name]]
         """
-        pass
+        lines, _ = self._shell("ls", "-lat", path_on_device)
+        res = {}  # todo
+        return res
 
     def get_time(self):
         """
         :rtype: datetime
         """
-        pass
+        line, ok = self._shell('date', '+"%Y-%m-%d\\', '%H:%M:%S:%N"')
+        if not ok:
+            raise DeviceUtilsError("failed to get device time")
+        return datetime.datetime.strptime(line, '%Y-%m-%d %H:%M:%S:%f')
 
     def get_device_name(self):
         """
+        return the BUGATONE device name (used in recording scripts)
         :rtype: str
         """
-        pass
+        name, success = self._shell("cat", "/data/local/tmp/devicename")
+        if success:
+            return name[-1]
+        else:
+            raise DeviceUtilsError("failed to get device name")
 
     def get_prop(self, prop_name):
         """
+        get a value of device property
         :type prop_name: str
         :rtype: str
         """
+        res, _ = self._shell("getprop", prop_name)
+        return res[-1]
 
     def set_prop(self, prop_name, value):
         """
+        set a value of a device property.
+        this method has no return value, so we return nothing
         :type prop_name: str
         :type value: str
         """
-        pass
+        self._shell("getprop", prop_name, value)
 
     def reboot(self):
         """
+        reboot the device
         """
-        pass
+        self.connection.adb("reboot")
 
+    def _check_earphone_connected(self, dumpsys_output):
+        """
+        parse the dumpsys audio and check if an earphone is connected
+        QUITE POSSIBLY DEVICE SPECIFIC
+        :type dumpsys_output: str
+        :rtype: bool
+        """
+        device = re.findall(r'STREAM_MUSIC.*?Devices: (\w+)', dumpsys_output, re.DOTALL)[0]
+        return device.lower() in 'headset'
 
-    ## Possibly device specific ##
+    def _check_device_volume(self, dumpsys_output):
+        """
+        parse the dumpsys audio and check for device stream volume
+        QUITE POSSIBLY DEVICE SPECIFIC
+        :type dumpsys_output: str
+        :rtype: bool
+        """
+        device = re.findall(r'STREAM_MUSIC.*?Devices: (\w+)', dumpsys_output, re.DOTALL)[0]
+        return int(re.findall(r'- STREAM_MUSIC.*?{}\): (\d+)'.format(device), dumpsys_output, re.DOTALL)[0])
 
     def is_earphone_connected(self):
         """
         :rtype: bool
         """
-        pass
+        txt, _ = self._shell('dumpsys', 'audio')
+        return self._check_earphone_connected(txt)
 
     def get_volume(self):
         """
         :rtype: int
         """
-        pass
+        txt, _ = self._shell('dumpsys', 'audio')
+        return self._check_device_volume(txt)
 
     def set_volume(self, val):
         """
+        set the stream volume on the device
         :type val: int
         :rtype: bool
         """
-        pass
+        if val > self.get_max_volume():
+            return False
+        self._shell("service", "call", "audio", "3", "i32", "3", "i32", str(val), "i32", "0")
+        return val == self.get_volume()
 
     def is_max_volume(self):
         """
@@ -149,6 +237,7 @@ class DeviceUtils:
     def get_max_volume(self):
         """
         get the max volume supported on the device
+        device specific for sure
         :rtype: int
         """
-        pass
+        raise NotImplementedError()
