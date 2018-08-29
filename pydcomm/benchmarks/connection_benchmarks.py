@@ -1,11 +1,10 @@
-# TODO: Everything is terrible. We must implement how the fixing mechanism works and build the tracing into it.
+import time
 from collections import defaultdict
 
 from enum import IntEnum
-import time
 
-from pydcomm.connection import Connection, ConnectionFactory, add_automated_recovery, add_interactive_troubleshooting_recovery
-from pydcomm.connection_decorators import auto_fixes, add_some_recovery, manual_fixes
+from pydcomm.connection import ConnectionFactory
+from pydcomm.connection_decorators import auto_fixes, add_some_recovery, manual_fixes, add_rooted_impl
 
 """
                    total_cons con_fail auto_rec_fail manu_rec_fail total_fail
@@ -35,10 +34,12 @@ def create_log_fix(fail_dict, name):
 
 class ConnectionBenchmark(object):
     # Not good, need to find a better solution
-    def _create_connection(self, recovery, ip=None):
+    def _create_connection(self, recovery, rooted, ip=None):
         self.fail_dict = defaultdict()
         cf = ConnectionFactory()
         decorators = []
+        if rooted:
+            decorators.append(add_rooted_impl)
         decorators.append(create_log_fix(self.fail_dict, "connection_fail"))
         if recovery >= Recovery.AUTO:
             decorators.append(add_some_recovery(auto_fixes))
@@ -51,18 +52,19 @@ class ConnectionBenchmark(object):
 
     @staticmethod
     def _test_connection_is_working(connection):
+        return connection.adb(["shell", "echo", "hi"]) == "hi"
 
     def repeat_test_connection(self, rooted, connect_from_ip, recovery, rounds, sleep_between_connections, connection_test_amount,
                                connection_length):
         """
         Returns dictionary containing in which part of the recovery it failed and number of rounds.
-        :param rooted:
+        :param connection_length: How long the connection is open in seconds
+        :param rooted: Should start a rooted connection
         :param connect_from_ip:
         :param recovery:
         :param rounds:
         :param sleep_between_connections:
         :param connection_test_amount:
-        :param sleep_between_connection_test:
         :return:
         """
         connection = self._create_connection(recovery, False)
@@ -71,13 +73,13 @@ class ConnectionBenchmark(object):
         connection.disconnect()
         fails = defaultdict()
         for i in range(rounds):
-            connection = self._create_connection(recovery, ip if connect_from_ip else None)
+            connection = self._create_connection(recovery, rooted, ip if connect_from_ip else None)
             for i in range(connection_test_amount):
-                if not connection.adb(["shell", "echo", "hi"]) == "hi":
+                if not self._test_connection_is_working(connection):
                     fails["shell"] += 1
                 time.sleep(connection_test_amount / connection_length)
             connection.disconnect()
-            if connection.adb(["shell", "echo", "hi"]) == "hi":
+            if self._test_connection_is_working(connection):
                 fails["disconnect"] += 1
             for k in self.fail_dict:
                 fails[k] += self.fail_dict[k]
