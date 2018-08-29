@@ -62,6 +62,7 @@ class ConnectionFactory(object):
         :param ip:
         :param device:
         :param decorators:
+        :type device_selector: MultiDeviceBehavior
         :return:
         """
         con = AdbConnection(ip or device)

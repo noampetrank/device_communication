@@ -26,11 +26,11 @@ class Recovery(IntEnum):
     INTERACTIVE = 2
 
 
-def create_log_fix(dict, name):
+def create_log_fix(fail_dict, name):
     def f(connection):
-        dict[name] += 1
+        fail_dict[name] += 1
 
-    return f
+    return add_some_recovery(f)
 
 
 class ConnectionBenchmark(object):
@@ -38,20 +38,19 @@ class ConnectionBenchmark(object):
     def _create_connection(self, recovery, ip=None):
         self.fail_dict = defaultdict()
         cf = ConnectionFactory()
-        decs = []
-        decs.append(create_log_fix(self.fail_dict, "connection_fail"))
+        decorators = []
+        decorators.append(create_log_fix(self.fail_dict, "connection_fail"))
         if recovery >= Recovery.AUTO:
-            decs.append(add_some_recovery(auto_fixes))
-            decs.append(create_log_fix(self.fail_dict, "auto_recover_fail"))
+            decorators.append(add_some_recovery(auto_fixes))
+            decorators.append(create_log_fix(self.fail_dict, "auto_recover_fail"))
         if recovery >= Recovery.INTERACTIVE:
-            decs.append(add_some_recovery(manual_fixes))
-            decs.append(create_log_fix(self.fail_dict, "manual_recover_fail"))
-        con = cf.create_connection(ip=ip, decorators=decs)
+            decorators.append(add_some_recovery(manual_fixes))
+            decorators.append(create_log_fix(self.fail_dict, "manual_recover_fail"))
+        con = cf.create_connection(ip=ip, decorators=decorators)
         return con
 
     @staticmethod
     def _test_connection_is_working(connection):
-        return connection.adb("shell echo hi") == "hi"
 
     def repeat_test_connection(self, rooted, connect_from_ip, recovery, rounds, sleep_between_connections, connection_test_amount,
                                connection_length):
@@ -74,9 +73,12 @@ class ConnectionBenchmark(object):
         for i in range(rounds):
             connection = self._create_connection(recovery, ip if connect_from_ip else None)
             for i in range(connection_test_amount):
-                self._test_connection_is_working(connection)
-                connection.disconnect()
+                if not connection.adb(["shell", "echo", "hi"]) == "hi":
+                    fails["shell"] += 1
                 time.sleep(connection_test_amount / connection_length)
+            connection.disconnect()
+            if connection.adb(["shell", "echo", "hi"]) == "hi":
+                fails["disconnect"] += 1
             for k in self.fail_dict:
                 fails[k] += self.fail_dict[k]
             time.sleep(sleep_between_connections)
