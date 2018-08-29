@@ -1,5 +1,6 @@
-typedef Buffer std::vector<uint8>;
-typedef std::shared_ptr<Buffer> MarshalledObject;
+using Buffer = std::vector<uint8>;
+using MarshalledObject = std::shared_ptr<Buffer>;
+
 
 template <class T>
 MarshalledObject marshall(const T &p);
@@ -8,11 +9,26 @@ template <class T>
 T unmarshall(const MarshalledObject &buf);
 
 
-class RemoteProcedureExecutor {
+class IRemoteProcedureExecutor {
 public:
-    MarshalledParams delegateProcedure(std::string procedureName, const MarshalledParams &params) final {
+    virtual MarshalledObject delegateProcedure(std::string procedureName, const MarshalledObject &params) = 0; // Delegate a procedure call from the caller
+
+    virtual void onStart() = 0; // Connection established, do whatever initialization is needed after that.
+    virtual void onStop() = 0; // Connection is about to close.
+
+    virtual std::string getVersion() = 0; // Get current executor version
+};
+
+
+class StandardRemoteProcedureExecutor {
+    virtual MarshalledObject rpc_echo(std::string procedureName, const MarshalledObject &params) final;
+public:
+    virtual MarshalledObject delegateProcedure(std::string procedureName, const MarshalledObject &params) final {
+        // TODO: move this to .cpp
         if (procedureName == "_rpc_get_version") {
             return marshall(getVersion());
+        if (procedureName == "_rpc_echo") {
+            return rpc_echo(procedureName, params);
         } else {
             return executeProcedure(procedureName, params);
         }
@@ -24,7 +40,7 @@ public:
     virtual std::string getVersion() { return "1"; }
 
     // Unmarshalls the relevant params, runs the procedure, marshalls the returned params and returns them.
-    virtual MarshalledParams onExecuteProcedure(std::string procedureName const MarshalledParams &params) = 0;
+    virtual MarshalledObject onExecuteProcedure(std::string procedureName const MarshalledObject &params) = 0;
 };
 
 
@@ -47,7 +63,46 @@ class OutputStream {
 
 
 // Stream marshaller
-MarshalledObject marshall<OutputStream>(const OutputStream &p);
+MarshalledObject marshall<OutputStream>(OutputStream &p);
 
 // Stream unmarshaller
 InputStream unmarshall<InputStream>(const MarshalledObject &buf);
+
+
+
+///////
+// Stream marshaller C++
+class AudioOutputStream : public OutputStream {
+    RemoteProcedureExecutor rpc;
+public:
+    AudioOutputStream(RemoteProcedureExecutor &rpc) : rpc(rpc) {}
+
+    int write(const MarshalledObject &buf) {
+        rpc.
+    }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

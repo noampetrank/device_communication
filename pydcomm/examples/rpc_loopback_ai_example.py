@@ -1,14 +1,12 @@
 import os
-from pydcomm.device_utils import DeviceUtils
 from pydcomm.remote_procedure_call import RemoteProcedureCaller, UnsupportedExecutorVersion, ExecutorConnectionError, get_generator_unmarshaller
 
 
 class AdbIntentsProcedureCaller(RemoteProcedureCaller):
     # This is an example for a specific implementation that uses ADB and intents to pass the calls.
-    def __init__(self, connection, app_name):
-        self.connection = connection
+    def __init__(self, device_utils, app_name):
         self.app_name = app_name
-        self.device_utils = DeviceUtils(connection)
+        self.device_utils = device_utils
         super(AdbIntentsProcedureCaller, self).__init__()
 
     def start(self):
@@ -28,7 +26,7 @@ class AdbIntentsProcedureCaller(RemoteProcedureCaller):
     def _send_and_wait_for_return(self, procedure_name, marshalled_params):
         if len(marshalled_params) < 2**10:
             # Pass params via intent
-            DeviceUtils.send_intent(self.app_name + '.' + procedure_name, xtra_data=marshalled_params)
+            self.device_utils.send_intent(self.app_name + '.' + procedure_name, xtra_data=marshalled_params)
         else:
             # Pass params via file
             tmp_local, tmp_device = '/home/buga/tmp/1.tmp', '/sdcard/tmp/1.tmp'
@@ -50,8 +48,8 @@ class AdbIntentsProcedureCaller(RemoteProcedureCaller):
 
 
 class LoopbackAiAppController:
-    def __init__(self, connection):
-        self.rpc = AdbIntentsProcedureCaller(connection, "MyLoopbackAi")
+    def __init__(self, device_utils):
+        self.rpc = AdbIntentsProcedureCaller(device_utils, "MyLoopbackAi")
 
     def record_and_play(self, song):
         """

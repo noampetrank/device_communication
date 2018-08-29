@@ -1,5 +1,6 @@
 import time
 import pandas as pd
+import numpy as np
 
 
 def time_it(obj, method, args, expected=None):

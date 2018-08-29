@@ -1,7 +1,4 @@
-class RemoteProcedureCaller(object):
-    def __init__(self):
-        self.start()
-
+class IRemoteProcedureCaller(object):
     def call(self, procedure_name, params, marshaller=None, unmarshaller=None):
         """
         Marshalls the params and sends them to the executor side. Then receives params that are returned from the executor and unmarshalls them.
@@ -13,6 +10,30 @@ class RemoteProcedureCaller(object):
         :return: Unmarshalled returned params (i.e. float, dict, object etc.)
         :rtype: dict[str: object]
         """
+        pass
+
+    def get_executor_version(self):
+        """
+        Returns the version string of the executor.
+        :rtype: str
+        """
+
+    def start(self):
+        """
+        Do whatever it takes to make the remote executor listen.
+        :rtype: None
+        """
+
+    def stop(self):
+        """
+        Put the remote executor to bed.
+        :rtype: None
+        """
+        pass
+
+
+class StandardRemoteProcedureCaller(IRemoteProcedureCaller):
+    def call(self, procedure_name, params, marshaller=None, unmarshaller=None):
         marshalled_params = marshaller(params) if marshaller else str(params)
         ret = self._send_and_wait_for_return(procedure_name, marshalled_params)
         return unmarshaller(ret) if unmarshaller else ret
@@ -21,20 +42,20 @@ class RemoteProcedureCaller(object):
         return self._send_and_wait_for_return('_rpc_get_version', {})
 
     def start(self):
-        """
-        Do whatever it takes to make the remote executor listen.
-        """
         # ...
         xver = self.get_executor_version()
         # check if we can handle this executor version
 
     def stop(self):
-        """
-        Put the remote executor to bed.
-        """
         pass
 
     def _send_and_wait_for_return(self, procedure_name, marshalled_params):
+        """
+        Specific implementation that calls a procedure on the executor and returns values from it.
+        :param procedure_name:
+        :param marshalled_params:
+        :return:
+        """
         raise NotImplementedError('This method needs to be overridden by subclass')
 
 
