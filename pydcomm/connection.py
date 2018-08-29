@@ -53,6 +53,8 @@ class Connection:
         """
         if not self._test_connection():
             self._handle_error()
+        log.info("adb params:", *args)
+
         args = list(args)
         if args[0] is not 'adb':
             args = ['adb'] + args

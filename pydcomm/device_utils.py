@@ -95,6 +95,7 @@ class DeviceUtils:
         """
         :type args: list(str)
         """
+        log.info("_shell params:", *args)
         return self.connection.adb("shell", *args)
 
     def mkdir(self, path_on_device):
