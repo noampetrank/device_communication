@@ -1,13 +1,12 @@
 import os
-from pydcomm.remote_procedure_call import RemoteProcedureCaller, UnsupportedExecutorVersion, ExecutorConnectionError, get_generator_unmarshaller
+from pydcomm.remote_procedure_call import StandardRemoteProcedureCaller, UnsupportedExecutorVersion, ExecutorConnectionError
 
-
-class AdbIntentsProcedureCaller(RemoteProcedureCaller):
+# Kadosh
+class AdbIntentsProcedureCaller(StandardRemoteProcedureCaller):
     # This is an example for a specific implementation that uses ADB and intents to pass the calls.
     def __init__(self, device_utils, app_name):
         self.app_name = app_name
         self.device_utils = device_utils
-        super(AdbIntentsProcedureCaller, self).__init__()
 
     def start(self):
         # Start app
@@ -47,6 +46,7 @@ class AdbIntentsProcedureCaller(RemoteProcedureCaller):
         return ret
 
 
+# Noam
 class LoopbackAiAppController:
     def __init__(self, device_utils):
         self.rpc = AdbIntentsProcedureCaller(device_utils, "MyLoopbackAi")
@@ -58,6 +58,6 @@ class LoopbackAiAppController:
         ret = self.rpc.call("record_and_play",
                             params=dict(song=song, times=100, volume=2),
                             marshaller=dict_marshaller,
-                            unmarshaller=get_generator_unmarshaller(numpy_unmarshaller))
+                            unmarshaller=numpy_unmarshaller)
         for block in ret:
             yield block

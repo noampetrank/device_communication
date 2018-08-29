@@ -1,4 +1,4 @@
-class IRemoteProcedureCaller(object):
+class IRemoteProcedureCaller:
     def call(self, procedure_name, params, marshaller=None, unmarshaller=None):
         """
         Marshalls the params and sends them to the executor side. Then receives params that are returned from the executor and unmarshalls them.
@@ -67,23 +67,4 @@ class ExecutorConnectionError(Exception):
     pass
 
 
-def get_generator_marshaller(base_marshaller):
-    """
-    Converts a generator to a marshalled representation to be received as a stream on the executor side.
-    :param base_marshaller: The marshaller to be used for the type returned by the generator.
-    :type base_marshaller: function
-    :return: A marshaller function that takes a generator and marshalls it for sending.
-    :rtype: function
-    """
-    pass
-
-
-def get_generator_unmarshaller(base_unmarshaller):
-    """
-    Converts a marshalled representation to a generator to read a stream sent from the executor side.
-    :param base_unmarshaller: The unmarshaller to be used for the type returned by the generator.
-    :type base_unmarshaller: function
-    :return: An unmarshaller function that returns a generator by unmarshalling the received value.
-    :rtype: function
-    """
-    pass
+# TODO add streaming API
