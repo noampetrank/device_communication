@@ -1,4 +1,5 @@
 import time
+import tqdm
 from collections import defaultdict
 
 from enum import IntEnum
@@ -55,7 +56,7 @@ class ConnectionBenchmark(object):
         return connection.adb(["shell", "echo", "hi"]) == "hi"
 
     def repeat_test_connection(self, rooted, connect_from_ip, recovery, rounds, sleep_between_connections, connection_test_amount,
-                               connection_length):
+                               connection_length, verbose=True):
         """
         Returns dictionary containing in which part of the recovery it failed and number of rounds.
         :param connection_length: How long the connection is open in seconds
@@ -72,9 +73,10 @@ class ConnectionBenchmark(object):
         ip = connection.get_connection_status()["ip"]
         connection.disconnect()
         fails = defaultdict()
-        for i in range(rounds):
+        it = tqdm.trange(rounds) if verbose else range(rounds)
+        for i in it:
             connection = self._create_connection(recovery, rooted, ip if connect_from_ip else None)
-            for i in range(connection_test_amount):
+            for j in range(connection_test_amount):
                 if not self._test_connection_is_working(connection):
                     fails["shell"] += 1
                 time.sleep(connection_test_amount / connection_length)
