@@ -8,6 +8,10 @@ log = logging.getLogger(__name__)
 from general_android.adb_connection_decorators import add_adb_recovery_decorator, auto_fixes, add_rooted_impl
 
 
+class AdbConnectionError(Exception):
+    pass  # General error class for ADB connection
+
+
 class AdbConnection:
     """
     Connects to a device and maintains the connection.
@@ -27,7 +31,12 @@ class AdbConnection:
             connection_type: string in ('usb_debugging', 'mtp', 'file_transfer')
             device_id: string
         """
-        pass
+        return dict(
+            is_connected=self._test_connection(),
+            is_wireless=None,  # TODO
+            connection_type=None,
+            device_id=None,
+        )
 
     def disconnect(self):
         """
@@ -36,33 +45,25 @@ class AdbConnection:
         pass
 
     def _test_connection(self):
-        return self.check_output("adb shell echo hi") == "hi"
+        return subprocess.check_output("adb shell echo hi").strip() == "hi"
 
-    def _handle_error(self):
-        for f in self.fixes:
-            f()
-            if self._test_connection():
-                break
-
-    def adb(self, *args):
+    def adb(self, *params):
         """
         Send the given command over adb.
-        :type args: list[str]
-        :param args: array of split args to adb command
+        :type params: list[str]
+        :param params: array of split args to adb command
         :rtype: tuple(list(str), bool)
         """
-        if not self._test_connection():
-            self._handle_error()
-        log.info("adb params:", *args)
+        log.info("adb params:", *params)
 
-        args = list(args)
-        if args[0] is not 'adb':
-            args = ['adb'] + args
+        if params[0] is 'adb':
+            log.warn("adb() called with 'adb' as first parameter. Is this intentional?")
+
         try:
-            return subprocess.check_output(args).splitlines(), True
+            return subprocess.check_output(params).splitlines(), True
         except subprocess.CalledProcessError as err:
             # log the exception
-            log.error("adb return with the following error code, returning output and False", err.returncode, err.message)
+            log.error("adb returned with the following error code, returning output and False", err.returncode, err.message)
             return err.output.splitlines(), False
 
     @staticmethod
@@ -70,7 +71,11 @@ class AdbConnection:
         """
         adb kill-server & adb start-start
         """
-        pass
+        def _run_and_check(cmd):
+            if subprocess.call(cmd.split()) != 0:
+                raise AdbConnectionError('Could not restart ADB server')
+        _run_and_check('adb kill-server')
+        _run_and_check('adb start-server')
 
 
 class MultiDeviceBehavior(IntEnum):
