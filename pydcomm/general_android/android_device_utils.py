@@ -30,11 +30,11 @@ class AndroidDeviceUtils:
         :type path_on_device: str
         :rtype: bool
         """
-        lines, ok = self.connection.adb("push {} {}".format(local_path, path_on_device).split())
+        output, ok = self.connection.adb("push {} {}".format(local_path, path_on_device).split())
         if not ok:
-            log.warn("error in device utils push:", lines)
+            log.warn("error in device utils push:", output)
             return False
-        return any('files pushed' in r for r in lines)
+        return re.search(r'files? pushed', output, re.M)
 
     def pull(self, path_on_device, local_path):
         """
@@ -43,11 +43,11 @@ class AndroidDeviceUtils:
         :type local_path: str
         :rtype: bool
         """
-        lines, ok = self.connection.adb("push {} {}".format(path_on_device, local_path).split())
+        output, ok = self.connection.adb("push {} {}".format(path_on_device, local_path).split())
         if not ok:
-            log.warn("error in device utils pull:", lines)
+            log.warn("error in device utils pull:", output)
             return False
-        return any('files pulled' in r for r in lines)
+        return re.search(r'files? pulled', output, re.M)
 
     def _get_intent_type_code(self, param):
         """

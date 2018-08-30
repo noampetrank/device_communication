@@ -52,7 +52,7 @@ class AdbConnection:
         Send the given command over adb.
         :type params: list[str]
         :param params: array of split args to adb command
-        :rtype: tuple(list(str), bool)
+        :rtype: tuple(str, bool)
         """
         log.info("adb params:", *params)
 
@@ -60,11 +60,11 @@ class AdbConnection:
             log.warn("adb() called with 'adb' as first parameter. Is this intentional?")
 
         try:
-            return subprocess.check_output(params).splitlines(), True
+            return subprocess.check_output(params), True
         except subprocess.CalledProcessError as err:
             # log the exception
             log.error("adb returned with the following error code, returning output and False", err.returncode, err.message)
-            return err.output.splitlines(), False
+            return err.output, False
 
     @staticmethod
     def restart_adb_server():
