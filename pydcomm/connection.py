@@ -5,8 +5,10 @@ import logging
 
 log = logging.getLogger(__name__)
 
+from pydcomm.connection_decorators import add_some_recovery, auto_fixes, manual_fixes, add_rooted_impl
 
-class Connection:
+
+class AdbConnection:
     """
     Connects to a device and maintains the connection.
     """
@@ -15,9 +17,6 @@ class Connection:
         """
         :type device_id: str
         """
-        # Connect to device
-        self.device_id = device_id
-        self.fixes = []
         pass
 
     def get_connection_status(self):
@@ -32,7 +31,7 @@ class Connection:
 
     def disconnect(self):
         """
-        :return: -
+        Disconnect from the device
         """
         pass
 
@@ -47,6 +46,7 @@ class Connection:
 
     def adb(self, *args):
         """
+        Send the given command over adb.
         :type args: list[str]
         :param args: array of split args to adb command
         :rtype: tuple(list(str), bool)
@@ -73,86 +73,27 @@ class Connection:
         pass
 
 
-# region Connection decorators
-# TODO: this region could go to a separate file(s), e.g. connection_fixes.py
-
-def add_rooted(connection):
-    # make connection also rooted
-    # modify "connect" function
-    # ...
-    return connection
-
-
-def add_automated_recovery(connection):
-    # ...
-    return connection
-
-
-def add_interactive_troubleshooting_recovery(connection):
-    # ...
-    return connection
-
-
-def add_choose_first_device(connection):
-    # ...
-    return connection
-
-
-def add_user_device_choise(connection):
-    # ...
-    return connection
-
-
-def add_samsung_quirks(connection):
-    # add samsung special fixes to connection
-    # modify "connect" function
-    # ...
-    return connection
-
-
-# endregion
-
-
 class MultiDeviceBehavior(IntEnum):
     CHOOSE_FIRST = 1
     USER_CHOICE = 2
 
 
-class ConnectionFactory:
-    def get_rooted_wireless_interactive_connection(self):
-        """
-        Returns a connection for rooted (Oppo) devices that communicates wirelessly to the phone
-         and when the phone disconnects asks the user for action to help reconnect the phone.
-        """
-        return self.get_connection(rooted=True, automated_recovery=True, interactive_recovery=True)
+class ConnectionFactory(object):
+    def get_rooted_auto_connection(self, device):
+        return self.create_connection(device=device, decorators=[add_rooted_impl, add_some_recovery(auto_fixes)])
 
-    def get_rooted_wireless_automated_connection(self):
+    @staticmethod
+    def create_connection(ip=None, device=None, decorators=None, device_selector=None):
         """
-        Returns a connection for rooted (Oppo) devices that communicates wirelessly to the phone
-         and when the phone disconnects it automatically tries to reconnect and if it can't it throws an exception.
+        Create a connection to the given ip or device, add the given decorators
+        :param ip:
+        :param device:
+        :param decorators:
+        :type device_selector: MultiDeviceBehavior
+        :return:
         """
-        return self.get_connection(rooted=True, automated_recovery=True, interactive_recovery=False)
+        con = AdbConnection(ip or device)
+        for d in decorators or []:
+            con = d(con)
 
-    def get_samsung_automated_connection(self):
-        """
-        If for some reason connecting to Samsung devices is different (eg. it doesn't require wifi, or
-        it has some special automated recovery), this function wll create the connection.
-        """
-        return self.get_connection(automated_recovery=True, interactive_recovery=True, special_samsung=True)
-
-    def get_connection(self, rooted=False, automated_recovery=False, interactive_recovery=False, special_samsung=False, multi_device=MultiDeviceBehavior.CHOOSE_FIRST):
-        con = Connection()
-        if automated_recovery:
-            # con.fixes.append(reboot_connection)
-            con = add_automated_recovery(con)
-        if interactive_recovery:
-            con = add_interactive_troubleshooting_recovery(con)
-        if rooted:
-            con = add_rooted(con)
-        if special_samsung:
-            con = add_samsung_quirks(con)
-        if multi_device == MultiDeviceBehavior.CHOOSE_FIRST:
-            con = add_choose_first_device(con)
-        elif multi_device == MultiDeviceBehavior.USER_CHOICE:
-            con = add_user_device_choise(con)
         return con
