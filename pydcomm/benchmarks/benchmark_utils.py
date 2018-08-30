@@ -1,30 +1,42 @@
 import time
 import pandas as pd
+import numpy as np
 
 
-def time_it(obj, method, args, expected=None):
+def time_it(obj, method, args, expected=None, kwargs=None):
     """
     run a method on the object and time it.
     todo: test this
-    :type expected: list
+
+    :param expected: None, iterable of options, or function that evaluates on result and returns bool.
+    :type expected: Union[NoneType, list, (T) -> bool]
     :type obj: object
     :type method: str
     :type args: list
     :rtype: tuple<bool, float>
     """
+    if kwargs is None:
+        kwargs = {}
+
     start = time.time()
     ok = True
     try:
-        res = getattr(obj, method)(*args)
+        res = getattr(obj, method)(*args, **kwargs)
         # if we got expected return value(s) check against them
-        ok = True if expected is None else res in expected
+        if expected is None:
+            ok = True
+        else:
+            try:
+                ok = expected(res)
+            except:
+                ok = res in expected
     except:
         ok = False
     finally:
         return ok, (time.time() - start)*1000.0
 
 
-def benchmark_it(repeats, obj, method, args, expected=None):
+def benchmark_it(repeats, obj, method, args, expected=None, kwargs=None):
     """
     time a method repeately, get time and success code for each run
     :type repeats: repeats
@@ -36,7 +48,7 @@ def benchmark_it(repeats, obj, method, args, expected=None):
     """
     res = []
     for i in range(repeats):
-        res.append(time_it(obj, method, args, expected=expected))
+        res.append(time_it(obj, method, args, expected=expected, kwargs=kwargs))
     return res
 
 
