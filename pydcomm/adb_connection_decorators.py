@@ -4,21 +4,13 @@ def add_rooted_impl(connection):
     return connection
 
 
-def check_device_connected():
-    """
-    @rtype: bool
-    """
-    raise NotImplementedError
-
-
-def add_some_recovery(function):
+def add_adb_recovery_decorator(function):
     def inner(connection):
         old_adb = connection.adb
 
         def new_adb(self, *args):
-            if not check_device_connected():
-                function(connection)
-
+            if not self.get_connection_status()['is_connected']:
+                function(self)
             return old_adb(self, *args)
 
         connection.adb = new_adb

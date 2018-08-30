@@ -1,6 +1,6 @@
 import time
 from unittest import TestCase
-from pydcomm.connection import ConnectionFactory, Connection, MultiDeviceBehavior
+from pydcomm.adb_connection import AdbConnectionFactory, Connection, MultiDeviceBehavior
 
 
 
@@ -8,7 +8,7 @@ from pydcomm.connection import ConnectionFactory, Connection, MultiDeviceBehavio
 # All tests are done with subprocess.check_output/Popen mocked to assert the output
 class ConnectionFactoryUnitTests(TestCase):
     def setUp(self):
-        self.cf = ConnectionFactory()
+        self.cf = AdbConnectionFactory()
 
     def rooted_connection__connect__root_will_be_executed(self):
         con = self.cf.get_rooted_wireless_automated_connection()

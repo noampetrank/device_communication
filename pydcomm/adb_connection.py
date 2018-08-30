@@ -5,7 +5,7 @@ import logging
 
 log = logging.getLogger(__name__)
 
-from pydcomm.connection_decorators import add_some_recovery, auto_fixes, manual_fixes, add_rooted_impl
+from pydcomm.adb_connection_decorators import add_adb_recovery_decorator, auto_fixes, manual_fixes, add_rooted_impl
 
 
 class AdbConnection:
@@ -78,9 +78,9 @@ class MultiDeviceBehavior(IntEnum):
     USER_CHOICE = 2
 
 
-class ConnectionFactory(object):
+class AdbConnectionFactory(object):
     def get_rooted_auto_connection(self, device):
-        return self.create_connection(device=device, decorators=[add_rooted_impl, add_some_recovery(auto_fixes)])
+        return self.create_connection(device=device, decorators=[add_rooted_impl, add_adb_recovery_decorator(auto_fixes)])
 
     @staticmethod
     def create_connection(ip=None, device=None, decorators=None, device_selector=None):

@@ -1,6 +1,6 @@
 import datetime
 import re
-from connection import Connection
+from adb_connection import Connection
 import numpy as np
 import logging
 

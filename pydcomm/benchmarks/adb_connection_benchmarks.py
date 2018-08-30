@@ -4,8 +4,8 @@ from collections import defaultdict
 
 from enum import IntEnum
 
-from pydcomm.connection import ConnectionFactory
-from pydcomm.connection_decorators import auto_fixes, add_some_recovery, manual_fixes, add_rooted_impl
+from pydcomm.adb_connection import AdbConnectionFactory
+from pydcomm.adb_connection_decorators import auto_fixes, add_adb_recovery_decorator, manual_fixes, add_rooted_impl
 
 """
                    total_cons con_fail auto_rec_fail manu_rec_fail total_fail
@@ -30,23 +30,23 @@ def create_log_fix(fail_dict, name):
     def f(connection):
         fail_dict[name] += 1
 
-    return add_some_recovery(f)
+    return add_adb_recovery_decorator(f)
 
 
 class ConnectionBenchmark(object):
     # Not good, need to find a better solution
     def _create_connection(self, recovery, rooted, ip=None):
         self.fail_dict = defaultdict()
-        cf = ConnectionFactory()
+        cf = AdbConnectionFactory()
         decorators = []
         if rooted:
             decorators.append(add_rooted_impl)
         decorators.append(create_log_fix(self.fail_dict, "connection_fail"))
         if recovery >= Recovery.AUTO:
-            decorators.append(add_some_recovery(auto_fixes))
+            decorators.append(add_adb_recovery_decorator(auto_fixes))
             decorators.append(create_log_fix(self.fail_dict, "auto_recover_fail"))
         if recovery >= Recovery.INTERACTIVE:
-            decorators.append(add_some_recovery(manual_fixes))
+            decorators.append(add_adb_recovery_decorator(manual_fixes))
             decorators.append(create_log_fix(self.fail_dict, "manual_recover_fail"))
         con = cf.create_connection(ip=ip, decorators=decorators)
         return con
