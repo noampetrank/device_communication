@@ -1,13 +1,13 @@
-from device_utils import DeviceUtils
+from general_android.android_device_utils import AndroidDeviceUtils
 
 
-class OppoDeviceUtils(DeviceUtils):
+class OppoDeviceUtils(AndroidDeviceUtils):
     """
     Implementation for Oppo 845 devices
     """
 
     def __init__(self, connection):
-        DeviceUtils.__init__(self, connection)
+        AndroidDeviceUtils.__init__(self, connection)
 
     def get_max_volume(self):
         return 16

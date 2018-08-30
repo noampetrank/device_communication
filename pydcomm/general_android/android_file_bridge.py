@@ -31,13 +31,13 @@ class Serializer:
 class FileBridge:
     def __init__(self, device_utils, serializer, device_base_folder='/sdcard/tmp/'):
         """
-        :type device_utils: DeviceUtils
+        :type device_utils: AndroidDeviceUtils
         :type serializer: Serializer
         :type device_base_folder: str
         """
         self.tmp_dir = self._make_tmp_dir_path(device_base_folder)
         self.serializer = serializer
-        self.device_utils = device_utilos
+        self.device_utils = device_utils
 
     def send_data(self, data, path_on_device=None):
         """

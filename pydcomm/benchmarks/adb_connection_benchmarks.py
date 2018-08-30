@@ -4,8 +4,8 @@ from collections import defaultdict
 
 from enum import IntEnum
 
-from pydcomm.adb_connection import AdbConnectionFactory
-from pydcomm.adb_connection_decorators import auto_fixes, add_adb_recovery_decorator, manual_fixes, add_rooted_impl
+from general_android.adb_connection import AdbConnectionFactory
+from general_android.adb_connection_decorators import auto_fixes, add_adb_recovery_decorator, manual_fixes, add_rooted_impl
 
 """
                    total_cons con_fail auto_rec_fail manu_rec_fail total_fail

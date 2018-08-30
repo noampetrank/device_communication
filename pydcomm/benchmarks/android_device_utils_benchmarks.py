@@ -56,7 +56,7 @@ volume_16         10.0         25.3        208.1    198      0.99      2      0.
 
 
 
-Other DeviceUtils methods:
+Other AndroidDeviceUtils methods:
                       speed_min_ms speed_avg_ms speed_max_ms n_pass pass_rate n_fail fail_rate n_total
 test_name
 send_intent                   10.0         25.3        208.1    198      0.99      2      0.01     200
@@ -136,7 +136,7 @@ def benchmark_push_pull(repeats, device, size_bytes):
 def device_benchmark(device, repeats):
     """
     benchmark of all methods on device_utils for a specific device
-    :type device: DeviceUtils
+    :type device: AndroidDeviceUtils
     :type repeats: int
     :return: None
     """

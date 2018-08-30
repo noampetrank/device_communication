@@ -1,8 +1,7 @@
 import unittest
 import mock
 
-from pydcomm.adb_connection import Connection
-from pydcomm.remote_procedure_call import AdbIntentsProcedureCaller
+from interfaces.remote_procedure_call import AdbIntentsProcedureCaller
 
 
 class UnitTestRpc(unittest.TestCase):

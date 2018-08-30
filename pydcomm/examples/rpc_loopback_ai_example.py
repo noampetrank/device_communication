@@ -1,5 +1,5 @@
 import os
-from pydcomm.remote_procedure_call import StandardRemoteProcedureCaller, UnsupportedExecutorVersion, ExecutorConnectionError
+from interfaces.remote_procedure_call import StandardRemoteProcedureCaller, UnsupportedExecutorVersion, ExecutorConnectionError
 
 # Kadosh
 class AdbIntentsProcedureCaller(StandardRemoteProcedureCaller):

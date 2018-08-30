@@ -1,7 +1,7 @@
 import unittest
 import mock
 
-from pydcomm.adb_connection import Connection
+from general_android.adb_connection import Connection
 
 
 class UnitTestDeviceUtils(unittest.TestCase):
@@ -18,7 +18,7 @@ class UnitTestDeviceUtils(unittest.TestCase):
         """
         pass
 
-    # region DeviceUtils.push() unit tests
+    # region AndroidDeviceUtils.push() unit tests
 
     @mock.patch.object(Connection, 'adb')
     def test_push_ok(self, mock_adb):
@@ -42,7 +42,7 @@ class UnitTestDeviceUtils(unittest.TestCase):
 
     # endregion
 
-    # region DeviceUtils.pull() unit tests
+    # region AndroidDeviceUtils.pull() unit tests
 
     @mock.patch.object(Connection, 'adb')
     def test_pull_ok(self, mock_adb):
@@ -66,7 +66,7 @@ class UnitTestDeviceUtils(unittest.TestCase):
 
     # endregion
 
-    # region DeviceUtils.send_intent() unit tests
+    # region AndroidDeviceUtils.send_intent() unit tests
 
     @mock.patch.object(Connection, 'adb')
     def test_send_intent_ok(self, mock_adb):
@@ -75,7 +75,7 @@ class UnitTestDeviceUtils(unittest.TestCase):
 
     # endregion
 
-    # region DeviceUtils._shell() unit tests
+    # region AndroidDeviceUtils._shell() unit tests
 
     @mock.patch.object(Connection, 'adb')
     def test_shell_ok(self, mock_adb):
@@ -84,7 +84,7 @@ class UnitTestDeviceUtils(unittest.TestCase):
 
     # endregion
 
-    # region DeviceUtils.mkdir() unit tests
+    # region AndroidDeviceUtils.mkdir() unit tests
 
     @mock.patch.object(Connection, 'adb')
     def test_mkdir_ok(self, mock_adb):
@@ -103,7 +103,7 @@ class UnitTestDeviceUtils(unittest.TestCase):
 
     # endregion
 
-    # region DeviceUtils.touch_file() unit tests
+    # region AndroidDeviceUtils.touch_file() unit tests
 
     @mock.patch.object(Connection, 'adb')
     def test_touch_file_ok(self, mock_adb):
@@ -123,7 +123,7 @@ class UnitTestDeviceUtils(unittest.TestCase):
 
     # endregion
 
-    # region DeviceUtils.ls() unit tests
+    # region AndroidDeviceUtils.ls() unit tests
 
     @mock.patch.object(Connection, 'adb')
     def test_ls_ok(self, mock_adb):
@@ -142,7 +142,7 @@ class UnitTestDeviceUtils(unittest.TestCase):
 
     # endregion
 
-    # region DeviceUtils.get_time() unit tests
+    # region AndroidDeviceUtils.get_time() unit tests
 
     @mock.patch.object(Connection, 'adb')
     def test_get_time_ok(self, mock_adb):
@@ -151,7 +151,7 @@ class UnitTestDeviceUtils(unittest.TestCase):
 
     # endregion
 
-    # region DeviceUtils.remove() unit tests
+    # region AndroidDeviceUtils.remove() unit tests
 
     @mock.patch.object(Connection, 'adb')
     def test_remove_ok(self, mock_adb):
@@ -170,7 +170,7 @@ class UnitTestDeviceUtils(unittest.TestCase):
 
     # endregion
 
-    # region DeviceUtils.get_device_name() unit tests
+    # region AndroidDeviceUtils.get_device_name() unit tests
 
     @mock.patch.object(Connection, 'adb')
     def test_get_device_name_ok(self, mock_adb):
@@ -184,7 +184,7 @@ class UnitTestDeviceUtils(unittest.TestCase):
 
     # endregion
 
-    # region DeviceUtils.get_prop() unit tests
+    # region AndroidDeviceUtils.get_prop() unit tests
 
     @mock.patch.object(Connection, 'adb')
     def test_get_prop_ok(self, mock_adb):
@@ -193,7 +193,7 @@ class UnitTestDeviceUtils(unittest.TestCase):
 
     # endregion
 
-    # region DeviceUtils.set_prop() unit tests
+    # region AndroidDeviceUtils.set_prop() unit tests
 
     @mock.patch.object(Connection, 'adb')
     def test_set_prop_ok(self, mock_adb):
@@ -207,7 +207,7 @@ class UnitTestDeviceUtils(unittest.TestCase):
 
     # endregion
     
-    # region DeviceUtils.reboot() unit tests
+    # region AndroidDeviceUtils.reboot() unit tests
 
     @mock.patch.object(Connection, 'adb')
     def test_reboot_ok(self, mock_adb):
@@ -221,7 +221,7 @@ class UnitTestDeviceUtils(unittest.TestCase):
 
     # endregion
 
-    # region DeviceUtils.is_earphone_connected() unit tests
+    # region AndroidDeviceUtils.is_earphone_connected() unit tests
 
     @mock.patch.object(Connection, 'adb')
     def test_is_earphone_connected_true_ok(self, mock_adb):
@@ -240,7 +240,7 @@ class UnitTestDeviceUtils(unittest.TestCase):
 
     # endregion
 
-    # region DeviceUtils.get_volume() unit tests
+    # region AndroidDeviceUtils.get_volume() unit tests
 
     @mock.patch.object(Connection, 'adb')
     def test_get_volume_ok(self, mock_adb):
@@ -254,7 +254,7 @@ class UnitTestDeviceUtils(unittest.TestCase):
 
     # endregion
 
-    # region DeviceUtils.set_volume() unit tests
+    # region AndroidDeviceUtils.set_volume() unit tests
 
     @mock.patch.object(Connection, 'adb')
     def test_set_volume_ok(self, mock_adb):
@@ -268,7 +268,7 @@ class UnitTestDeviceUtils(unittest.TestCase):
 
     # endregion
 
-    # region DeviceUtils.is_max_volume() unit tests
+    # region AndroidDeviceUtils.is_max_volume() unit tests
 
     @mock.patch.object(Connection, 'adb')
     def test_is_max_volume_true_ok(self, mock_adb):

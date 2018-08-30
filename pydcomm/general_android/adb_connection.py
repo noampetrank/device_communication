@@ -5,7 +5,7 @@ import logging
 
 log = logging.getLogger(__name__)
 
-from pydcomm.adb_connection_decorators import add_adb_recovery_decorator, auto_fixes, manual_fixes, add_rooted_impl
+from general_android.adb_connection_decorators import add_adb_recovery_decorator, auto_fixes, add_rooted_impl
 
 
 class AdbConnection:

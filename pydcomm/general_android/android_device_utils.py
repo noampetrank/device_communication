@@ -1,31 +1,25 @@
 import datetime
 import re
-from adb_connection import Connection
 import numpy as np
 import logging
 
 log = logging.getLogger(__name__)
 
 
-class DeviceUtilsError(Exception):
-    """
-    error class for device utils
-    """
-
-    def __init__(self, *args):
-        super(DeviceUtilsError, self).__init__(*args)
+class AndroidDeviceUtilsError(Exception):
+    pass  # General error class for device utils
 
 
-class DeviceUtils:
+class AndroidDeviceUtils:
     """
-    class exposing basic operations on an android device
-    methods here control the device itself and not a specific app
-    some methods may have to be overriden for a specifc model,
-    mainly due to differences in return valus of adb commands
+    Class exposing basic operations on an android device.
+    Methods here control the device itself and not a specific app.
+    Some methods may have to be overriden for a specific model,
+    mainly due to differences in return values of adb commands
     """
     def __init__(self, connection):
         """
-        :type connection: Connection
+        :type connection: AdbConnection
         """
         self.connection = connection
 
@@ -151,7 +145,7 @@ class DeviceUtils:
             vals = l.split()
             if len(vals) != 8:
                 log.error("Error in ls: unexpected number of values in the line", l)
-                raise DeviceUtilsError("Incorrect string returned from ls: " + l)
+                raise AndroidDeviceUtilsError("Incorrect string returned from ls: " + l)
             res.append({'permissions': vals[0],
                         'n_links': vals[1],
                         'owner': vals[2],
@@ -167,7 +161,7 @@ class DeviceUtils:
         """
         lines, ok = self._shell('date', '+"%Y-%m-%d\\', '%H:%M:%S:%N"')
         if not ok:
-            raise DeviceUtilsError("failed to get device time")
+            raise AndroidDeviceUtilsError("failed to get device time")
         return datetime.datetime.strptime(lines[0], '%Y-%m-%d %H:%M:%S:%f')
 
     def get_device_name(self):
@@ -179,7 +173,7 @@ class DeviceUtils:
         if success:
             return name[-1]
         else:
-            raise DeviceUtilsError("failed to get device name")
+            raise AndroidDeviceUtilsError("failed to get device name")
 
     def get_prop(self, prop_name):
         """
@@ -191,11 +185,11 @@ class DeviceUtils:
         if not ok:
             msg = "failed to get value of property: " + prop_name
             log.error(msg)
-            raise DeviceUtilsError(msg)
+            raise AndroidDeviceUtilsError(msg)
         elif len(res) == 0:
             msg = "property not found on the device: " + prop_name
             log.error(msg)
-            raise DeviceUtilsError(msg)
+            raise AndroidDeviceUtilsError(msg)
         return res[-1]
 
     def set_prop(self, prop_name, value):

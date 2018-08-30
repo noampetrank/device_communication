@@ -4,7 +4,19 @@ import time
 import tqdm
 
 """
+Format:
+                   total_times success_rate success auto_recover manual_recover fail min_speed_ms avg_speed_ms max_speed_ms
+                                                                                                                           
+rpc_echo_no_params         500          1.0     500            0              0    0         3000         5000        10000
+rpc_echo_float             300         0.98     295            4              1    0        18000        22000        26000
+rpc_echo_string            100         0.90      90           15             12   10        50000        60000       100000
+rpc_echo_1k                100         0.90      90           15             12   10        50000        60000       100000
+rpc_echo_100k              100         0.90      90           15             12   10        50000        60000       100000
+rpc_echo_1M                 50         0.80      40            4              8   10        50000        60000       100000
+rpc_echo_10M                20         0.75      15            2              4    5        50000        60000       100000
+rpc_echo_100M                3         0.67       2            1              1    1        50000        60000       100000
 """
+
 
 def rpc_echo_benchmark_for_params(name, rpc, params, marshaller, unmarshaller, repeats):
     """
@@ -18,7 +30,6 @@ def rpc_echo_benchmark_for_params(name, rpc, params, marshaller, unmarshaller, r
     :rtype: dict
     """
     return benchmark_it(repeats, rpc, "call", ("echo", params, marshaller, unmarshaller), expected=lambda res: np.all(res == params))
-
 
 
 def call_benchmark(rpc, repeats=None):

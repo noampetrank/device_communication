@@ -1,6 +1,5 @@
-import time
 from unittest import TestCase
-from pydcomm.adb_connection import AdbConnectionFactory, Connection, MultiDeviceBehavior
+from general_android.adb_connection import AdbConnectionFactory, MultiDeviceBehavior
 
 
 
