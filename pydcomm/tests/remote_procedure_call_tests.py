@@ -1,7 +1,7 @@
 import unittest
 import mock
 
-from interfaces.remote_procedure_call import AdbIntentsProcedureCaller
+from rpc.remote_procedure_call import AdbIntentsProcedureCaller
 
 
 class UnitTestRpc(unittest.TestCase):
