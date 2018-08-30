@@ -46,7 +46,7 @@ private:
 };
 
 
-class IRemoteProcedureSetup {
+class IRemoteProcedureServer {
 public:
     // Listens; calls delegate when stuff arrives
     virtual void listen(IRemoteProcedureExecutor &listener) = 0;

@@ -22,7 +22,7 @@ public:
 
 
 // Kadosh
-class AdbIntentsTBD {
+class IRemoteProcedureServer {
 public:
     virtual void listen(IRemoteProcedureExecutor &listener) {
         registerIntent();
@@ -33,6 +33,6 @@ public:
 void main() {
     //Noam
     LoopbackAIProcedureExecutor exec;
-    AdbIntentsTBD tbd();
-    tbd.listen(exec);
+    IRemoteProcedureServer server();
+    server.listen(exec);
 }
