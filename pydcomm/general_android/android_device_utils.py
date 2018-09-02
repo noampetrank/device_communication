@@ -2,12 +2,30 @@ import datetime
 import re
 import numpy as np
 import logging
+import subprocess
+from adb_connection import AdbConnectionError
 
 log = logging.getLogger(__name__)
 
 
 class AndroidDeviceUtilsError(Exception):
     pass  # General error class for device utils
+
+
+class LocalFileNotFound(AndroidDeviceUtilsError):
+    pass
+
+
+class RemoteFileNotFound(AndroidDeviceUtilsError):
+    pass
+
+
+class WrongPermissions(AndroidDeviceUtilsError):
+    pass
+
+
+class FileAlreadyExists(AndroidDeviceUtilsError):
+    pass
 
 
 class AndroidDeviceUtils:
@@ -28,13 +46,26 @@ class AndroidDeviceUtils:
         Push a file/dir to the device.
         :type local_path: str
         :type path_on_device: str
-        :rtype: bool
+        :rtype bool
+        :raises LocalFileNotFound
+        :raises RemoteFileNotFound
+        :raises WrongPermissions
+        :raises AdbConnectionError
+        :raises AndroidDeviceUtilsError
         """
-        output, ok = self.connection.adb("push {} {}".format(local_path, path_on_device).split())
-        if not ok:
-            log.warn("error in device utils push:", output)
-            return False
-        return re.search(r'files? pushed', output, re.M)
+        try:
+            output = self.connection.adb("push {} {}".format(local_path, path_on_device).split())
+        except AdbConnectionError as err:
+            if 'Read-only file system' in err.stderr:
+                raise WrongPermissions()
+            if 'No such file or directory' in err.stderr:
+                raise LocalFileNotFound()
+            if 'Is a directory' in err.stderr:
+                raise RemoteFileNotFound()
+            raise
+
+        if not re.search(r'files? pushed', output, re.M):
+            raise AndroidDeviceUtilsError('Unknown problem occurred')
 
     def pull(self, path_on_device, local_path):
         """
@@ -42,12 +73,25 @@ class AndroidDeviceUtils:
         :type path_on_device: str
         :type local_path: str
         :rtype: bool
+        :raises LocalFileNotFound
+        :raises RemoteFileNotFound
+        :raises WrongPermissions
+        :raises AdbConnectionError
+        :raises AndroidDeviceUtilsError
         """
-        output, ok = self.connection.adb("push {} {}".format(path_on_device, local_path).split())
-        if not ok:
-            log.warn("error in device utils pull:", output)
-            return False
-        return re.search(r'files? pulled', output, re.M)
+        try:
+            output = self.connection.adb("push {} {}".format(path_on_device, local_path).split())
+        except AdbConnectionError as err:
+            if 'Permission denied' in err.stderr:
+                raise WrongPermissions()
+            if 'No such file or directory' in err.stderr:
+                raise RemoteFileNotFound()
+            if 'Is a directory' in err.stderr:
+                raise LocalFileNotFound()
+            raise
+
+        if not re.search(r'files? pulled', output, re.M):
+            raise AndroidDeviceUtilsError('Unknown problem occurred')
 
     def _get_intent_type_code(self, param):
         """
@@ -83,7 +127,7 @@ class AndroidDeviceUtils:
         :type name: str
         :type args: dict[str, str]
         """
-        return self._shell("am", "broadcast", "-a", name, self._expand_intent_params_into_list(params_list))[0]
+        return self._shell("am", "broadcast", "-a", name, params_list)[0]
 
     def _shell(self, *args):
         """
@@ -94,67 +138,122 @@ class AndroidDeviceUtils:
 
     def mkdir(self, path_on_device):
         """
-        create a folder on the device
+        Create a folder on the device
         :type path_on_device: str
-        :rtype: bool
+        :raises FileAlreadyExists
+        :raises WrongPermissions
         """
-        lines, ok = self._shell("mkdir", path_on_device)
-        # in case of lines, nothing is printed...
-        return ok and len(lines) == 0
+        try:
+            output = self._shell("mkdir", path_on_device)
+        except AdbConnectionError as err:
+            if 'No such file or directory' in err.stderr:
+                raise RemoteFileNotFound()
+            if 'File exists' in err.stderr:
+                raise FileAlreadyExists()
+            if 'Read-only file system' in err.stderr:
+                raise WrongPermissions()
+            raise
+
+        if output.strip() != '':
+            raise AndroidDeviceUtilsError('Unknown problem occurred')
 
     def rmdir(self, path_on_device):
         """
-        remove a folder on the device
+        Remove a folder and its contents on the device. A file will be removed as well.
         :type path_on_device: str
-        :rtype: bool
-       """
-        lines, ok = self._shell("rm", "-rf", path_on_device)
-        # in case of lines, nothing is printed...
-        return ok and len(lines) == 0
+        :raises WrongPermissions
+        """
+        try:
+            output = self._shell("rm", "-rf", path_on_device)
+        except AdbConnectionError as err:
+            if 'Read-only file system' in err.stderr or 'No such file or directory' in err.stderr:
+                # Trying to remove a read-only file resulted in 'No such file or directory', so not sure how to distinguish these two.
+                raise WrongPermissions()
+            raise
+
+        if output.strip() != '':
+            raise AndroidDeviceUtilsError('Unknown problem occurred')
 
     def touch_file(self, path_on_device):
         """
         touch a file on the device
         :type path_on_device: str
         """
-        lines, ok = self._shell("touch", path_on_device)
-        # in case of lines, nothing is printed...
-        return ok and len(lines) == 0
+        try:
+            output = self._shell("touch", path_on_device)
+        except AdbConnectionError as err:
+            if 'No such file or directory' in err.stderr:
+                raise RemoteFileNotFound()
+            if 'Read-only file system' in err.stderr:
+                raise WrongPermissions()
+            raise
+
+        if output.strip() != '':
+            raise AndroidDeviceUtilsError('Unknown problem occurred')
 
     def remove(self, path_on_device):
         """
-        remove a file from the device
+        Remove a file on the device.
         :type path_on_device: str
+        :raises WrongPermissions
         """
-        lines, ok = self._shell("rm", "-f", path_on_device)
-        # in case of success, nothing is printed...
-        return ok and len(lines) == 0
+        try:
+            output = self._shell("rm", "-f", path_on_device)
+        except AdbConnectionError as err:
+            if 'Read-only file system' in err.stderr or 'No such file or directory' in err.stderr:
+                # Trying to remove a read-only file resulted in 'No such file or directory', so not sure how to distinguish these two.
+                raise WrongPermissions()
+            raise
+
+        if output.strip() != '':
+            raise AndroidDeviceUtilsError('Unknown problem occurred')
 
     def ls(self, path_on_device):
         """
         According to ls -lat output: drwxrwx---   9 system cache     4096 2018-05-16 03:00 cache
-        For files with permissions error, ret['permissions'] (and all other flelds except name) will be None.
+        For files with permissions error, ret['permissions'] (and all other fields except name) will be None.
         MIGHT BE DEVICE SPECIFIC (UNLIKELY)
         :type path_on_device: str
-        :rtype list[dict[permissons, n_links, owner, group, size, modified, name]]
+        :rtype list[dict[permissions, n_links, owner, group, size, modified, name, links_to]]
         """
-        lines, _ = self._shell("ls", "-lat", path_on_device)
-        lines = [l for l in lines if (not l.startswith("total") and not l.endswith("."))]
-        res = []
-        for l in lines:
-            vals = l.split()
-            if len(vals) != 8:
-                log.error("Error in ls: unexpected number of values in the line", l)
-                raise AndroidDeviceUtilsError("Incorrect string returned from ls: " + l)
-            res.append({'permissions': vals[0],
-                        'n_links': vals[1],
-                        'owner': vals[2],
-                        'group': vals[3],
-                        'size': vals[4],
-                        'modified': ' '.join([vals[5], vals[6]]),
-                        'name': vals[7]})
-        return res
+        try:
+            output = self._shell("ls", "-lat", path_on_device)
+            error = ''
+        except AdbConnectionError as err:
+            # Make sure that all errors are just permission errors
+            if any(['Permission denied' not in x for x in err.stderr.splitlines() if x.strip()]):
+                if 'No such file or directory' in err.stderr:
+                    raise RemoteFileNotFound()
+                raise
+            output = err.stdout
+            error = err.stderr
+        regular = re.findall('^(\S{10})\s+(\d+)\s+(\S+)\s+(\S+)\s+(\d+)\s+(\S+\s+\S+)\s+([^>\n]+)$', output, re.M)
+        links = re.findall('^(\S{10})\s+(\d+)\s+(\S+)\s+(\S+)\s+(\d+)\s+(\S+\s+\S+)\s+(\S+) -> (\S+)$', output, re.M)
+        no_perm = re.findall('\/([^\/\n]+): Permission denied', error, re.M)
 
+        def get_dict(permissions=None, n_links=None, owner=None, group=None, size=None, modified=None, name=None, links_to=None):
+            n_links = int(n_links) if n_links is not None else None
+            size = int(size) if size is not None else None
+            modified = datetime.datetime.strptime(modified, '%Y-%m-%d %H:%M') if modified is not None else None
+            return locals()
+
+        ret = []
+        for x in regular:
+            ret.append(get_dict(*x))
+        for x in links:
+            ret.append(get_dict(*x))
+        for x in no_perm:
+            ret.append(get_dict(name=x))
+        return ret
+
+    @staticmethod
+    def _local_file_exists(path):
+        return '1' in subprocess.check_output('test -e {} && echo 1 || echo 0'.format(path), shell=True)
+
+    def _remote_file_exists(self, path):
+        return '1' in self.connection.adb(['shell', '[ -f {} ] && echo 1 || echo 0'.format(path)])
+
+    # TODO: Change methods below this line to raise specific exceptions and not look for a return value from adb. Add unit tests.
     def get_time(self):
         """
         :rtype: datetime
@@ -222,7 +321,7 @@ class AndroidDeviceUtils:
         parse the dumpsys audio and check for device stream volume
         QUITE POSSIBLY DEVICE SPECIFIC
         :type dumpsys_output: str
-        :rtype: bool
+        :rtype: int
         """
         device = re.findall(r'STREAM_MUSIC.*?Devices: (\w+)', dumpsys_output, re.DOTALL)[0]
         return int(re.findall(r'- STREAM_MUSIC.*?{}\): (\d+)'.format(device), dumpsys_output, re.DOTALL)[0])
@@ -245,7 +344,6 @@ class AndroidDeviceUtils:
         """
         set the stream volume on the device
         :type val: int
-        :rtype: bool
         """
         if val > self.get_max_volume():
             return False

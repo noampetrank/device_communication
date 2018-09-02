@@ -1,10 +1,13 @@
+import datetime
 import unittest
+from textwrap import dedent
+
 import mock
 import tempfile
 import numpy as np
 
-from general_android.adb_connection import AdbConnection
-from general_android.android_device_utils import AndroidDeviceUtils
+from general_android.adb_connection import AdbConnection, AdbConnectionError
+from general_android.android_device_utils import AndroidDeviceUtils, LocalFileNotFound, RemoteFileNotFound, WrongPermissions, FileAlreadyExists
 
 
 @mock.patch.object(AdbConnection, 'adb')
@@ -26,110 +29,198 @@ class UnitTestDeviceUtils(unittest.TestCase):
     # region AndroidDeviceUtils.push() unit tests
 
     def test_push_ok(self, mock_adb):
-        mock_adb.return_value = ('[100%] /sdcard/tmpANxMOd\n/tmp/tmpANxMOd: 1 file pushed. 0.0 MB/s (61 bytes in 0.011s)\n', True)
+        mock_adb.return_value = '[100%] /sdcard/tmpANxMOd\n/tmp/tmpANxMOd: 1 file pushed. 0.0 MB/s (61 bytes in 0.011s)\n'
         with tempfile.NamedTemporaryFile() as tmp_file:
             content = 'The quick brown fox jumps over the lazy dog\n1234567890\n\01234\x1234'
             tmp_file.write(content)
             tmp_file.flush()
-            ret = self.device_utils.push(tmp_file.name, '/sdcard/')
-            assert ret
+            self.device_utils.push(tmp_file.name, '/sdcard/')
 
     def test_push_from_non_existent(self, mock_adb):
-        # TODO: Invoke device_utils.push(from, to) where 'from' doesn't exist and expect a LocalFileNotFound exception
-        pass
+        err = AdbConnectionError()
+        err.stderr = "adb: error: cannot stat '/home/buga/tmp_dir/tmp_file.tm': No such file or directory\n"
+        mock_adb.side_effect = err
+        self.assertRaises(LocalFileNotFound, self.device_utils.push, '/home/buga/tmp_dir/tmp_file.tm', '/sdcard/')
 
     def test_push_to_non_existent(self, mock_adb):
-        # TODO: Invoke device_utils.push(from, to) where 'to' path doesn't exist and expect a RemoteFileNotFound exception
-        pass
+        err = AdbConnectionError()
+        err.stderr = "[100%] /sdcard23/\nadb: error: failed to copy '/home/buga/tmp_dir/tmp_file.tmp' to '/sdcard23/': remote couldn't create file: Is a directory\n/home/buga/tmp_dir/tmp_file.tmp: 0 files pushed. 0.0 MB/s (44 bytes in 0.003s)\n"
+        mock_adb.side_effect = err
+        self.assertRaises(RemoteFileNotFound, self.device_utils.push, '/home/buga/tmp_dir/tmp_file.tmp', '/sdcard23/')
 
     def test_push_no_permissions(self, mock_adb):
-        # TODO: Invoke device_utils.push(from, to) where 'to' has no write permissions and expect WrongPermissions exception
-        pass
+        err = AdbConnectionError()
+        err.stderr = "[100%] /tmp_file.tmp\nadb: error: failed to copy '/home/buga/tmp_dir/tmp_file.tmp' to '/tmp_file.tmp': remote couldn't create file: Read-only file system\n/home/buga/tmp_dir/tmp_file.tmp: 0 files pushed. 0.0 MB/s (44 bytes in 0.005s)\n"
+        mock_adb.side_effect = err
+        self.assertRaises(WrongPermissions, self.device_utils.push, '/home/buga/tmp_dir/tmp_file.tmp', '/')
 
     # endregion
 
     # region AndroidDeviceUtils.pull() unit tests
 
     def test_pull_ok(self, mock_adb):
-        # TODO: Invoke device_utils.pull(from, to) and expect no exceptions and no output.
-        pass
+        mock_adb.return_value = '[100%] /sdcard/tmp_file.tmp\n/sdcard/tmp_file.tmp: 1 file pulled. 0.0 MB/s (44 bytes in 0.003s)\n'
+        self.device_utils.pull('/sdcard/tmp_file.tmp', '/home/buga/tmp_dir/')
+
 
     def test_pull_from_non_existent(self, mock_adb):
-        # TODO: Invoke device_utils.pull(from, to) where 'from' doesn't exist and expect a RemoteFileNotFound exception
-        pass
+        err = AdbConnectionError()
+        err.stderr = "adb: error: failed to stat remote object '/sdcard/tmp_file.tm': No such file or directory\n"
+        mock_adb.side_effect = err
+        self.assertRaises(RemoteFileNotFound, self.device_utils.pull, '/sdcard/tmp_file.tm', '/home/buga/tmp_dir/')
 
     def test_pull_to_non_existent(self, mock_adb):
-        # TODO: Invoke device_utils.pull(from, to) where 'to' path doesn't exist and expect a LocalFileNotFound exception
-        pass
+        err = AdbConnectionError()
+        err.stderr = "adb: error: cannot create '/home/buga/tmp_dir2/': Is a directory\n"
+        mock_adb.side_effect = err
+        self.assertRaises(LocalFileNotFound, self.device_utils.pull, '/sdcard/tmp_file.tmp', '/home/buga/tmp_dir2/')
 
     def test_pull_no_permissions(self, mock_adb):
-        # TODO: Invoke device_utils.pull(from, to) where 'from' has no write permissions and expect WrongPermissions exception
-        pass
+        err = AdbConnectionError()
+        err.stderr = "adb: error: cannot create '/home/buga/tmp_dir/no_perm/tmp_file.tmp': Permission denied\n"
+        mock_adb.side_effect = err
+        self.assertRaises(WrongPermissions, self.device_utils.pull, '/sdcard/tmp_file.tmp', '/home/buga/tmp_dir/no_perm')
 
     # endregion
 
     # region AndroidDeviceUtils.send_intent() unit tests
 
     def test_send_intent_ok(self, mock_adb):
-        # TODO: Invoke device_utils.intent() and expect no exceptions and no output.
-        pass
+        mock_adb.return_value = 'Broadcasting: Intent { act=INTENT_ACTION_NAME flg=0x400000 }\nBroadcast completed: result=0\n'
+        self.device_utils.send_intent('start', 'INTENT_ACTION_NAME')
 
     # endregion
 
     # region AndroidDeviceUtils._shell() unit tests
 
     def test_shell_ok(self, mock_adb):
-        # TODO: assert(device_utils._shell('echo hi')=='hi')
-        pass
+        mock_adb.return_value = 'hi\n'
+        self.assertEqual(self.device_utils._shell('echo hi').strip(), 'hi')
 
     # endregion
 
     # region AndroidDeviceUtils.mkdir() unit tests
 
     def test_mkdir_ok(self, mock_adb):
-        # TODO: Invoke device_utils.mkdir(path) and expect no exceptions and no output.
-        pass
+        mock_adb.return_value = ''
+        self.device_utils.mkdir('/sdcard/tmp_dir')
+
+    def test_mkdir_already_exists(self, mock_adb):
+        err = AdbConnectionError()
+        err.stderr = "mkdir: '/sdcard/tmp_dir/': File exists\n"
+        mock_adb.side_effect = err
+        self.assertRaises(FileAlreadyExists, self.device_utils.mkdir, '/sdcard/tmp_dir')
 
     def test_mkdir_in_non_existent(self, mock_adb):
-        # TODO: Invoke device_utils.mkdir(path) where path base doesn't exist and expect a RemoteFileNotFound exception
-        pass
+        err = AdbConnectionError()
+        err.stderr = "mkdir: '/sdcard/tmp_dir/sub/dir': No such file or directory\n"
+        mock_adb.side_effect = err
+        self.assertRaises(RemoteFileNotFound, self.device_utils.mkdir, '/sdcard/tmp_dir/sub/dir')
 
     def test_mkdir_no_permissions(self, mock_adb):
-        # TODO: Invoke device_utils.mkdir(path) where path has no write permissions and expect WrongPermissions exception
-        pass
+        err = AdbConnectionError()
+        err.stderr = "mkdir: '/system/tmp_dir': Read-only file system\n"
+        mock_adb.side_effect = err
+        self.assertRaises(WrongPermissions, self.device_utils.mkdir, '/system/tmp_dir')
+
+    # endregion
+
+    # region AndroidDeviceUtils.rmdir() unit tests
+
+    def test_rmdir_ok(self, mock_adb):
+        mock_adb.return_value = ''
+        self.device_utils.rmdir('/sdcard/tmp_dir')
+
+    def test_rmdir_no_permissions(self, mock_adb):
+        err = AdbConnectionError()
+        err.stderr = 'rm: /system/tmp_dir: No such file or directory\n'
+        mock_adb.side_effect = err
+        self.assertRaises(WrongPermissions, self.device_utils.rmdir, '/system/tmp_dir')
 
     # endregion
 
     # region AndroidDeviceUtils.touch_file() unit tests
 
     def test_touch_file_ok(self, mock_adb):
-        # TODO: Invoke device_utils.touch_file(path) and expect no exceptions and no output.
-        pass
+        mock_adb.return_value = ''
+        self.device_utils.touch_file('/sdcard/tmp_file2')
 
     def test_touch_file_in_non_existent(self, mock_adb):
-        # TODO: Invoke device_utils.touch_file(path) where path base doesn't exist and expect a RemoteFileNotFound exception
-        pass
+        err = AdbConnectionError()
+        err.stderr = "touch: '/sdcard/notexist/tmp_file2': No such file or directory\n"
+        mock_adb.side_effect = err
+        self.assertRaises(RemoteFileNotFound, self.device_utils.touch_file, '/sdcard/notexist/tmp_file2')
 
     def test_touch_file_no_permissions(self, mock_adb):
-        # TODO: Invoke device_utils.touch_file(path) where path has no write permissions and expect WrongPermissions exception
-        pass
+        err = AdbConnectionError()
+        err.stderr = "touch: '/system/tmp_file': Read-only file system\n"
+        mock_adb.side_effect = err
+        self.assertRaises(WrongPermissions, self.device_utils.touch_file, '/system/tmp_file')
 
+    # endregion
+
+    # region AndroidDeviceUtils.remove() unit tests
+
+    def test_remove_ok(self, mock_adb):
+        mock_adb.return_value = ''
+        self.device_utils.remove('/sdcard/tmp_file.tmp')
+
+    def test_remove_no_permissions(self, mock_adb):
+        err = AdbConnectionError()
+        err.stderr = 'rm: /system/tmp_file: No such file or directory\n'
+        mock_adb.side_effect = err
+        self.assertRaises(WrongPermissions, self.device_utils.remove, '/system/tmp_file')
 
     # endregion
 
     # region AndroidDeviceUtils.ls() unit tests
 
     def test_ls_ok(self, mock_adb):
-        # TODO: Invoke device_utils.ls('/') and check there is a 'system' folder in the output. Parse the format of each field and verify it's corrent.
-        pass
+        stdout = dedent("""\
+            total 32216
+            drwxr-xr-x  2 root shell    8192 2008-12-31 20:30 .
+            -rwxr-xr-x  1 root shell   47760 2008-12-31 20:30 ATFWD-daemon
+            -rwxr-xr-x  1 root shell   61232 2008-12-31 20:30 BCM4345C0_003.001.025.0138.0222.HCD
+            -rwxr-xr-x  1 root shell   52870 2008-12-31 20:30 BCM4358A3_001.004.015.0076.0130_0x66_ORC.HCD
+            -rwxr-xr-x  1 root shell   22720 2008-12-31 20:30 WifiLogger_app
+            lrwxr-xr-x  1 root shell       6 2008-12-31 20:30 acpi -> toybox
+            -rwxr-xr-x  1 root shell    6264 2008-12-31 20:30 adsprpcd
+            -rwxr-xr-x  1 root shell     210 2008-12-31 20:30 am
+            lrwxr-xr-x  1 root shell      13 2008-12-31 20:30 app_process -> app_process64
+            lrwxr-xr-x  1 root shell       6 2008-12-31 20:30 xargs -> toybox
+            lrwxr-xr-x  1 root shell       6 2008-12-31 20:30 xxd -> toybox
+            lrwxr-xr-x  1 root shell       6 2008-12-31 20:30 yes -> toybox
+            -rwxr-xr-x  1 root shell   67704 2008-12-31 20:30 yuvtool
+            drwxr-xr-x 19 root root     4096 1970-01-01 02:00 ..
+            """)
+        stderr = dedent("""\
+            ls: /system/bin/PktRspTest: Permission denied
+            ls: /system/bin/StoreKeybox: Permission denied
+            ls: /system/bin/xtwifi-inet-agent: Permission denied
+            """)
+
+        mock_adb.return_value = stdout
+        ls = self.device_utils.ls('/system/bin')
+        self.assertEqual(len([x for x in ls if x['links_to']]), 5)
+        self.assertEqual(len(ls), 14)
+
+        err = AdbConnectionError()
+        err.stdout = stdout
+        err.stderr = stderr
+        mock_adb.side_effect = err
+        ls = self.device_utils.ls('/system/bin')
+        self.assertEqual(len([x for x in ls if x['links_to']]), 5)
+        self.assertEqual(len([x for x in ls if x['permissions'] is None]), 3)
+        self.assertEqual(len(ls), 17)
+        self.assertIn(dict(permissions='drwxr-xr-x', n_links=2, owner='root', group='shell', size=8192, modified=datetime.datetime(2008, 12, 31, 20, 30), name='.', links_to=None), ls)
+        self.assertIn(dict(permissions='lrwxr-xr-x', n_links=1, owner='root', group='shell', size=6, modified=datetime.datetime(2008, 12, 31, 20, 30), name='acpi', links_to='toybox'), ls)
+        self.assertIn(dict(permissions=None, n_links=None, owner=None, group=None, size=None, modified=None, name='PktRspTest', links_to=None), ls)
 
     def test_ls_doesnt_exist(self, mock_adb):
-        # TODO: Invoke device_utils.ls('/sggfjdhgdjf') and expect a RemoteFileNotFound exception
-        pass
-
-    def test_ls_doesnt_wrong_permissions(self, mock_adb):
-        # TODO: Invoke device_utils.ls(no_read_permissions_path) and expect a WrongPermissions exception (is this possible?)
-        pass
+        err = AdbConnectionError()
+        err.stderr = 'ls: /abc: No such file or directory\n'
+        mock_adb.side_effect = err
+        self.assertRaises(RemoteFileNotFound, self.device_utils.ls, '/abc')
 
     # endregion
 

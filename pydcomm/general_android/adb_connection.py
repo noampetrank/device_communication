@@ -9,7 +9,12 @@ from general_android.adb_connection_decorators import add_adb_recovery_decorator
 
 
 class AdbConnectionError(Exception):
-    pass  # General error class for ADB connection
+    # General error class for ADB connection
+    def __init__(self, *args, **kwargs):
+        self.stderr = None
+        self.stdout = None
+        self.returncode = None
+        super(AdbConnectionError, self).__init__(*args, **kwargs)
 
 
 class AdbConnection:
@@ -25,7 +30,7 @@ class AdbConnection:
 
     def get_connection_status(self):
         """
-        :return: dict object with the following fields:
+        :return dict object with the following fields:
             is_connected: bool
             is_wireless: bool
             connection_type: string in ('usb_debugging', 'mtp', 'file_transfer')
@@ -52,24 +57,28 @@ class AdbConnection:
         Send the given command over adb.
         :type params: list[str]
         :param params: array of split args to adb command
-        :rtype: tuple(str, bool)
+        :return str
+        :raises AdbConnectionError
         """
         log.info("adb params:", *params)
 
         if params[0] is 'adb':
             log.warn("adb() called with 'adb' as first parameter. Is this intentional?")
 
-        try:
-            return subprocess.check_output(params), True
-        except subprocess.CalledProcessError as err:
-            # log the exception
-            log.error("adb returned with the following error code, returning output and False", err.returncode, err.message)
-            return err.output, False
+        p = subprocess.Popen(['adb'] + list(*params), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output, error = p.communicate()
+        if p.returncode != 0:
+            err = AdbConnectionError('adb returned with non-zero error code')
+            err.stderr = error
+            err.returncode = p.returncode
+            raise err
+        return output
 
     @staticmethod
     def restart_adb_server():
         """
         adb kill-server & adb start-start
+        :raises AdbConnectionError
         """
         def _run_and_check(cmd):
             if subprocess.call(cmd.split()) != 0:
@@ -95,7 +104,7 @@ class AdbConnectionFactory(object):
         :param device:
         :param decorators:
         :type device_selector: MultiDeviceBehavior
-        :return:
+        :return
         """
         con = AdbConnection(ip or device)
         for d in decorators or []:
