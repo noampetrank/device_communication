@@ -1,6 +1,45 @@
 import time
 import pandas as pd
 import numpy as np
+import timeit
+
+import timeit
+import time
+
+
+# https://stackoverflow.com/a/24812460/365408
+# set timeit to return the value
+def _template_func(setup, func):
+    """Create a timer function. Used if the "statement" is a callable."""
+
+    def inner(_it, _timer, _func=func):
+        setup()
+        _t0 = _timer()
+        for _i in _it:
+            retval = _func()
+        _t1 = _timer()
+        return _t1 - _t0, retval
+
+    return inner
+
+
+timeit._template_func = _template_func
+
+
+def new_time_it(action, expected=None, repeats=1):
+    """
+    Takes a lambda as action, an expected value to assert against,
+    and the number of repaets, and returns the amount of time the
+    statement takes and whether the expected value is received.
+    :param action: lambda to measure
+    :param expected: expected value, pass None to not assert
+    :param repeats: How many times
+    :return: list of tuples containins time it took and whether the assert succeded.
+    """
+    if expected:
+        return timeit.repeat(lambda: action() == expected, repeat=repeats)
+    else:
+        return [(x, True) for x, _ in timeit.repeat(lambda: action(), repeat=repeats)]
 
 
 def time_it(obj, method, args, expected=None, kwargs=None):
@@ -33,7 +72,7 @@ def time_it(obj, method, args, expected=None, kwargs=None):
     except:
         ok = False
     finally:
-        return ok, (time.time() - start)*1000.0
+        return ok, (time.time() - start) * 1000.0
 
 
 def benchmark_it(repeats, obj, method, args, expected=None, kwargs=None):
@@ -71,7 +110,7 @@ def print_table(summaries):
                      s["fail_rate"],
                      s["n_total"]])
 
-    df = pd.DataFrame(data,columns=columns).set_index(columns[0])
+    df = pd.DataFrame(data, columns=columns).set_index(columns[0])
     print(df)
 
 
@@ -93,9 +132,9 @@ def get_stats(name, single_benchmark):
         "speed_max_ms": max(times),
         "n_total": total,
         "n_pass": n_ok,
-        "pass_rate": float(n_ok)/total,
+        "pass_rate": float(n_ok) / total,
         "n_fail": total - n_ok,
-        "fail_rate": float(total - n_ok)/total,
+        "fail_rate": float(total - n_ok) / total,
     }
 
 
