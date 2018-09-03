@@ -1,11 +1,17 @@
-using Buffer = std::vector<uint8>;
+#ifndef CPP_REMOTE_PROCEDURE_EXECUTION_H
+#define CPP_REMOTE_PROCEDURE_EXECUTION_H
+
+#include <string>
+#include <memory>
+
+using Buffer = std::string;
 using MarshalledObject = std::shared_ptr<Buffer>;
 
 template <class T>
-MarshalledObject marshall(const T &p);
+MarshalledObject marshal(const T &p);
 
 template <class T>
-T unmarshall(const MarshalledObject &buf);
+T unmarshal(const MarshalledObject &buf);
 
 
 class IRemoteProcedureExecutor {
@@ -16,31 +22,17 @@ public:
 };
 
 
-class StandardRemoteProcedureExecutor {
+class StandardRemoteProcedureExecutor : public IRemoteProcedureExecutor {
 public:
-    virtual MarshalledObject delegateProcedure(std::string procedureName, const MarshalledObject &params) final override {
-        // TODO: move this to .cpp
-        if (procedureName == "_rpc_get_version") {
-            return marshall(getVersion());
-        } if (procedureName == "_rpc_echo") {
-            return rpc_echo(params);
-        } if (procedureName == "_rpc_start") {
-            return onStart(params);
-        } if (procedureName == "_rpc_stop") {
-            return onStop(params);
-        } else {
-            return executeProcedure(procedureName, params);
-        }
-    }
-
-    virtual std::string getVersion() { return "0.0"; }
+    virtual MarshalledObject delegateProcedure(std::string procedureName, const MarshalledObject &params) final override;
+    virtual std::string getVersion() override { return "0.0"; }
 
 protected:
-    virtual void onStart() {} // Connection established, do whatever initialization is needed after that.
-    virtual void onStop() {} // Connection is about to close.
+    virtual void onStart(const MarshalledObject &params) {} // Connection established, do whatever initialization is needed after that.
+    virtual void onStop(const MarshalledObject &params) {} // Connection is about to close.
 
     // Unmarshalls the relevant params, runs the procedure, marshalls the returned params and returns them.
-    virtual MarshalledObject onExecuteProcedure(std::string procedureName const MarshalledObject &params) = 0;
+    virtual MarshalledObject executeProcedure(std::string procedureName, const MarshalledObject &params) = 0;
 
 private:
     virtual MarshalledObject rpc_echo(const MarshalledObject &params) final;
@@ -52,9 +44,10 @@ public:
     // Listens; calls delegate when stuff arrives
     virtual void listen(IRemoteProcedureExecutor &listener) = 0;
     virtual ~IRemoteProcedureServer() = default;
-}
+};
 
 
 
 // TODO add streaming API
 
+#endif //CPP_REMOTE_PROCEDURE_EXECUTION_H
