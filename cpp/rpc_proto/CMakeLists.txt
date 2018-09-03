@@ -1,45 +1,32 @@
+cmake_minimum_required(VERSION 3.2)
 
-cmake_minimum_required(VERSION 2.8)
+# GRPC and Protocol Buffers libraries location
+list(APPEND CMAKE_PREFIX_PATH "/usr/local/lib")
 
+# Cmake find modules
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/../cmake")
 
-include(FindProtobuf)
-#find_package(Protobuf REQUIRED)
-#include_directories(${PROTOBUF_INCLUDE_DIR})
-#protobuf_generate_cpp(PROTO_SRC PROTO_HEADER rpc.proto)
-#add_library(proto ${PROTO_HEADER} ${PROTO_SRC} gen/hi.h)
-
-
-set(protobuf_MODULE_COMPATIBLE TRUE)
 find_package(Protobuf REQUIRED)
-message(STATUS "Using protobuf ${protobuf_VERSION}")
+find_package(GRPC REQUIRED)
 
-set(_PROTOBUF_LIBPROTOBUF protobuf::libprotobuf)
-set(_PROTOBUF_PROTOC $<TARGET_FILE:protobuf::protoc>)
+set(PROTOS
+        ${CMAKE_CURRENT_SOURCE_DIR}/buga_rpc.proto
+        )
 
-# Find gRPC installation
-# Looks for gRPCConfig.cmake file installed by gRPC's cmake installation.
-find_package(gRPC REQUIRED)
-message(STATUS "Using gRPC ${gRPC_VERSION}")
+set(PROTO_SRC_DIR ${CMAKE_CURRENT_BINARY_DIR}/proto-src)
+file(MAKE_DIRECTORY ${PROTO_SRC_DIR})
 
-set(_GRPC_GRPCPP_UNSECURE gRPC::grpc++_unsecure)
-set(_GRPC_CPP_PLUGIN_EXECUTABLE $<TARGET_FILE:gRPC::grpc_cpp_plugin>)
+protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTO_SRC_DIR} ${PROTOS})
+grpc_generate_cpp(GRPC_SRCS GRPC_HDRS ${PROTO_SRC_DIR} ${PROTOS})
 
+# Building server
+add_library(proto
+        ${PROTO_SRCS}
+        ${GRPC_SRCS}
+        )
 
-# Proto file
-get_filename_component(hw_proto rpc.proto ABSOLUTE)
-get_filename_component(hw_proto_path "${hw_proto}" PATH)
-
-# Generated sources
-set(hw_proto_srcs "${CMAKE_CURRENT_BINARY_DIR}/helloworld.pb.cc")
-set(hw_proto_hdrs "${CMAKE_CURRENT_BINARY_DIR}/helloworld.pb.h")
-set(hw_grpc_srcs "${CMAKE_CURRENT_BINARY_DIR}/helloworld.grpc.pb.cc")
-set(hw_grpc_hdrs "${CMAKE_CURRENT_BINARY_DIR}/helloworld.grpc.pb.h")
-add_custom_command(
-        OUTPUT "${hw_proto_srcs}" "${hw_proto_hdrs}" "${hw_grpc_srcs}" "${hw_grpc_hdrs}"
-        COMMAND ${_PROTOBUF_PROTOC}
-        ARGS --grpc_out "${CMAKE_CURRENT_BINARY_DIR}"
-        --cpp_out "${CMAKE_CURRENT_BINARY_DIR}"
-        -I "${hw_proto_path}"
-        --plugin=protoc-gen-grpc="${_GRPC_CPP_PLUGIN_EXECUTABLE}"
-        "${hw_proto}"
-        DEPENDS "${hw_proto}")
+target_include_directories(proto PUBLIC ${PROTO_SRC_DIR})
+target_link_libraries(proto
+        gRPC::grpc++_reflection
+        protobuf::libprotobuf
+        )

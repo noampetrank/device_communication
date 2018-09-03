@@ -1,10 +1,11 @@
 #include <iostream>
-#include "rpc_proto/rpc.pb.h"
-
 #include <memory>
 #include <string>
 
 #include <grpcpp/grpcpp.h>
+
+#include "buga_rpc.pb.h"
+#include "buga_rpc.grpc.pb.h"
 
 using grpc::Server;
 using grpc::ServerBuilder;
@@ -14,19 +15,17 @@ using buga_rpc::MarshalledObject;
 using buga_rpc::DeviceRpc;
 
 
-// Logic and data behind the server's behavior.
-class GreeterServiceImpl final : public Greeter::Service {
-    Status SayHello(ServerContext* context, const HelloRequest* request,
-                    HelloReply* reply) override {
-        std::string prefix("Hello ");
-        reply->set_message(prefix + request->name());
+class DeviceRpcImpl final : public DeviceRpc::Service {
+    Status call(ServerContext *context, const MarshalledObject *request, MarshalledObject *response) override {
+        // Do amazing stuff
         return Status::OK;
     }
 };
 
+
 void RunServer() {
     std::string server_address("0.0.0.0:50051");
-    GreeterServiceImpl service;
+    DeviceRpcImpl service;
 
     ServerBuilder builder;
     // Listen on the given address without any authentication mechanism.
@@ -43,7 +42,7 @@ void RunServer() {
     server->Wait();
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     RunServer();
 
     return 0;
