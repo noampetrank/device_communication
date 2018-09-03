@@ -12,12 +12,13 @@ class IRemoteProcedureExecutor {
 public:
     virtual MarshalledObject delegateProcedure(std::string procedureName, const MarshalledObject &params) = 0; // Delegate a procedure call from the caller
     virtual std::string getVersion() = 0; // Get current executor version
+    virtual ~IRemoteProcedureExecutor() = default;
 };
 
 
 class StandardRemoteProcedureExecutor {
 public:
-    virtual MarshalledObject delegateProcedure(std::string procedureName, const MarshalledObject &params) final {
+    virtual MarshalledObject delegateProcedure(std::string procedureName, const MarshalledObject &params) final override {
         // TODO: move this to .cpp
         if (procedureName == "_rpc_get_version") {
             return marshall(getVersion());
@@ -50,6 +51,7 @@ class IRemoteProcedureServer {
 public:
     // Listens; calls delegate when stuff arrives
     virtual void listen(IRemoteProcedureExecutor &listener) = 0;
+    virtual ~IRemoteProcedureServer() = default;
 }
 
 
