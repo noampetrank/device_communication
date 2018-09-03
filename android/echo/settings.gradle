@@ -1,0 +1,4 @@
+include ':app'
+
+include 'bugarpc'
+project(':bugarpc').projectDir = file('../libbugarpc/bugarpc')
