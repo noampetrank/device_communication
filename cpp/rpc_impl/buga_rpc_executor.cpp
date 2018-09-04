@@ -2,5 +2,5 @@
 
 MarshalledObject BugaRpcExecutor::executeProcedure(std::string procedureName, const MarshalledObject &params) {
     //TODO implement
-    return params;
+    return std::make_shared<std::string>("OK: " + *params);
 }
