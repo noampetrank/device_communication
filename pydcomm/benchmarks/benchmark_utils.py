@@ -84,7 +84,7 @@ def get_stats(name, single_benchmark):
     """
     times = [n[1] for n in single_benchmark]
     success = [n[0] for n in single_benchmark]
-    n_ok = len([n for n in success if n is True])
+    n_ok = len([n for n in success if n])
     total = len(single_benchmark)
     return {
         "test_name": name,
@@ -106,3 +106,10 @@ def create_summary(benchmark_results):
     """
     summaries = [get_stats(key, benchmark_results[key]) for key in benchmark_results.keys()]
     print_table(summaries)
+
+
+def pandas_config_for_bench():
+    pd.set_option('display.max_rows', 500)
+    pd.set_option('display.max_columns', 100)
+    pd.set_option('display.width', 160)
+    pd.set_option('display.max_colwidth', 32)

@@ -1,7 +1,10 @@
+from pydcomm.benchmarks.benchmark_utils import pandas_config_for_bench
 from pydcomm.benchmarks.benchmark_utils import time_it, benchmark_it, create_summary
 import numpy as np
+from collections import OrderedDict
 import time
 import tqdm
+from pydcomm.rpc.marshallers import nparray_marshal, nparray_unmarshal
 
 """
 Format:
@@ -29,7 +32,10 @@ def rpc_echo_benchmark_for_params(name, rpc, params, marshaller, unmarshaller, r
     :type repeats: int
     :rtype: dict
     """
-    return benchmark_it(repeats, rpc, "call", ("echo", params, marshaller, unmarshaller), expected=lambda res: np.all(res == params))
+    expected = lambda res: res == params
+    if type(params) == np.ndarray:
+        expected = lambda res: np.all(res == params)
+    return benchmark_it(repeats, rpc, "call", ("_rpc_echo", params, marshaller, unmarshaller), expected=expected)
 
 
 def call_benchmark(rpc, repeats=None):
@@ -38,21 +44,23 @@ def call_benchmark(rpc, repeats=None):
 
     rpc instance must have an "echo" method on the server side, that echos back whatever it got.
     """
-    name_to_stuff = {
-        'float': (1000, float_marshaller, float_unmarshaller, 8.2),
-        'string': (1000, string_marshaller, string_unmarshaller, 'Test TEST test!'),
-        '1k': (500, nparray_marshaller, nparray_unmarshaller, np.random.rand(2 ** 10)),
-        '100k': (100, nparray_marshaller, nparray_unmarshaller, np.random.rand(100 * 2 ** 10)),
-        '1M': (50, nparray_marshaller, nparray_unmarshaller, np.random.rand(2 ** 20)),
-        '10M': (10, nparray_marshaller, nparray_unmarshaller, np.random.rand(10 * 2 ** 20)),
-        '100M': (3, nparray_marshaller, nparray_unmarshaller, np.random.rand(100 * 2 ** 20)),
-    }
-    benchmark_results = {}
+    name_to_stuff = OrderedDict()
+    name_to_stuff['float'] = (1000, None, None, 8.2)
+    name_to_stuff['string'] = (1000, None, None, 'Test TEST test!')
+    name_to_stuff['1k'] = (500, nparray_marshal, nparray_unmarshal, np.random.rand(2 ** 10))
+    name_to_stuff['100k'] = (100, nparray_marshal, nparray_unmarshal, np.random.rand(100 * 2 ** 10))
+    name_to_stuff['1M'] = (50, nparray_marshal, nparray_unmarshal, np.random.rand(2 ** 20))
+    name_to_stuff['10M'] = (10, nparray_marshal, nparray_unmarshal, np.random.rand(10 * 2 ** 20))
+    name_to_stuff['100M'] = (3, nparray_marshal, nparray_unmarshal, np.random.rand(100 * 2 ** 20))
+
+    benchmark_results = OrderedDict()
     for name, (reps, marshaller, unmarshaller, params) in name_to_stuff.items():
         if type(repeats) == dict and name in repeats:
             reps = repeats[name]
         if type(repeats) in (int, float):
             reps = repeats
         benchmark_results[name] = rpc_echo_benchmark_for_params(name, rpc, params, marshaller, unmarshaller, reps)
-    
+
+    pandas_config_for_bench()
     create_summary(benchmark_results)
+

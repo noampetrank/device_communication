@@ -7,7 +7,7 @@ from pydcomm.rpc.gen.buga_rpc_pb2 import GRequest
 class BugaGRpcCaller(StandardRemoteProcedureCaller):
     def __init__(self, ip_port):
         self.ip_port = ip_port or 'localhost:50051'  # TODO remove this default
-        self.channel = None
+        self.channel = None  # This needs to remain an instance variable (according to https://blog.jeffli.me/blog/2017/08/02/keep-python-grpc-client-connection-truly-alive/)
         self.stub = None
 
     def start(self):
@@ -21,9 +21,9 @@ class BugaGRpcCaller(StandardRemoteProcedureCaller):
         pass
 
     def _echo_test(self):
-        response = self.stub.grpc_echo(GRequest(buf='Python client works!'))
+        response = self.stub.grpc_echo(GRequest(buf='Python gRPC connection works!'))
         print("RPC client received: " + response.buf)
-        response = self.stub.call(GRequest(name='_rpc_echo', buf='Python Buga client works!'))
+        response = self.stub.call(GRequest(name='_rpc_echo', buf='Python Buga RPC works!'))
         print("RPC client received: " + response.buf)
         xver = self.get_executor_version()
         print("Executor version {}".format(xver))

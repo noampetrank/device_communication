@@ -1,4 +1,5 @@
 from abc import ABCMeta, abstractmethod
+import cbor
 
 
 class IRemoteProcedureCaller:
@@ -43,12 +44,12 @@ class IRemoteProcedureCaller:
 
 class StandardRemoteProcedureCaller(IRemoteProcedureCaller):
     def call(self, procedure_name, params, marshaller=None, unmarshaller=None):
-        marshalled_params = marshaller(params) if marshaller else str(params)
+        marshalled_params = marshaller(params) if marshaller else cbor.dumps(params)
         ret = self._send_and_wait_for_return(procedure_name, marshalled_params)
-        return unmarshaller(ret) if unmarshaller else ret
+        return unmarshaller(ret) if unmarshaller else cbor.loads(ret)
 
     def get_executor_version(self):
-        return self._send_and_wait_for_return('_rpc_get_version', '')
+        return self._send_and_wait_for_return('_rpc_get_version', None)
 
     def start(self):
         # ...
