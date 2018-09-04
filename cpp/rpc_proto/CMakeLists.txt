@@ -3,6 +3,16 @@ cmake_minimum_required(VERSION 3.2)
 # GRPC and Protocol Buffers libraries location
 list(APPEND CMAKE_PREFIX_PATH "/usr/local/lib")
 
+add_subdirectory(/home/buga/Code/grpc ${CMAKE_CURRENT_BINARY_DIR}/grpc EXCLUDE_FROM_ALL)
+message(STATUS "Using gRPC via add_subdirectory.")
+
+# After using add_subdirectory, we can now use the grpc targets directly from
+# this build.
+set(_PROTOBUF_LIBPROTOBUF libprotobuf)
+set(_PROTOBUF_PROTOC $<TARGET_FILE:protoc>)
+set(_GRPC_GRPCPP_UNSECURE grpc++_unsecure)
+set(_GRPC_CPP_PLUGIN_EXECUTABLE $<TARGET_FILE:grpc_cpp_plugin>)
+
 # Cmake find modules
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/../cmake")
 
@@ -25,45 +35,10 @@ add_library(proto
         ${GRPC_SRCS}
         )
 
-if (NOT MY_BUILD_ANDROID)
-    set(THIS_LIB
-            gRPC::grpc++_reflection
-            protobuf::libprotobuf
-            )
-else ()
-#    set(THIS_LIB
-##            /home/buga/Code/grpc-arm64/libs/opt/libgrpc++_reflection.so
-##            /home/buga/Code/grpc-arm64/libs/opt/libgrpc++.so
-##            /home/buga/Code/grpc-arm64/libs/opt/libgrpc.so
-##            /home/buga/Code/grpc-arm64/libs/opt/libgrpc_unsecure.so
-##            /home/buga/Code/grpc-arm64/libs/opt/libgrpc++_unsecure.so
-##            /home/buga/Code/grpc-arm64/libs/opt/libgrpc_cronet.so
-##            /home/buga/Code/grpc-arm64/libs/opt/libgrpc++_cronet.so
-##            /home/buga/Code/grpc-arm64/libs/opt/libgpr.so
-##            /home/buga/Code/grpc-arm64/libs/opt/libaddress_sorting.so
-##            /home/buga/Code/grpc-arm64/libs/opt/protobuf/libprotobuf.a
-#            ${PROJECT_SOURCE_DIR}/dependencies/newtry/libgrpc++.a
-#            ${PROJECT_SOURCE_DIR}/dependencies/newtry/libgrpc.a
-#            ${PROJECT_SOURCE_DIR}/dependencies/newtry/libgpr.a
-##            ${PROJECT_SOURCE_DIR}/dependencies/newtry/third_party/protobuf/libprotobuf.a
-##            ${PROJECT_SOURCE_DIR}/dependencies/newtry/third_party/zlib/libz.a
-##            ${PROJECT_SOURCE_DIR}/dependencies/newtry/third_party/cares/cares/lib/libcares.a
-##            ${PROJECT_SOURCE_DIR}/dependencies/newtry/third_party/benchmark/test/liboutput_test_helper.a
-##            ${PROJECT_SOURCE_DIR}/dependencies/newtry/third_party/benchmark/src/libbenchmark.a
-#            ${PROJECT_SOURCE_DIR}/dependencies/newtry/third_party/boringssl/crypto/libcrypto.a
-##            ${PROJECT_SOURCE_DIR}/dependencies/newtry/third_party/boringssl/libboringssl_gtest.a
-#            ${PROJECT_SOURCE_DIR}/dependencies/newtry/third_party/boringssl/decrepit/libdecrepit.a
-#            ${PROJECT_SOURCE_DIR}/dependencies/newtry/third_party/boringssl/ssl/libssl.a
-#            ${PROJECT_SOURCE_DIR}/dependencies/newtry/third_party/protobuf/libprotobuf.a
-#            ${PROJECT_SOURCE_DIR}/dependencies/newtry/third_party/zlib/libz.a
-#            ${PROJECT_SOURCE_DIR}/dependencies/newtry/third_party/cares/cares/lib/libcares.a
-#
-#            log
-#            )
-    target_include_directories(proto PUBLIC ${GRPC_INCLUDE_DIR})
-    set(CMAKE_INSTALL_RPATH ${PROJECT_SOURCE_DIR}/dependencies/grpc/lib/)
-
-endif ()
+set(THIS_LIB
+        ${_GRPC_GRPCPP_UNSECURE}
+        ${_PROTOBUF_LIBPROTOBUF}
+        )
 
 target_include_directories(proto PUBLIC ${PROTO_SRC_DIR})
 target_link_libraries(proto
