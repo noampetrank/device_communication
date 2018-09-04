@@ -49,6 +49,11 @@ void GRemoteProcedureServer::listen(IRemoteProcedureExecutor &listener) {
     // Register "service" as the instance through which we'll communicate with
     // clients. In this case it corresponds to an *synchronous* service.
     builder.RegisterService(service.get());
+    // Set max message size to 1Gb
+    const int max_message_size = 1024*1024*1024;
+    builder.SetMaxReceiveMessageSize(max_message_size);
+    builder.SetMaxSendMessageSize(max_message_size);
+    std::cout << max_message_size << std::endl;
     // Finally assemble the server.
     std::unique_ptr<Server> server(builder.BuildAndStart());
     std::cout << "Server listening on " << server_address << std::endl;

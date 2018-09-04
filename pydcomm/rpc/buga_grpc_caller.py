@@ -5,14 +5,16 @@ from pydcomm.rpc.gen.buga_rpc_pb2 import GRequest
 
 
 class BugaGRpcCaller(StandardRemoteProcedureCaller):
+    MAX_MESSAGE_SIZE = 1024*1024*1024  # 1Gb
+
     def __init__(self, ip_port):
-        self.ip_port = ip_port or 'localhost:50051'  # TODO remove this default
+        self.host_port = ip_port or 'localhost:50051'  # TODO remove this default
         self.channel = None  # This needs to remain an instance variable (according to https://blog.jeffli.me/blog/2017/08/02/keep-python-grpc-client-connection-truly-alive/)
         self.stub = None
 
     def start(self):
-        # TODO connect to IP:port
-        self.channel = grpc.insecure_channel(self.ip_port)
+        self.channel = grpc.insecure_channel(self.host_port, options=[('grpc.max_send_message_length', BugaGRpcCaller.MAX_MESSAGE_SIZE),
+                                                                      ('grpc.max_receive_message_length', BugaGRpcCaller.MAX_MESSAGE_SIZE)])
         self.stub = DeviceRpcStub(self.channel)
         xver = self.get_executor_version()
         assert xver == '0.0'

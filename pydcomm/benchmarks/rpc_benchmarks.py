@@ -8,16 +8,15 @@ from pydcomm.rpc.marshallers import nparray_marshal, nparray_unmarshal
 
 """
 Format:
-                   total_times success_rate success auto_recover manual_recover fail min_speed_ms avg_speed_ms max_speed_ms
-                                                                                                                           
-rpc_echo_no_params         500          1.0     500            0              0    0         3000         5000        10000
-rpc_echo_float             300         0.98     295            4              1    0        18000        22000        26000
-rpc_echo_string            100         0.90      90           15             12   10        50000        60000       100000
-rpc_echo_1k                100         0.90      90           15             12   10        50000        60000       100000
-rpc_echo_100k              100         0.90      90           15             12   10        50000        60000       100000
-rpc_echo_1M                 50         0.80      40            4              8   10        50000        60000       100000
-rpc_echo_10M                20         0.75      15            2              4    5        50000        60000       100000
-rpc_echo_100M                3         0.67       2            1              1    1        50000        60000       100000
+           speed_avg_ms  speed_min_ms  speed_max_ms  n_pass  pass_rate  n_fail  fail_rate  n_total
+test_name                                                                                         
+float          0.089372      0.083923      0.288010    1000        1.0       0        0.0     1000
+string         0.091907      0.084877      0.277996    1000        1.0       0        0.0     1000
+1k             0.212770      0.192881      0.360966     500        1.0       0        0.0      500
+100k          10.655496      9.881020     12.848139     100        1.0       0        0.0      100
+1M           117.582521    104.593039    141.941071      50        1.0       0        0.0       50
+10M         1414.263058   1390.681982   1459.050894      10        1.0       0        0.0       10
+100M       14249.854247  14118.469000  14508.166790       3        1.0       0        0.0        3
 """
 
 
