@@ -1,4 +1,10 @@
+from abc import ABCMeta, abstractmethod
+
+
 class IRemoteProcedureCaller:
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
     def call(self, procedure_name, params, marshaller=None, unmarshaller=None):
         """
         Marshalls the params and sends them to the executor side. Then receives params that are returned from the executor and unmarshalls them.
@@ -12,18 +18,21 @@ class IRemoteProcedureCaller:
         """
         pass
 
+    @abstractmethod
     def get_executor_version(self):
         """
         Returns the version string of the executor.
         :rtype: str
         """
 
+    @abstractmethod
     def start(self):
         """
         Do whatever it takes to make the remote executor listen.
         :rtype: None
         """
 
+    @abstractmethod
     def stop(self):
         """
         Put the remote executor to bed.
@@ -39,7 +48,7 @@ class StandardRemoteProcedureCaller(IRemoteProcedureCaller):
         return unmarshaller(ret) if unmarshaller else ret
 
     def get_executor_version(self):
-        return self._send_and_wait_for_return('_rpc_get_version', {})
+        return self._send_and_wait_for_return('_rpc_get_version', '')
 
     def start(self):
         # ...
@@ -49,6 +58,7 @@ class StandardRemoteProcedureCaller(IRemoteProcedureCaller):
     def stop(self):
         pass
 
+    @abstractmethod
     def _send_and_wait_for_return(self, procedure_name, marshalled_params):
         """
         Specific implementation that calls a procedure on the executor and returns values from it.
@@ -56,7 +66,7 @@ class StandardRemoteProcedureCaller(IRemoteProcedureCaller):
         :param marshalled_params:
         :return:
         """
-        raise NotImplementedError('This method needs to be overridden by subclass')
+        pass
 
 
 class UnsupportedExecutorVersion(Exception):
