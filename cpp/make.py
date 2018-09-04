@@ -10,6 +10,7 @@ from optparse import OptionParser
 
 from colorama import init
 from pymobileproduct.utils.make.shared import mkdir_p, cd, MakeException, set_env_vars, WARN, TITLE, SUCCESS
+from pymobileproduct.utils.make.build import create_standalone_toolchain
 
 POSSIBLE_PLATFORMS = ["all", "linux", "android", "clean"]
 POSSIBLE_RUNTESTS = ["none", "short", "long"]
@@ -94,6 +95,7 @@ def build_platforms(options):
 def main():
     options = parse_options()
     validate_options(options)
+    create_standalone_toolchain(options.platform)
     build_platforms(options)
 
 

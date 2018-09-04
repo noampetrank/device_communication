@@ -1,0 +1,32 @@
+330c330
+< CPPFLAGS += -g -Wall -Wextra -Werror -Wno-long-long -Wno-unused-parameter -DOSATOMIC_USE_INLINED=1
+---
+> CPPFLAGS += -g -Wall -Wextra -Wno-long-long -Wno-unused-parameter -DOSATOMIC_USE_INLINED=1
+371c371
+< LIBS = dl rt m pthread
+---
+> LIBS = dl m
+781c781
+< PROTOC_PLUGINS_DIR = $(BINDIR)/$(CONFIG)
+---
+> PROTOC_PLUGINS_DIR ?= $(BINDIR)/$(CONFIG)
+808c808
+< PROTOC_PLUGINS_DIR = $(prefix)/bin
+---
+> PROTOC_PLUGINS_DIR ?= $(prefix)/bin
+330c330
+< CPPFLAGS += -g -Wall -Wextra -Werror -Wno-long-long -Wno-unused-parameter -DOSATOMIC_USE_INLINED=1
+---
+> CPPFLAGS += -g -Wall -Wextra -Wno-long-long -Wno-unused-parameter -DOSATOMIC_USE_INLINED=1
+371c371
+< LIBS = dl rt m pthread
+---
+> LIBS = dl m
+781c781
+< PROTOC_PLUGINS_DIR = $(BINDIR)/$(CONFIG)
+---
+> PROTOC_PLUGINS_DIR ?= $(BINDIR)/$(CONFIG)
+808c808
+< PROTOC_PLUGINS_DIR = $(prefix)/bin
+---
+> PROTOC_PLUGINS_DIR ?= $(prefix)/bin
