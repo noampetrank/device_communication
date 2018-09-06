@@ -3,9 +3,12 @@
 
 # noinspection PyUnusedLocal
 # https://stackoverflow.com/a/392258/365408
+import glob
 import multiprocessing
+import os
 import subprocess
 import time
+import shutil
 from optparse import OptionParser
 
 from colorama import init
@@ -15,10 +18,17 @@ from pymobileproduct.utils.make.build import create_standalone_toolchain
 POSSIBLE_PLATFORMS = ["all", "linux", "android", "clean"]
 POSSIBLE_RUNTESTS = ["none", "short", "long"]
 POSSIBLE_BUILD_TYPES = ["debug", "release"]
+CLEAN_DIRECTORIES = [
+    "lib",
+    "bin",
+    "build_linux_debug",
+    "build_linux_release",
+    "build_android_debug",
+    "build_android_release",
+]
 
 # Colorama
 init(autoreset=True)
-
 
 
 def split_list(option, opt, value, parser):
@@ -63,6 +73,7 @@ def validate_options(options):
     if not success:
         raise MakeException("Invalid option")
 
+
 def build_platforms(options):
     for platform in options.platform:
         build_dir = "build_" + platform + '_' + options.buildtype
@@ -92,9 +103,24 @@ def build_platforms(options):
             except subprocess.CalledProcessError:
                 raise MakeException(" * Compilation failed :(")
 
+
+def clean():
+    print(TITLE + " * Cleaning...")
+    for directory in CLEAN_DIRECTORIES:
+        print("Deleting {0}".format(directory))
+        for f in glob.glob(directory + "/*"):
+            if os.path.isfile(f):
+                os.unlink(f)
+            else:
+                shutil.rmtree(f)
+
+
 def main():
     options = parse_options()
     validate_options(options)
+    if "clean" in options.platform:
+        clean()
+        return
     create_standalone_toolchain(options.platform)
     build_platforms(options)
 
