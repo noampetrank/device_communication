@@ -1,11 +1,12 @@
 import subprocess
 
+import sys
 from enum import IntEnum
 import logging
+from pydcomm.general_android.adb_connection_decorators import add_adb_recovery_decorator, auto_fixes, add_rooted_impl
+
 
 log = logging.getLogger(__name__)
-
-from general_android.adb_connection_decorators import add_adb_recovery_decorator, auto_fixes, add_rooted_impl
 
 
 class AdbConnectionError(Exception):
@@ -65,7 +66,7 @@ class AdbConnection:
         if params[0] is 'adb':
             log.warn("adb() called with 'adb' as first parameter. Is this intentional?")
 
-        p = subprocess.Popen(['adb'] + list(*params), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        p = subprocess.Popen(['adb'] + list(params), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output, error = p.communicate()
         if p.returncode != 0:
             err = AdbConnectionError('adb returned with non-zero error code')
@@ -80,9 +81,11 @@ class AdbConnection:
         adb kill-server & adb start-start
         :raises AdbConnectionError
         """
+
         def _run_and_check(cmd):
             if subprocess.call(cmd.split()) != 0:
                 raise AdbConnectionError('Could not restart ADB server')
+
         _run_and_check('adb kill-server')
         _run_and_check('adb start-server')
 
@@ -94,7 +97,8 @@ class MultiDeviceBehavior(IntEnum):
 
 class AdbConnectionFactory(object):
     def get_rooted_auto_connection(self, device):
-        return self.create_connection(device=device, decorators=[add_rooted_impl, add_adb_recovery_decorator(auto_fixes)])
+        return self.create_connection(device=device,
+                                      decorators=[add_rooted_impl, add_adb_recovery_decorator(auto_fixes)])
 
     @staticmethod
     def create_connection(ip=None, device=None, decorators=None, device_selector=None):
