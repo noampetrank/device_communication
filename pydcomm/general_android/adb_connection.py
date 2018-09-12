@@ -8,6 +8,8 @@ from pydcomm.general_android.adb_connection_decorators import add_adb_recovery_d
 
 log = logging.getLogger(__name__)
 
+from pydcomm.general_android.adb_connection_decorators import add_adb_recovery_decorator, auto_fixes, add_rooted_impl
+
 
 class AdbConnectionError(Exception):
     # General error class for ADB connection
