@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.4.1)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 
-set(helloworld_PROTOBUF_PROTOC_EXECUTABLE "/usr/local/bin/protoc" CACHE STRING "Protoc binary on host")
-set(helloworld_GRPC_CPP_PLUGIN_EXECUTABLE "/usr/local/bin/grpc_cpp_plugin" CACHE STRING "gRPC CPP plugin binary on host")
+set(buga_grpc_PROTOBUF_PROTOC_EXECUTABLE "/usr/local/bin/protoc" CACHE STRING "Protoc binary on host")
+set(buga_grpc_GRPC_CPP_PLUGIN_EXECUTABLE "/usr/local/bin/grpc_cpp_plugin" CACHE STRING "gRPC CPP plugin binary on host")
 
 set(GRPC_SRC_DIR ../../3rdparty/grpc/)
 
@@ -42,14 +42,14 @@ function(android_protobuf_grpc_generate_cpp SRC_FILES HDR_FILES INCLUDE_ROOT)
              "${GRPC_PROTO_GENS_DIR}/${RELFIL_WE}.grpc.pb.h"
              "${GRPC_PROTO_GENS_DIR}/${RELFIL_WE}.pb.cc"
              "${GRPC_PROTO_GENS_DIR}/${RELFIL_WE}.pb.h"
-      COMMAND ${helloworld_PROTOBUF_PROTOC_EXECUTABLE}
+      COMMAND ${buga_grpc_PROTOBUF_PROTOC_EXECUTABLE}
       ARGS --grpc_out=${GRPC_PROTO_GENS_DIR}
         --cpp_out=${GRPC_PROTO_GENS_DIR}
-        --plugin=protoc-gen-grpc=${helloworld_GRPC_CPP_PLUGIN_EXECUTABLE}
+        --plugin=protoc-gen-grpc=${buga_grpc_GRPC_CPP_PLUGIN_EXECUTABLE}
         ${PROTOBUF_INCLUDE_PATH}
         ${REL_FIL}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-      DEPENDS ${helloworld_PROTOBUF_PROTOC_EXECUTABLE} ${helloworld_GRPC_CPP_PLUGIN_EXECUTABLE} ${ABS_FIL} )
+      DEPENDS ${buga_grpc_PROTOBUF_PROTOC_EXECUTABLE} ${buga_grpc_GRPC_CPP_PLUGIN_EXECUTABLE} ${ABS_FIL} )
   endforeach()
 
   set_source_files_properties(${${SRC_FILES}} ${${HDR_FILES}} PROPERTIES GENERATED TRUE)
@@ -57,15 +57,15 @@ function(android_protobuf_grpc_generate_cpp SRC_FILES HDR_FILES INCLUDE_ROOT)
   set(${HDR_FILES} ${${HDR_FILES}} PARENT_SCOPE)
 endfunction()
 
-set(PROTO_BASE_DIR ${GRPC_SRC_DIR}/examples/protos)
+set(PROTO_BASE_DIR ../../cpp/rpc_proto/)
 
 android_protobuf_grpc_generate_cpp(
-  HELLOWORLD_PROTO_SRCS HELLOWORLD_PROTO_HDRS ${PROTO_BASE_DIR} ${PROTO_BASE_DIR}/helloworld.proto)
+  BUGA_GRPC_PROTO_SRCS BUGA_GRPC_PROTO_HDRS ${PROTO_BASE_DIR} ${PROTO_BASE_DIR}/buga_rpc.proto)
 
-add_library(helloworld_proto_lib
-  SHARED ${HELLOWORLD_PROTO_HDRS} ${HELLOWORLD_PROTO_SRCS})
+add_library(buga_grpc_proto_lib
+  SHARED ${BUGA_GRPC_PROTO_HDRS} ${BUGA_GRPC_PROTO_SRCS})
 
-target_link_libraries(helloworld_proto_lib
+target_link_libraries(buga_grpc_proto_lib
   grpc++
   libprotobuf
   android
@@ -74,13 +74,26 @@ target_link_libraries(helloworld_proto_lib
 find_library(log-lib
  log)
 
-add_library(grpc-helloworld
-  SHARED src/main/cpp/grpc-helloworld.cc)
 
-target_include_directories(grpc-helloworld
-  PRIVATE ${HELLOWORLD_PROTO_HEADERS})
 
-target_link_libraries(grpc-helloworld
-  helloworld_proto_lib
+set(BUGA_GRPC_SERVER_SRCS ../../cpp/)
+
+add_library(buga_grpc SHARED
+  ${BUGA_GRPC_SERVER_SRCS}/rpc_bindings/marshallers.cpp
+  ${BUGA_GRPC_SERVER_SRCS}/rpc_bindings/marshallers.h
+  ${BUGA_GRPC_SERVER_SRCS}/rpc_bindings/remote_procedure_execution.cpp
+  ${BUGA_GRPC_SERVER_SRCS}/rpc_bindings/remote_procedure_execution.h
+  ${BUGA_GRPC_SERVER_SRCS}/rpc_impl/buga_grpc_server.cpp
+  ${BUGA_GRPC_SERVER_SRCS}/rpc_impl/buga_grpc_server.h
+  ${BUGA_GRPC_SERVER_SRCS}/rpc_impl/buga_rpc_executor.cpp
+  ${BUGA_GRPC_SERVER_SRCS}/rpc_impl/buga_rpc_executor.h
+)
+
+target_include_directories(buga_grpc PRIVATE
+  ${BUGA_GRPC_SERVER_SRCS}
+)
+
+target_link_libraries(buga_grpc
+  buga_grpc_proto_lib
   android
   ${log-lib})
