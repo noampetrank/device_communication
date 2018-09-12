@@ -4,8 +4,8 @@ from textwrap import dedent
 import mock
 import tempfile
 
-from pydcomm.general_android.adb_connection import *
-from pydcomm.general_android.android_device_utils import *
+from pydcomm.general_android.adb_connection import AdbConnection, AdbConnectionError
+from pydcomm.general_android.android_device_utils import AndroidDeviceUtils, LocalFileNotFound, RemoteFileNotFound, WrongPermissions, FileAlreadyExists
 
 
 @mock.patch.object(AdbConnection, 'adb')
@@ -286,7 +286,7 @@ class UnitTestDeviceUtils(unittest.TestCase):
         self.device_utils.set_prop("testprop", ' a b c ')
 
     # endregion
-    
+
     # region AndroidDeviceUtils.is_earphone_connected() unit tests
 
     OPPO_DUMPSYS_AUDIO = dedent("""\
