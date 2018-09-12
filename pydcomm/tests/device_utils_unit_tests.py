@@ -239,7 +239,10 @@ class UnitTestDeviceUtils(unittest.TestCase):
     # region AndroidDeviceUtils.remove() unit tests
 
     def test_remove_ok(self, mock_adb):
-        # TODO: Invoke device_utils.remove(path) and expect no exceptions and no output.
+        path = '/sdcard/somefile'
+        stdout = "\n"
+        mock_adb.return_value = stdout
+        self.device_utils.remove(path)
         pass
 
     def test_remove_non_existent(self, mock_adb):
