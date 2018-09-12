@@ -40,7 +40,7 @@ GRemoteProcedureServer::GRemoteProcedureServer(std::string server_address)
 
 GRemoteProcedureServer::~GRemoteProcedureServer() = default;
 
-void GRemoteProcedureServer::listen(IRemoteProcedureExecutor &listener) {
+void GRemoteProcedureServer::listen(IRemoteProcedureExecutor &listener, bool wait) {
     service = std::make_unique<BugaGRpcServiceImpl>(listener);
 
     ServerBuilder builder;
@@ -58,7 +58,9 @@ void GRemoteProcedureServer::listen(IRemoteProcedureExecutor &listener) {
     std::unique_ptr<Server> server(builder.BuildAndStart());
     std::cout << "Server listening on " << server_address << std::endl;
 
-    // Wait for the server to shutdown. Note that some other thread must be
-    // responsible for shutting down the server for this call to ever return.
-    server->Wait();
+    if (wait) {
+        // Wait for the server to shutdown. Note that some other thread must be
+        // responsible for shutting down the server for this call to ever return.
+        server->Wait();
+    }
 }

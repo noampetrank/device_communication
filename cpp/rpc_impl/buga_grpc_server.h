@@ -12,7 +12,7 @@ class GRemoteProcedureServer : public IRemoteProcedureServer {
 public:
     GRemoteProcedureServer(std::string server_address);
     ~GRemoteProcedureServer();
-    virtual void listen(IRemoteProcedureExecutor &listener) override;
+    virtual void listen(IRemoteProcedureExecutor &listener, bool wait = true) override;
 };
 
 #endif //CPP_BUGA_GRPC_SERVER_H

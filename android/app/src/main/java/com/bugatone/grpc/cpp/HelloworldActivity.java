@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.grpc.helloworldexample.cpp;
+package com.bugatone.grpc.cpp;
 
 import android.content.Context;
 import android.os.AsyncTask;
@@ -30,10 +30,12 @@ import android.widget.TextView;
 import android.widget.Toast;
 import java.lang.ref.WeakReference;
 
+import com.bugatone.grpc.cpp.R;
+
 public class HelloworldActivity extends AppCompatActivity {
 
   static {
-    System.loadLibrary("grpc-helloworld");
+    System.loadLibrary("buga_grpc");
   }
 
   private Button sendButton;

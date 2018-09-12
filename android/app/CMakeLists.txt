@@ -87,6 +87,7 @@ add_library(buga_grpc SHARED
   ${BUGA_GRPC_SERVER_SRCS}/rpc_impl/buga_grpc_server.h
   ${BUGA_GRPC_SERVER_SRCS}/rpc_impl/buga_rpc_executor.cpp
   ${BUGA_GRPC_SERVER_SRCS}/rpc_impl/buga_rpc_executor.h
+  src/main/cpp/buga_grpc.cc
 )
 
 target_include_directories(buga_grpc PRIVATE

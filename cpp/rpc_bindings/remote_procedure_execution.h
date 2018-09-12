@@ -42,7 +42,7 @@ private:
 class IRemoteProcedureServer {
 public:
     // Listens; calls delegate when stuff arrives
-    virtual void listen(IRemoteProcedureExecutor &listener) = 0;
+    virtual void listen(IRemoteProcedureExecutor &listener, bool wait = true) = 0;
     virtual ~IRemoteProcedureServer() = default;
 };
 
