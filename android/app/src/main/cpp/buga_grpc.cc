@@ -33,7 +33,7 @@ void StartServer(JNIEnv* env, jobject obj, jmethodID is_cancelled_mid,
 
 // Send an RPC and return the response. Invoked from Java code.
 extern "C" JNIEXPORT jstring JNICALL
-Java_com_bugatone_grpc_cpp_HelloworldActivity_sayHello(
+Java_com_bugatone_grpc_cpp_BugaGrpcActivity_sayHello(
     JNIEnv* env, jobject obj_unused, jstring host_raw, jint port_raw,
     jstring message_raw)
 {
@@ -42,7 +42,7 @@ Java_com_bugatone_grpc_cpp_HelloworldActivity_sayHello(
 
 // Start the server. Invoked from Java code.
 extern "C" JNIEXPORT void JNICALL
-Java_com_bugatone_grpc_cpp_HelloworldActivity_startServer(
+Java_com_bugatone_grpc_cpp_BugaGrpcActivity_startServer(
     JNIEnv* env, jobject obj_this, jint port_raw)
 {
   int port = static_cast<int>(port_raw);

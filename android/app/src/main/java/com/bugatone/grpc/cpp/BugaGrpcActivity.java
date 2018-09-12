@@ -30,9 +30,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import java.lang.ref.WeakReference;
 
-import com.bugatone.grpc.cpp.R;
-
-public class HelloworldActivity extends AppCompatActivity {
+public class BugaGrpcActivity extends AppCompatActivity {
 
   static {
     System.loadLibrary("buga_grpc");
@@ -51,7 +49,7 @@ public class HelloworldActivity extends AppCompatActivity {
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    setContentView(R.layout.activity_helloworld);
+    setContentView(R.layout.activity_buga_grpc);
     sendButton = (Button) findViewById(R.id.send_button);
     serverButton = (Button) findViewById(R.id.server_button);
     hostEdit = (EditText) findViewById(R.id.host_edit_text);
@@ -106,16 +104,16 @@ public class HelloworldActivity extends AppCompatActivity {
   }
 
   private static class RunServerTask extends AsyncTask<Integer, Void, Void> {
-    private final WeakReference<HelloworldActivity> activityReference;
+    private final WeakReference<BugaGrpcActivity> activityReference;
 
-    private RunServerTask(HelloworldActivity activity) {
-      this.activityReference = new WeakReference<HelloworldActivity>(activity);
+    private RunServerTask(BugaGrpcActivity activity) {
+      this.activityReference = new WeakReference<BugaGrpcActivity>(activity);
     }
 
     @Override
     protected Void doInBackground(Integer... params) {
       int port = params[0];
-      HelloworldActivity activity = activityReference.get();
+      BugaGrpcActivity activity = activityReference.get();
       if (activity != null) {
         activity.startServer(port);
       }
@@ -124,10 +122,10 @@ public class HelloworldActivity extends AppCompatActivity {
   }
 
   private static class GrpcTask extends AsyncTask<String, Void, String> {
-    private final WeakReference<HelloworldActivity> activityReference;
+    private final WeakReference<BugaGrpcActivity> activityReference;
 
-    private GrpcTask(HelloworldActivity activity) {
-      this.activityReference = new WeakReference<HelloworldActivity>(activity);
+    private GrpcTask(BugaGrpcActivity activity) {
+      this.activityReference = new WeakReference<BugaGrpcActivity>(activity);
     }
 
     @Override
@@ -141,7 +139,7 @@ public class HelloworldActivity extends AppCompatActivity {
 
     @Override
     protected void onPostExecute(String result) {
-      HelloworldActivity activity = activityReference.get();
+      BugaGrpcActivity activity = activityReference.get();
       if (activity == null || isCancelled()) {
         return;
       }
