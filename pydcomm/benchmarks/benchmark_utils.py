@@ -18,10 +18,12 @@ def time_it(obj, method, args, expected=None, kwargs=None):
     if kwargs is None:
         kwargs = {}
 
-    start = time.time()
     ok = True
+    start = time.time()
+    end = None
     try:
         res = getattr(obj, method)(*args, **kwargs)
+        end = time.time()
         # if we got expected return value(s) check against them
         if expected is None:
             ok = True
@@ -33,7 +35,8 @@ def time_it(obj, method, args, expected=None, kwargs=None):
     except:
         ok = False
     finally:
-        return ok, (time.time() - start)*1000.0
+        end = end or time.time()
+        return ok, (end - start)*1000.0
 
 
 def benchmark_it(repeats, obj, method, args, expected=None, kwargs=None):

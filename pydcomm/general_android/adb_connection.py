@@ -5,7 +5,7 @@ import logging
 
 log = logging.getLogger(__name__)
 
-from general_android.adb_connection_decorators import add_adb_recovery_decorator, auto_fixes, add_rooted_impl
+from pydcomm.general_android.adb_connection_decorators import add_adb_recovery_decorator, auto_fixes, add_rooted_impl
 
 
 class AdbConnectionError(Exception):
@@ -65,7 +65,7 @@ class AdbConnection:
         if params[0] is 'adb':
             log.warn("adb() called with 'adb' as first parameter. Is this intentional?")
 
-        p = subprocess.Popen(['adb'] + list(*params), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        p = subprocess.Popen(['adb'] + list(params), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output, error = p.communicate()
         if p.returncode != 0:
             err = AdbConnectionError('adb returned with non-zero error code')
