@@ -19,6 +19,9 @@ package com.bugatone.grpc.cpp;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.text.method.ScrollingMovementMethod;
@@ -45,6 +48,10 @@ public class BugaGrpcActivity extends AppCompatActivity {
   private TextView resultText;
   private GrpcTask grpcTask;
   private RunServerTask runServerTask;
+  private Handler toastHandler;
+
+  private int SERVER_START_SUCCEEDED = 1000;
+  private int SERVER_START_FAILED = 1001;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -58,6 +65,22 @@ public class BugaGrpcActivity extends AppCompatActivity {
     serverPortEdit = (EditText) findViewById(R.id.server_port_edit_text);
     resultText = (TextView) findViewById(R.id.grpc_response_text);
     resultText.setMovementMethod(new ScrollingMovementMethod());
+    toastHandler = new Handler(Looper.getMainLooper()) {
+      @Override
+      public void handleMessage(Message message) {
+        if (message.what == SERVER_START_SUCCEEDED) {
+          // Control wouldn't reach this point because server.listen() is blocking.
+//          Toast.makeText(BugaGrpcActivity.this, "Server started on port " + message.obj.toString(), Toast.LENGTH_LONG).show();
+        } else if (message.what == SERVER_START_FAILED) {
+          if (runServerTask != null) {
+            runServerTask.cancel(true);
+            runServerTask = null;
+          }
+          serverButton.setText("Start gRPC Server");
+          Toast.makeText(BugaGrpcActivity.this, "Couldn't start server on port " + message.obj.toString(), Toast.LENGTH_LONG).show();
+        }
+      }
+    };
   }
 
   @Override
@@ -92,14 +115,13 @@ public class BugaGrpcActivity extends AppCompatActivity {
       runServerTask.cancel(true);
       runServerTask = null;
       serverButton.setText("Start gRPC Server");
-      Toast.makeText(this, "Server stopped", Toast.LENGTH_SHORT).show();
+      Toast.makeText(this, "Server stopped (actually not yet implemented...)", Toast.LENGTH_SHORT).show();
     } else {
       runServerTask = new RunServerTask(this);
       String portStr = serverPortEdit.getText().toString();
-      int port = TextUtils.isEmpty(portStr) ? 50051 : Integer.valueOf(portStr);
+      int port = TextUtils.isEmpty(portStr) ? 60004 : Integer.valueOf(portStr);
       runServerTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, port);
       serverButton.setText("Stop gRPC Server");
-      Toast.makeText(this, "Server started on port " + port, Toast.LENGTH_SHORT).show();
     }
   }
 
@@ -115,7 +137,8 @@ public class BugaGrpcActivity extends AppCompatActivity {
       int port = params[0];
       BugaGrpcActivity activity = activityReference.get();
       if (activity != null) {
-        activity.startServer(port);
+        boolean ret = activity.startServer(port);
+        activity.toastHandler.obtainMessage(ret ? activity.SERVER_START_SUCCEEDED : activity.SERVER_START_FAILED, port).sendToTarget();
       }
       return null;
     }
@@ -163,5 +186,5 @@ public class BugaGrpcActivity extends AppCompatActivity {
 
   public static native String sayHello(String host, int port, String message);
 
-  public native void startServer(int port);
+  public native boolean startServer(int port);
 }

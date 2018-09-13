@@ -42,6 +42,8 @@ GRemoteProcedureServer::~GRemoteProcedureServer() = default;
 
 void GRemoteProcedureServer::listen(IRemoteProcedureExecutor &listener, bool wait) {
     service = std::make_unique<BugaGRpcServiceImpl>(listener);
+    if (!service.get())
+        throw GRPCServerError("Service object is null");
 
     ServerBuilder builder;
     // Listen on the given address without any authentication mechanism.
@@ -57,6 +59,9 @@ void GRemoteProcedureServer::listen(IRemoteProcedureExecutor &listener, bool wai
     // Finally assemble the server.
     std::unique_ptr<Server> server(builder.BuildAndStart());
     std::cout << "Server listening on " << server_address << std::endl;
+
+    if (!server.get())
+        throw GRPCServerError("Server object is null");
 
     if (wait) {
         // Wait for the server to shutdown. Note that some other thread must be

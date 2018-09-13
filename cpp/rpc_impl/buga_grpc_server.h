@@ -15,4 +15,8 @@ public:
     virtual void listen(IRemoteProcedureExecutor &listener, bool wait = true) override;
 };
 
+struct GRPCServerError : public std::runtime_error {
+    GRPCServerError(const std::string &msg) : std::runtime_error(msg) {}
+};
+
 #endif //CPP_BUGA_GRPC_SERVER_H
