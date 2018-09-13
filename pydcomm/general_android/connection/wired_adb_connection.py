@@ -1,5 +1,6 @@
 import logging
-import subprocess
+import subprocess32 as subprocess
+from subprocess32 import CalledProcessError
 
 
 class DcommError(Exception):
@@ -45,6 +46,8 @@ class WiredAdbConnection(object):
         :return: Adb command output
         :raises AdbConnectionError
         """
+        if not self.test_connection():
+            raise AdbConnectionError("test_connection failed")
         self.log.info("adb params: %s", list(params))
 
         if params[0] is "adb":
@@ -55,3 +58,13 @@ class WiredAdbConnection(object):
         if p.returncode != 0:
             raise AdbConnectionError("adb returned with non-zero error code", stderr=error, returncode=p.returncode)
         return output
+
+    def test_connection(self):
+        try:
+            return subprocess.check_output(["adb", "-s", self.device_id, "shell", "echo hi"], timeout=1).strip() == "hi"
+        except subprocess.TimeoutExpired:
+            self.log.warn("test_connection timed out")
+            return False
+        except CalledProcessError as e:
+            self.log.exception(e)
+            return False

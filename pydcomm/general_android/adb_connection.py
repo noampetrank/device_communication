@@ -1,12 +1,11 @@
 import subprocess
 
-import sys
 from enum import IntEnum
 import logging
 
 log = logging.getLogger(__name__)
 
-from pydcomm.general_android.adb_connection_decorators import add_adb_recovery_decorator, auto_fixes, add_rooted_impl
+from pydcomm.general_android.connection.connection_fixers import add_adb_recovery_decorator, auto_fixes, add_rooted_impl
 
 
 class AdbConnectionError(Exception):
