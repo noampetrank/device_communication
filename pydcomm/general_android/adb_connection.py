@@ -3,8 +3,6 @@ import subprocess
 import sys
 from enum import IntEnum
 import logging
-from pydcomm.general_android.adb_connection_decorators import add_adb_recovery_decorator, auto_fixes, add_rooted_impl
-
 
 log = logging.getLogger(__name__)
 
@@ -20,6 +18,7 @@ class AdbConnectionError(Exception):
         super(AdbConnectionError, self).__init__(*args, **kwargs)
 
 
+# Deprecated, use WiredAdbConnection.
 class AdbConnection:
     """
     Connects to a device and maintains the connection.
