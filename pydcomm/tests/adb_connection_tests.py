@@ -1,5 +1,5 @@
 from unittest import TestCase
-from general_android.adb_connection import AdbConnectionFactory, MultiDeviceBehavior
+from pydcomm.general_android.adb_connection import AdbConnectionFactory, MultiDeviceBehavior
 
 
 
