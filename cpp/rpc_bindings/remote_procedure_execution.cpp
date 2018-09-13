@@ -32,7 +32,7 @@ MarshalledObject StandardRemoteProcedureExecutor::rpc_echo_push(const Marshalled
 
 MarshalledObject StandardRemoteProcedureExecutor::rpc_echo_pop(const MarshalledObject &params) {
     if (stack.empty())
-        return marshal(std::string("Empty"));
+        return marshal(std::string());
     MarshalledObject mo = stack.top();
     stack.pop();
     return mo;
