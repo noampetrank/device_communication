@@ -2,25 +2,30 @@ import logging
 import subprocess
 
 
-class AdbConnectionError(Exception):
+class DcommError(Exception):
+    pass
+
+
+class AdbConnectionError(DcommError):
     # General error class for ADB connection
-    def __init__(self, *args, **kwargs):
-        self.stderr = None
-        self.stdout = None
-        self.returncode = None
-        super(AdbConnectionError, self).__init__(*args, **kwargs)
+    def __init__(self, message, stderr=None, stdout=None, returncode=None):
+        super(AdbConnectionError, self).__init__(message)
+        self.stdout = stdout
+        self.stderr = stderr
+        self.returncode = returncode
 
 
 class WiredAdbConnection(object):
     def __init__(self, device_id=None):
         # TODO: test adb version
+        self.log = logging.getLogger(__name__)
         if not device_id:
             self.device_id = self._get_device_to_connect()
             if not self.device_id:
                 raise ValueError("No device given and no device choosing strategy used.")
         else:
             self.device_id = device_id
-        logging.info("Connected to device: \"{}\"".format(self.device_id))
+        self.log.info("Connected to device: \"{}\"".format(self.device_id))
 
     def _get_device_to_connect(self):
         return ""
@@ -40,16 +45,13 @@ class WiredAdbConnection(object):
         :return: Adb command output
         :raises AdbConnectionError
         """
-        logging.info("adb params:", *params)
+        self.log.info("adb params: %s", list(params))
 
         if params[0] is "adb":
-            logging.warn("adb() called with 'adb' as first parameter. Is this intentional?")
+            self.log.warn("adb() called with 'adb' as first parameter. Is this intentional?")
 
         p = subprocess.Popen(["adb", "-s", self.device_id] + list(params), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output, error = p.communicate()
         if p.returncode != 0:
-            err = AdbConnectionError("adb returned with non-zero error code")
-            err.stderr = error
-            err.returncode = p.returncode
-            raise err
+            raise AdbConnectionError("adb returned with non-zero error code", stderr=error, returncode=p.returncode)
         return output
