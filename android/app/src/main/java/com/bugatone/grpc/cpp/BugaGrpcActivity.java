@@ -52,6 +52,7 @@ public class BugaGrpcActivity extends AppCompatActivity {
 
   private int SERVER_START_SUCCEEDED = 1000;
   private int SERVER_START_FAILED = 1001;
+  private int DEFAULT_PORT = 60004;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -63,6 +64,7 @@ public class BugaGrpcActivity extends AppCompatActivity {
     portEdit = (EditText) findViewById(R.id.port_edit_text);
     messageEdit = (EditText) findViewById(R.id.message_edit_text);
     serverPortEdit = (EditText) findViewById(R.id.server_port_edit_text);
+    serverPortEdit.setHint("Server port (default " + DEFAULT_PORT + ")");
     resultText = (TextView) findViewById(R.id.grpc_response_text);
     resultText.setMovementMethod(new ScrollingMovementMethod());
     toastHandler = new Handler(Looper.getMainLooper()) {
@@ -119,7 +121,7 @@ public class BugaGrpcActivity extends AppCompatActivity {
     } else {
       runServerTask = new RunServerTask(this);
       String portStr = serverPortEdit.getText().toString();
-      int port = TextUtils.isEmpty(portStr) ? 60004 : Integer.valueOf(portStr);
+      int port = TextUtils.isEmpty(portStr) ? DEFAULT_PORT : Integer.valueOf(portStr);
       runServerTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, port);
       serverButton.setText("Stop gRPC Server");
     }

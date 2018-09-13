@@ -44,9 +44,9 @@ class IRemoteProcedureCaller:
 
 class StandardRemoteProcedureCaller(IRemoteProcedureCaller):
     def call(self, procedure_name, params, marshaller=None, unmarshaller=None):
-        marshalled_params = marshaller(params) if marshaller else cbor.dumps(params)
+        marshalled_params = marshaller(params) if marshaller else params
         ret = self._send_and_wait_for_return(procedure_name, marshalled_params)
-        return unmarshaller(ret) if unmarshaller else cbor.loads(ret)
+        return unmarshaller(ret) if unmarshaller else ret
 
     def get_executor_version(self):
         return self._send_and_wait_for_return('_rpc_get_version', None)

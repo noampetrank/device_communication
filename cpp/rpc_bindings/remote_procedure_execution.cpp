@@ -6,6 +6,10 @@ MarshalledObject StandardRemoteProcedureExecutor::delegateProcedure(std::string 
         return marshal(getVersion());
     } if (procedureName == "_rpc_echo") {
         return rpc_echo(params);
+    } if (procedureName == "_rpc_echo_push") {
+        return rpc_echo_push(params);
+    } if (procedureName == "_rpc_echo_pop") {
+        return rpc_echo_pop(params);
     } if (procedureName == "_rpc_start") {
         onStart(params);
         return MarshalledObject();
@@ -21,3 +25,15 @@ MarshalledObject StandardRemoteProcedureExecutor::rpc_echo(const MarshalledObjec
     return params;
 }
 
+MarshalledObject StandardRemoteProcedureExecutor::rpc_echo_push(const MarshalledObject &params) {
+    stack.push(params);
+    return marshal(std::string("OK"));
+}
+
+MarshalledObject StandardRemoteProcedureExecutor::rpc_echo_pop(const MarshalledObject &params) {
+    if (stack.empty())
+        return marshal(std::string("Empty"));
+    MarshalledObject mo = stack.top();
+    stack.pop();
+    return mo;
+}

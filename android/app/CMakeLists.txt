@@ -92,6 +92,7 @@ add_library(buga_grpc SHARED
 
 target_include_directories(buga_grpc PRIVATE
   ${BUGA_GRPC_SERVER_SRCS}
+  ../../3rdparty/nlohmann/include/
 )
 
 target_link_libraries(buga_grpc

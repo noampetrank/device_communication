@@ -4,6 +4,7 @@ import numpy as np
 from collections import OrderedDict
 import time
 import tqdm
+import os
 from pydcomm.rpc.marshallers import nparray_marshal, nparray_unmarshal
 
 """
@@ -46,11 +47,12 @@ def call_benchmark(rpc, repeats=None):
     name_to_stuff = OrderedDict()
     name_to_stuff['float'] = (1000, None, None, 8.2)
     name_to_stuff['string'] = (1000, None, None, 'Test TEST test!')
-    name_to_stuff['1k'] = (500, nparray_marshal, nparray_unmarshal, np.random.rand(2 ** 10))
-    name_to_stuff['100k'] = (100, nparray_marshal, nparray_unmarshal, np.random.rand(100 * 2 ** 10))
-    name_to_stuff['1M'] = (50, nparray_marshal, nparray_unmarshal, np.random.rand(2 ** 20))
-    name_to_stuff['10M'] = (10, nparray_marshal, nparray_unmarshal, np.random.rand(10 * 2 ** 20))
-    name_to_stuff['100M'] = (3, nparray_marshal, nparray_unmarshal, np.random.rand(100 * 2 ** 20))
+    name_to_stuff['ndarray'] = (500, nparray_marshal, nparray_unmarshal, np.random.rand(2 ** 8))
+    name_to_stuff['1k'] = (500, None, None, os.urandom(2 ** 10))
+    name_to_stuff['100k'] = (100, None, None, os.urandom(100 * 2 ** 10))
+    name_to_stuff['1M'] = (50, None, None, os.urandom(2 ** 20))
+    name_to_stuff['10M'] = (10, None, None, os.urandom(10 * 2 ** 20))
+    name_to_stuff['100M'] = (3, None, None, os.urandom(100 * 2 ** 20))
 
     benchmark_results = OrderedDict()
     for name, (reps, marshaller, unmarshaller, params) in name_to_stuff.items():

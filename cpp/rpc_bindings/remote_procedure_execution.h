@@ -3,6 +3,7 @@
 
 #include <string>
 #include <memory>
+#include <stack>
 
 using Buffer = std::string;
 using MarshalledObject = std::shared_ptr<Buffer>;
@@ -36,6 +37,10 @@ protected:
 
 private:
     virtual MarshalledObject rpc_echo(const MarshalledObject &params) final;
+    virtual MarshalledObject rpc_echo_push(const MarshalledObject &params) final;
+    virtual MarshalledObject rpc_echo_pop(const MarshalledObject &params) final;
+
+    std::stack<MarshalledObject> stack;
 };
 
 

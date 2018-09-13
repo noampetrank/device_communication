@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.2)
 # GRPC and Protocol Buffers libraries location
 list(APPEND CMAKE_PREFIX_PATH "/usr/local/lib")
 
-add_subdirectory(/home/buga/Code/grpc ${CMAKE_CURRENT_BINARY_DIR}/grpc EXCLUDE_FROM_ALL)
+add_subdirectory(../../3rdparty/grpc ${CMAKE_CURRENT_BINARY_DIR}/grpc EXCLUDE_FROM_ALL)
 message(STATUS "Using gRPC via add_subdirectory.")
 
 # After using add_subdirectory, we can now use the grpc targets directly from

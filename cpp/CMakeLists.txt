@@ -32,6 +32,9 @@ message(STATUS "Compiling for " ${ARCH})
 
 add_subdirectory(rpc_proto)
 add_executable(cpp demo_main.cpp rpc_bindings/remote_procedure_execution.cpp rpc_impl/buga_rpc_executor.cpp rpc_impl/buga_rpc_executor.h rpc_impl/buga_grpc_server.cpp rpc_impl/buga_grpc_server.h rpc_bindings/marshallers.cpp rpc_bindings/marshallers.h)
-target_include_directories(cpp PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(cpp PRIVATE
+        ${CMAKE_CURRENT_BINARY_DIR}
+        ../3rdparty/nlohmann/include/
+)
 
 target_link_libraries(cpp proto)
