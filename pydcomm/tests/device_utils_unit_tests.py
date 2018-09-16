@@ -227,7 +227,11 @@ class UnitTestDeviceUtils(unittest.TestCase):
     # region AndroidDeviceUtils.get_time() unit tests
 
     def test_get_time_ok(self, mock_adb):
-        # TODO: Invoke device_utils.get_time() and parse output.
+        stdout = "2018-09-09\\ 11:18:04:348158411\n"
+        mock_adb.return_value = stdout
+        device_time = self.device_utils.get_time()
+        expected_time = datetime.datetime(2018, 9, 9, 11, 18, 4, 348158)
+        self.assertEquals(device_time, expected_time)
         pass
 
     # endregion
@@ -235,7 +239,10 @@ class UnitTestDeviceUtils(unittest.TestCase):
     # region AndroidDeviceUtils.remove() unit tests
 
     def test_remove_ok(self, mock_adb):
-        # TODO: Invoke device_utils.remove(path) and expect no exceptions and no output.
+        path = '/sdcard/somefile'
+        stdout = "\n"
+        mock_adb.return_value = stdout
+        self.device_utils.remove(path)
         pass
 
     def test_remove_non_existent(self, mock_adb):

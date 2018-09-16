@@ -133,7 +133,7 @@ class AndroidDeviceUtils:
         """
         :type args: list(str)
         """
-        log.info("_shell params:", *args)
+        # log.info("_shell params:", *args)
         return self.connection.adb("shell", *args)
 
     def mkdir(self, path_on_device):
@@ -258,10 +258,10 @@ class AndroidDeviceUtils:
         """
         :rtype: datetime
         """
-        lines, ok = self._shell('date', '+"%Y-%m-%d\\', '%H:%M:%S:%N"')
-        if not ok:
-            raise AndroidDeviceUtilsError("failed to get device time")
-        return datetime.datetime.strptime(lines[0], '%Y-%m-%d %H:%M:%S:%f')
+        line = self._shell('date', '+"%Y-%m-%d\\', '%H:%M:%S:%N"').strip()
+
+        return self._parse_time(line)
+
 
     def get_device_name(self):
         """
@@ -363,3 +363,11 @@ class AndroidDeviceUtils:
         :rtype: int
         """
         raise NotImplementedError()
+
+    def _parse_time(self, line):
+        """
+        helper for parse_time since oppo seems to work a bit differently from experia
+        :param line:
+        :return:
+        """
+        return datetime.datetime.strptime(line[:-3], '%Y-%m-%d\\ %H:%M:%S:%f')
