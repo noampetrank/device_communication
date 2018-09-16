@@ -11,6 +11,7 @@ class WiredAdbConnectionTests(unittest.TestCase):
         self.con = WiredAdbConnection(device_id="avocado")
 
     @mock.patch("pydcomm.general_android.connection.wired_adb_connection.subprocess.Popen")
+    @mock.patch.object(WiredAdbConnection, "test_connection", lambda x: True)
     def test_adb__valid_input__adb_called_with_input_and_device_id(self, mock_popen):
         stdout = "WONDERFUL STDOUT!!!"
         mock_popen.return_value.communicate.return_value = stdout, mock.Mock()
@@ -23,6 +24,7 @@ class WiredAdbConnectionTests(unittest.TestCase):
         self.assertEqual(res, stdout)
 
     @mock.patch("pydcomm.general_android.connection.wired_adb_connection.subprocess.Popen")
+    @mock.patch.object(WiredAdbConnection, "test_connection", lambda x: True)
     def test_adb__adb_returns_error_code__raises_appropriate_exception(self, mock_popen):
         stderr = "GREAT ERROR!"
         mock_popen.return_value.communicate.return_value = mock.Mock(), stderr
