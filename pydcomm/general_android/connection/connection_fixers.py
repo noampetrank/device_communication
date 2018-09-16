@@ -126,13 +126,19 @@ known_phone_usb_ids = [
 ]
 
 
+def get_connected_usb_devices():
+    out = subprocess.check_output("lsusb")
+    return re.findall(r"Bus \d+ Device \d+: ID (\w{4}):(\w{4})", out)
+
+def get_connected_phones():
+    all_devices = get_connected_usb_devices()
+    vendor_ids = [x[0] for x in all_devices]
+    phone_vendor_ids= [x[0] for x in known_phone_usb_ids if x[1].lower() in vendor_ids]
+    return phone_vendor_ids
+
 def add_no_device_connected_recovery(connection):
     old_init = connection.__init__
     old_adb = connection.adb
-
-    def get_connected_usb_devices():
-        out = subprocess.check_output("lsusb")
-        return re.findall(r"Bus \d+ Device \d+: ID (\w{4}):(\w{4})", out)
 
     def replace_init(self, device_id=None):
         old_init(self, device_id)
@@ -146,7 +152,7 @@ def add_no_device_connected_recovery(connection):
             vendor_ids = [x[0] for x in difference]
             phone_vendor_ids_disconnected = [x[0] for x in known_phone_usb_ids if x[1].lower() in vendor_ids]
             for i in phone_vendor_ids_disconnected:
-                print("A phone from manufacturer {} has been disconnected, please reconnect".format(i))
+                print("A phone from manufacturer {} has been disconnected, is this your device?".format(i))
                 raw_input()
             if len(phone_vendor_ids_disconnected) != len(vendor_ids):
                 print("A usb device has been disconnected, is this the phone?")
@@ -157,4 +163,20 @@ def add_no_device_connected_recovery(connection):
     connection.adb = replace_adb
     return connection
 
+
+# TODO: These fixes should be applied to __init__ and not adb()
+def forgot_device_fix(connection):
+    if not get_connected_phones():
+        print("I can't see any phone connected, is the phone connected?")
+    else:
+        print("Are you sure the phone is connected?")
+    raw_input()
+
+
+def device_turned_off(connection):
+    if get_connected_phones():
+        print("There is a phone connected, is it turned on? Is USB debugging enabled?")
+    else:
+        print("Is the phone turned on?")
+    raw_input()
 # endregion
