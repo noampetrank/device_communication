@@ -131,11 +131,10 @@ def call_benchmark(rpc, repeats=None, compare_to_adb=False):
 
 if __name__ == "__main__":
     import re, subprocess
-    ips = re.findall('Link encap:Ethernet[^\n]+\n[^\n]*inet addr:(\d+\.\d+\.\d+\.\d+)', subprocess.check_output("adb shell ifconfig", shell=True), re.M | re.S)
+    ifconfig = subprocess.check_output("adb shell ifconfig", shell=True)
+    ips = re.findall('Link encap:Ethernet[^\n]+\n[^\n]*inet addr:(\d+\.\d+\.\d+\.\d+)', ifconfig, re.M | re.S) or re.findall('wlan[^\n]+Link encap:[^\n]+\n[^\n]*inet addr:(\d+\.\d+\.\d+\.\d+)', ifconfig, re.M | re.S)
     if not ips:
-        ips = re.findall('wlan[^\n]+Link encap:[^\n]+\n[^\n]*inet addr:(\d+\.\d+\.\d+\.\d+)', subprocess.check_output("adb shell ifconfig", shell=True), re.M | re.S)
-    if not ips:
-        print("No device connected")
+        print("Can't get device IP")
     else:
         host_port = '{}:60004'.format(ips[0])
         print('Connecting to RPC server ' + host_port)
