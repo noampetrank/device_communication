@@ -1,13 +1,19 @@
 from unittest import TestCase
-from pydcomm.general_android.adb_connection import AdbConnectionFactory, MultiDeviceBehavior
 
 
 
 
 # All tests are done with subprocess.check_output/Popen mocked to assert the output
+from mock import mock
+
+from pydcomm.general_android.connection.connection_factory import AdbConnectionFactory
+from pydcomm.general_android.connection.device_selector import MultiDeviceBehavior
+
+
 class ConnectionFactoryUnitTests(TestCase):
     def setUp(self):
-        self.cf = AdbConnectionFactory()
+        # self.cf = AdbConnectionFactory()
+        self.cf = mock.Mock()
 
     def rooted_connection__connect__root_will_be_executed(self):
         con = self.cf.get_rooted_wireless_automated_connection()

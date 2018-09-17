@@ -3,7 +3,7 @@ import re
 import numpy as np
 import logging
 import subprocess
-from adb_connection import AdbConnectionError
+from pydcomm.general_android.connection.adb_connection import AdbConnectionError
 
 log = logging.getLogger(__name__)
 

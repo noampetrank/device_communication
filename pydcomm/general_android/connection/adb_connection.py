@@ -15,7 +15,7 @@ class AdbConnectionError(DcommError):
     """ Error that happens when running adb() """
 
     # General error class for ADB connection
-    def __init__(self, message, stderr=None, stdout=None, returncode=None):
+    def __init__(self, message=None, stderr=None, stdout=None, returncode=None):
         super(AdbConnectionError, self).__init__(message)
         self.stdout = stdout
         self.stderr = stderr

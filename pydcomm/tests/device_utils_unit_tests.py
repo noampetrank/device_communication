@@ -1,21 +1,21 @@
+import datetime
 import unittest
 from textwrap import dedent
 
 import mock
 import tempfile
 
-from pydcomm.general_android.adb_connection import AdbConnection, AdbConnectionError
-from pydcomm.general_android.android_device_utils import AndroidDeviceUtils, LocalFileNotFound, RemoteFileNotFound, WrongPermissions, FileAlreadyExists
+from pydcomm.general_android.connection.adb_connection import WiredAdbConnection, AdbConnectionError
+from pydcomm.general_android.android_device_utils import AndroidDeviceUtils, LocalFileNotFound, RemoteFileNotFound, WrongPermissions, FileAlreadyExists, OperationUnsupported, \
+    AndroidDeviceUtilsError
 
 
-@mock.patch.object(AdbConnection, 'adb')
 class UnitTestDeviceUtils(unittest.TestCase):
-
     def setUp(self):
         """
         Executed in the beginning of each test
         """
-        self.conn = AdbConnection()
+        self.conn = mock.Mock()
         self.device_utils = AndroidDeviceUtils(self.conn)
 
     def tearDown(self):
@@ -26,154 +26,154 @@ class UnitTestDeviceUtils(unittest.TestCase):
 
     # region AndroidDeviceUtils.push() unit tests
 
-    def test_push_ok(self, mock_adb):
-        mock_adb.return_value = '[100%] /sdcard/tmpANxMOd\n/tmp/tmpANxMOd: 1 file pushed. 0.0 MB/s (61 bytes in 0.011s)\n'
+    def test_push_ok(self):
+        self.conn.adb.return_value = '[100%] /sdcard/tmpANxMOd\n/tmp/tmpANxMOd: 1 file pushed. 0.0 MB/s (61 bytes in 0.011s)\n'
         with tempfile.NamedTemporaryFile() as tmp_file:
             content = 'The quick brown fox jumps over the lazy dog\n1234567890\n\01234\x1234'
             tmp_file.write(content)
             tmp_file.flush()
             self.device_utils.push(tmp_file.name, '/sdcard/')
 
-    def test_push_from_non_existent(self, mock_adb):
+    def test_push_from_non_existent(self):
         err = AdbConnectionError()
         err.stderr = "adb: error: cannot stat '/home/buga/tmp_dir/tmp_file.tm': No such file or directory\n"
-        mock_adb.side_effect = err
+        self.conn.adb.side_effect = err
         self.assertRaises(LocalFileNotFound, self.device_utils.push, '/home/buga/tmp_dir/tmp_file.tm', '/sdcard/')
 
-    def test_push_to_non_existent(self, mock_adb):
+    def test_push_to_non_existent(self):
         err = AdbConnectionError()
         err.stderr = "[100%] /sdcard23/\nadb: error: failed to copy '/home/buga/tmp_dir/tmp_file.tmp' to '/sdcard23/': remote couldn't create file: Is a directory\n/home/buga/tmp_dir/tmp_file.tmp: 0 files pushed. 0.0 MB/s (44 bytes in 0.003s)\n"
-        mock_adb.side_effect = err
+        self.conn.adb.side_effect = err
         self.assertRaises(RemoteFileNotFound, self.device_utils.push, '/home/buga/tmp_dir/tmp_file.tmp', '/sdcard23/')
 
-    def test_push_no_permissions(self, mock_adb):
+    def test_push_no_permissions(self):
         err = AdbConnectionError()
         err.stderr = "[100%] /tmp_file.tmp\nadb: error: failed to copy '/home/buga/tmp_dir/tmp_file.tmp' to '/tmp_file.tmp': remote couldn't create file: Read-only file system\n/home/buga/tmp_dir/tmp_file.tmp: 0 files pushed. 0.0 MB/s (44 bytes in 0.005s)\n"
-        mock_adb.side_effect = err
+        self.conn.adb.side_effect = err
         self.assertRaises(WrongPermissions, self.device_utils.push, '/home/buga/tmp_dir/tmp_file.tmp', '/')
 
     # endregion
 
     # region AndroidDeviceUtils.pull() unit tests
 
-    def test_pull_ok(self, mock_adb):
-        mock_adb.return_value = '[100%] /sdcard/tmp_file.tmp\n/sdcard/tmp_file.tmp: 1 file pulled. 0.0 MB/s (44 bytes in 0.003s)\n'
+    def test_pull_ok(self):
+        self.conn.adb.return_value = '[100%] /sdcard/tmp_file.tmp\n/sdcard/tmp_file.tmp: 1 file pulled. 0.0 MB/s (44 bytes in 0.003s)\n'
         self.device_utils.pull('/sdcard/tmp_file.tmp', '/home/buga/tmp_dir/')
 
 
-    def test_pull_from_non_existent(self, mock_adb):
+    def test_pull_from_non_existent(self):
         err = AdbConnectionError()
         err.stderr = "adb: error: failed to stat remote object '/sdcard/tmp_file.tm': No such file or directory\n"
-        mock_adb.side_effect = err
+        self.conn.adb.side_effect = err
         self.assertRaises(RemoteFileNotFound, self.device_utils.pull, '/sdcard/tmp_file.tm', '/home/buga/tmp_dir/')
 
-    def test_pull_to_non_existent(self, mock_adb):
+    def test_pull_to_non_existent(self):
         err = AdbConnectionError()
         err.stderr = "adb: error: cannot create '/home/buga/tmp_dir2/': Is a directory\n"
-        mock_adb.side_effect = err
+        self.conn.adb.side_effect = err
         self.assertRaises(LocalFileNotFound, self.device_utils.pull, '/sdcard/tmp_file.tmp', '/home/buga/tmp_dir2/')
 
-    def test_pull_no_permissions(self, mock_adb):
+    def test_pull_no_permissions(self):
         err = AdbConnectionError()
         err.stderr = "adb: error: cannot create '/home/buga/tmp_dir/no_perm/tmp_file.tmp': Permission denied\n"
-        mock_adb.side_effect = err
+        self.conn.adb.side_effect = err
         self.assertRaises(WrongPermissions, self.device_utils.pull, '/sdcard/tmp_file.tmp', '/home/buga/tmp_dir/no_perm')
 
     # endregion
 
     # region AndroidDeviceUtils.send_intent() unit tests
 
-    def test_send_intent_ok(self, mock_adb):
-        mock_adb.return_value = 'Broadcasting: Intent { act=INTENT_ACTION_NAME flg=0x400000 }\nBroadcast completed: result=0\n'
+    def test_send_intent_ok(self):
+        self.conn.adb.return_value = 'Broadcasting: Intent { act=INTENT_ACTION_NAME flg=0x400000 }\nBroadcast completed: result=0\n'
         self.device_utils.send_intent('start', 'INTENT_ACTION_NAME')
 
     # endregion
 
     # region AndroidDeviceUtils._shell() unit tests
 
-    def test_shell_ok(self, mock_adb):
-        mock_adb.return_value = 'hi\n'
+    def test_shell_ok(self):
+        self.conn.adb.return_value = 'hi\n'
         self.assertEqual(self.device_utils._shell('echo hi').strip(), 'hi')
 
     # endregion
 
     # region AndroidDeviceUtils.mkdir() unit tests
 
-    def test_mkdir_ok(self, mock_adb):
-        mock_adb.return_value = ''
+    def test_mkdir_ok(self):
+        self.conn.adb.return_value = ''
         self.device_utils.mkdir('/sdcard/tmp_dir')
 
-    def test_mkdir_already_exists(self, mock_adb):
+    def test_mkdir_already_exists(self):
         err = AdbConnectionError()
         err.stderr = "mkdir: '/sdcard/tmp_dir/': File exists\n"
-        mock_adb.side_effect = err
+        self.conn.adb.side_effect = err
         self.assertRaises(FileAlreadyExists, self.device_utils.mkdir, '/sdcard/tmp_dir')
 
-    def test_mkdir_in_non_existent(self, mock_adb):
+    def test_mkdir_in_non_existent(self):
         err = AdbConnectionError()
         err.stderr = "mkdir: '/sdcard/tmp_dir/sub/dir': No such file or directory\n"
-        mock_adb.side_effect = err
+        self.conn.adb.side_effect = err
         self.assertRaises(RemoteFileNotFound, self.device_utils.mkdir, '/sdcard/tmp_dir/sub/dir')
 
-    def test_mkdir_no_permissions(self, mock_adb):
+    def test_mkdir_no_permissions(self):
         err = AdbConnectionError()
         err.stderr = "mkdir: '/system/tmp_dir': Read-only file system\n"
-        mock_adb.side_effect = err
+        self.conn.adb.side_effect = err
         self.assertRaises(WrongPermissions, self.device_utils.mkdir, '/system/tmp_dir')
 
     # endregion
 
     # region AndroidDeviceUtils.rmdir() unit tests
 
-    def test_rmdir_ok(self, mock_adb):
-        mock_adb.return_value = ''
+    def test_rmdir_ok(self):
+        self.conn.adb.return_value = ''
         self.device_utils.rmdir('/sdcard/tmp_dir')
 
-    def test_rmdir_no_permissions(self, mock_adb):
+    def test_rmdir_no_permissions(self):
         err = AdbConnectionError()
         err.stderr = 'rm: /system/tmp_dir: No such file or directory\n'
-        mock_adb.side_effect = err
+        self.conn.adb.side_effect = err
         self.assertRaises(WrongPermissions, self.device_utils.rmdir, '/system/tmp_dir')
 
     # endregion
 
     # region AndroidDeviceUtils.touch_file() unit tests
 
-    def test_touch_file_ok(self, mock_adb):
-        mock_adb.return_value = ''
+    def test_touch_file_ok(self):
+        self.conn.adb.return_value = ''
         self.device_utils.touch_file('/sdcard/tmp_file2')
 
-    def test_touch_file_in_non_existent(self, mock_adb):
+    def test_touch_file_in_non_existent(self):
         err = AdbConnectionError()
         err.stderr = "touch: '/sdcard/notexist/tmp_file2': No such file or directory\n"
-        mock_adb.side_effect = err
+        self.conn.adb.side_effect = err
         self.assertRaises(RemoteFileNotFound, self.device_utils.touch_file, '/sdcard/notexist/tmp_file2')
 
-    def test_touch_file_no_permissions(self, mock_adb):
+    def test_touch_file_no_permissions(self):
         err = AdbConnectionError()
         err.stderr = "touch: '/system/tmp_file': Read-only file system\n"
-        mock_adb.side_effect = err
+        self.conn.adb.side_effect = err
         self.assertRaises(WrongPermissions, self.device_utils.touch_file, '/system/tmp_file')
 
     # endregion
 
     # region AndroidDeviceUtils.remove() unit tests
 
-    def test_remove_ok(self, mock_adb):
-        mock_adb.return_value = ''
+    def test_remove_ok(self):
+        self.conn.adb.return_value = ''
         self.device_utils.remove('/sdcard/tmp_file.tmp')
 
-    def test_remove_no_permissions(self, mock_adb):
+    def test_remove_no_permissions(self):
         err = AdbConnectionError()
         err.stderr = 'rm: /system/tmp_file: No such file or directory\n'
-        mock_adb.side_effect = err
+        self.conn.adb.side_effect = err
         self.assertRaises(WrongPermissions, self.device_utils.remove, '/system/tmp_file')
 
     # endregion
 
     # region AndroidDeviceUtils.ls() unit tests
 
-    def test_ls_ok(self, mock_adb):
+    def test_ls_ok(self):
         stdout = dedent("""\
             total 32216
             drwxr-xr-x  2 root shell    8192 2008-12-31 20:30 .
@@ -197,7 +197,7 @@ class UnitTestDeviceUtils(unittest.TestCase):
             ls: /system/bin/xtwifi-inet-agent: Permission denied
             """)
 
-        mock_adb.return_value = stdout
+        self.conn.adb.return_value = stdout
         ls = self.device_utils.ls('/system/bin')
         self.assertEqual(len([x for x in ls if x['links_to']]), 5)
         self.assertEqual(len(ls), 14)
@@ -205,7 +205,7 @@ class UnitTestDeviceUtils(unittest.TestCase):
         err = AdbConnectionError()
         err.stdout = stdout
         err.stderr = stderr
-        mock_adb.side_effect = err
+        self.conn.adb.side_effect = err
         ls = self.device_utils.ls('/system/bin')
         self.assertEqual(len([x for x in ls if x['links_to']]), 5)
         self.assertEqual(len([x for x in ls if x['permissions'] is None]), 3)
@@ -214,19 +214,19 @@ class UnitTestDeviceUtils(unittest.TestCase):
         self.assertIn(dict(permissions='lrwxr-xr-x', n_links=1, owner='root', group='shell', size=6, modified=datetime.datetime(2008, 12, 31, 20, 30), name='acpi', links_to='toybox'), ls)
         self.assertIn(dict(permissions=None, n_links=None, owner=None, group=None, size=None, modified=None, name='PktRspTest', links_to=None), ls)
 
-    def test_ls_doesnt_exist(self, mock_adb):
+    def test_ls_doesnt_exist(self):
         err = AdbConnectionError()
         err.stderr = 'ls: /abc: No such file or directory\n'
-        mock_adb.side_effect = err
+        self.conn.adb.side_effect = err
         self.assertRaises(RemoteFileNotFound, self.device_utils.ls, '/abc')
 
     # endregion
 
     # region AndroidDeviceUtils.get_time() unit tests
 
-    def test_get_time_ok(self, mock_adb):
+    def test_get_time_ok(self):
         stdout = "2018-09-09\\ 11:18:04:348158411\n"
-        mock_adb.return_value = stdout
+        self.conn.adb.return_value = stdout
         device_time = self.device_utils.get_time()
         expected_time = datetime.datetime(2018, 9, 9, 11, 18, 4, 348158)
         self.assertEquals(device_time, expected_time)
@@ -235,17 +235,17 @@ class UnitTestDeviceUtils(unittest.TestCase):
 
     # region AndroidDeviceUtils.remove() unit tests
 
-    def test_remove_ok(self, mock_adb):
+    def test_remove_ok(self):
         path = '/sdcard/somefile'
         stdout = "\n"
-        mock_adb.return_value = stdout
+        self.conn.adb.return_value = stdout
         self.device_utils.remove(path)
 
-    def test_remove_non_existent(self, mock_adb):
+    def test_remove_non_existent(self):
         # TODO: Invoke device_utils.remove(path) where 'path' doesn't exist and expect a RemoteFileNotFound exception
         pass
 
-    def test_remove_no_permissions(self, mock_adb):
+    def test_remove_no_permissions(self):
         # TODO: Invoke device_utils.remove(path) where 'path' has no write permissions and expect WrongPermissions exception
         pass
 
@@ -253,25 +253,25 @@ class UnitTestDeviceUtils(unittest.TestCase):
 
     # region AndroidDeviceUtils.get_device_name() unit tests
 
-    def test_get_device_name_ok(self, mock_adb):
+    def test_get_device_name_ok(self):
         dne = "oppo845H_24bits_17"
-        mock_adb.return_value = dne
+        self.conn.adb.return_value = dne
         dna = self.device_utils.get_device_name()
         self.assertEqual(dne, dna)
 
-    def test_get_device_name_unsupported(self, mock_adb):
+    def test_get_device_name_unsupported(self):
         err = AdbConnectionError()
         err.stderr = 'rm: /data/local/tmp/devicename: No such file or directory\n'
-        mock_adb.side_effect = err
+        self.conn.adb.side_effect = err
         self.assertRaises(OperationUnsupported, self.device_utils.get_device_name)
 
     # endregion
 
     # region AndroidDeviceUtils.get_prop() unit tests
 
-    def test_get_prop_ok(self, mock_adb):
+    def test_get_prop_ok(self):
         pe = "testtesttest"
-        mock_adb.return_value = pe
+        self.conn.adb.return_value = pe
         pa = self.device_utils.get_prop("testprop")
         self.assertEqual(pe, pa)
 
@@ -279,10 +279,10 @@ class UnitTestDeviceUtils(unittest.TestCase):
 
     # region AndroidDeviceUtils.set_prop() unit tests
 
-    def test_set_prop_ok(self, mock_adb):
+    def test_set_prop_ok(self):
         def check_adb_input(*args):
             self.assertTrue(args[-1][0] == '"' and args[-1][-1] == '"', 'setprop value should be wrapped in "double quotes" to keep whitespaces')
-        mock_adb.side_effect = check_adb_input
+        self.conn.adb.side_effect = check_adb_input
         self.device_utils.set_prop("testprop", ' a b c ')
 
     # endregion
@@ -310,52 +310,52 @@ class UnitTestDeviceUtils(unittest.TestCase):
            Devices: speaker, headset
         """)
 
-    def test_is_earphone_connected_true_ok(self, mock_adb):
-        mock_adb.return_value = UnitTestDeviceUtils.OPPO_DUMPSYS_AUDIO
+    def test_is_earphone_connected_true_ok(self):
+        self.conn.adb.return_value = UnitTestDeviceUtils.OPPO_DUMPSYS_AUDIO
         self.assertTrue(self.device_utils.is_earphone_connected())
 
-    def test_is_earphone_connected_false_ok(self, mock_adb):
-        mock_adb.return_value = UnitTestDeviceUtils.OPPO_DUMPSYS_AUDIO.replace('headset', 'boombox')
+    def test_is_earphone_connected_false_ok(self):
+        self.conn.adb.return_value = UnitTestDeviceUtils.OPPO_DUMPSYS_AUDIO.replace('headset', 'boombox')
         self.assertFalse(self.device_utils.is_earphone_connected())
 
-    def test_is_earphone_connected_fail(self, mock_adb):
-        mock_adb.return_value = ""
+    def test_is_earphone_connected_fail(self):
+        self.conn.adb.return_value = ""
         self.assertRaises(AndroidDeviceUtilsError, self.device_utils.is_earphone_connected)
 
     # endregion
 
     # region AndroidDeviceUtils.get_volume() unit tests
 
-    def test_get_volume_ok(self, mock_adb):
-        mock_adb.return_value = UnitTestDeviceUtils.OPPO_DUMPSYS_AUDIO
+    def test_get_volume_ok(self):
+        self.conn.adb.return_value = UnitTestDeviceUtils.OPPO_DUMPSYS_AUDIO
         self.assertEqual(self.device_utils.get_volume(), 8)
 
-    def test_get_volume_fail(self, mock_adb):
-        mock_adb.return_value = ""
+    def test_get_volume_fail(self):
+        self.conn.adb.return_value = ""
         self.assertRaises(AndroidDeviceUtilsError, self.device_utils.get_volume)
 
     # endregion
 
     # region AndroidDeviceUtils.set_volume() unit tests
 
-    def test_set_volume_ok(self, mock_adb):
-        mock_adb.return_value = UnitTestDeviceUtils.OPPO_DUMPSYS_AUDIO.replace('8', '5')
+    def test_set_volume_ok(self):
+        self.conn.adb.return_value = UnitTestDeviceUtils.OPPO_DUMPSYS_AUDIO.replace('8', '5')
         self.device_utils.set_volume(5)
 
-    def test_set_volume_fail(self, mock_adb):
-        mock_adb.return_value = UnitTestDeviceUtils.OPPO_DUMPSYS_AUDIO.replace('8', '5')
+    def test_set_volume_fail(self):
+        self.conn.adb.return_value = UnitTestDeviceUtils.OPPO_DUMPSYS_AUDIO.replace('8', '5')
         self.assertRaises(AndroidDeviceUtilsError, self.device_utils.set_volume, 6)
 
     # endregion
 
     # region AndroidDeviceUtils.is_max_volume() unit tests
 
-    def test_is_max_volume_true_ok(self, mock_adb):
-        mock_adb.return_value = UnitTestDeviceUtils.OPPO_DUMPSYS_AUDIO.replace('8', '16')
+    def test_is_max_volume_true_ok(self):
+        self.conn.adb.return_value = UnitTestDeviceUtils.OPPO_DUMPSYS_AUDIO.replace('8', '16')
         self.assertTrue(self.device_utils.is_max_volume())
 
-    def test_is_max_volume_false_ok(self, mock_adb):
-        mock_adb.return_value = UnitTestDeviceUtils.OPPO_DUMPSYS_AUDIO
+    def test_is_max_volume_false_ok(self):
+        self.conn.adb.return_value = UnitTestDeviceUtils.OPPO_DUMPSYS_AUDIO
         self.assertFalse(self.device_utils.is_max_volume())
 
     # endregion

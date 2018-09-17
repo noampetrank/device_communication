@@ -1,7 +1,7 @@
 import unittest
 import mock
 
-from rpc.remote_procedure_call import AdbIntentsProcedureCaller
+from pydcomm.examples.rpc_loopback_ai_example import AdbIntentsProcedureCaller
 
 
 class UnitTestRpc(unittest.TestCase):
@@ -10,7 +10,8 @@ class UnitTestRpc(unittest.TestCase):
         """
         Executed in the beginning of each test
         """
-        self.rpc = AdbIntentsProcedureCaller()
+        # self.rpc = AdbIntentsProcedureCaller()
+        pass
 
     def tearDown(self):
         """
@@ -25,11 +26,11 @@ class UnitTestRpc(unittest.TestCase):
         # TODO: call rpc.start() and verify that _send_and_wait_for_return is called with procedure_name=='_rpc_get_version'
         pass
 
-    def test_call_fails_without_start(self, rpc_send):
+    def test_call_fails_without_start(self):
         # TODO: call rpc.call() without calling rpc.start() and expect RpcNotStartedError
         pass
 
-    def test_marshalling_with_correct_type(self, rpc_send):
+    def test_marshalling_with_correct_type(self):
         # TODO: Create dummy marshallers for int and float, call rpc.call() with parameters of types int and float, make sure the correct marshaller is called with the correct parameter.
         pass
 
