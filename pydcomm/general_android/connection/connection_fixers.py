@@ -2,10 +2,9 @@ import subprocess32 as subprocess
 import re
 
 
-def add_rooted_impl(connection):
+def add_rooted_impl(connection, device_id=None):
     connection.adb("root")
     connection.adb("remount")
-    return connection
 
 
 # region Auto fixes
@@ -110,11 +109,13 @@ def get_connected_usb_devices():
     out = subprocess.check_output("lsusb")
     return re.findall(r"Bus \d+ Device \d+: ID (\w{4}):(\w{4})", out)
 
+
 def get_connected_phones():
     all_devices = get_connected_usb_devices()
     vendor_ids = [x[0] for x in all_devices]
-    phone_vendor_ids= [x[0] for x in known_phone_usb_ids if x[1].lower() in vendor_ids]
+    phone_vendor_ids = [x[0] for x in known_phone_usb_ids if x[1].lower() in vendor_ids]
     return phone_vendor_ids
+
 
 # TODO: Change this to two separate adb() and __init__ decorators
 def add_no_device_connected_recovery(connection):

@@ -4,8 +4,10 @@ from collections import defaultdict
 
 from enum import IntEnum
 
-from general_android.adb_connection import AdbConnectionFactory
-from general_android.adb_connection_decorators import auto_fixes, add_adb_recovery_decorator, manual_fixes, add_rooted_impl
+from pydcomm.general_android.connection.connection_factory import AdbConnectionFactory
+from pydcomm.general_android.connection.connection_fixers import add_rooted_impl, set_usb_mode_to_mtp_fix, restart_adb_server_fix, add_no_device_connected_recovery, \
+    forgot_device_fix, device_turned_off
+from pydcomm.general_android.connection.decorator_helpers import add_adb_recovery_decorator, add_init_decorator
 
 """
                    total_cons con_fail auto_rec_fail manu_rec_fail total_fail
@@ -30,7 +32,7 @@ def create_log_fix(fail_dict, name):
     def f(connection):
         fail_dict[name] += 1
 
-    return add_adb_recovery_decorator(f)
+    return add_adb_recovery_decorator(f, "counter for " + name)
 
 
 class ConnectionBenchmark(object):
@@ -40,20 +42,24 @@ class ConnectionBenchmark(object):
         cf = AdbConnectionFactory()
         decorators = []
         if rooted:
-            decorators.append(add_rooted_impl)
+            decorators.append(add_init_decorator(add_rooted_impl, "add_rooted_impl"))
         decorators.append(create_log_fix(self.fail_dict, "connection_fail"))
         if recovery >= Recovery.AUTO:
-            decorators.append(add_adb_recovery_decorator(auto_fixes))
+            decorators.append(add_adb_recovery_decorator(restart_adb_server_fix, "restart_adb_server_fix"))
+            decorators.append(add_adb_recovery_decorator(set_usb_mode_to_mtp_fix, "set_usb_mode_to_mtp_fix"))
             decorators.append(create_log_fix(self.fail_dict, "auto_recover_fail"))
         if recovery >= Recovery.INTERACTIVE:
-            decorators.append(add_adb_recovery_decorator(manual_fixes))
+            decorators.append(add_no_device_connected_recovery)
+            decorators.append(add_adb_recovery_decorator(set_usb_mode_to_mtp_fix, "set_usb_mode_to_mtp_fix"))
+            decorators.append(add_adb_recovery_decorator(forgot_device_fix, "forgot_device_fix"))
+            decorators.append(add_adb_recovery_decorator(device_turned_off, "device_turned_off"))
             decorators.append(create_log_fix(self.fail_dict, "manual_recover_fail"))
-        con = cf.create_connection(ip=ip, decorators=decorators)
+        con = cf.create_connection(wired=True, ip=ip, decorators=decorators)
         return con
 
     @staticmethod
-    def _test_connection_is_working(connection):
-        return connection.adb(["shell", "echo", "hi"]) == "hi"
+    def test_connection(connection):
+        return connection.adb("shell", "echo hi").strip() == "hi"
 
     def repeat_test_connection(self, rooted, connect_from_ip, recovery, rounds, sleep_between_connections, connection_test_amount,
                                connection_length, verbose=True):
@@ -70,18 +76,18 @@ class ConnectionBenchmark(object):
         """
         connection = self._create_connection(recovery, False)
 
-        ip = connection.get_connection_status()["ip"]
+        ip = connection.device_id
         connection.disconnect()
-        fails = defaultdict()
+        fails = defaultdict(lambda: 0)
         it = tqdm.trange(rounds) if verbose else range(rounds)
         for i in it:
             connection = self._create_connection(recovery, rooted, ip if connect_from_ip else None)
             for j in range(connection_test_amount):
-                if not self._test_connection_is_working(connection):
+                if self.test_connection(connection):
                     fails["shell"] += 1
                 time.sleep(connection_test_amount / connection_length)
             connection.disconnect()
-            if self._test_connection_is_working(connection):
+            if self.test_connection(connection):
                 fails["disconnect"] += 1
             for k in self.fail_dict:
                 fails[k] += self.fail_dict[k]
@@ -93,18 +99,68 @@ def main():
     rooted = True
     bench = ConnectionBenchmark()
     results = {}
-    results["short_connections"] = bench.repeat_test_connection(rooted=rooted,
-                                                                connect_from_ip=True,
-                                                                recovery=Recovery.INTERACTIVE,
-                                                                rounds=1000,
-                                                                sleep_between_connections=0,
-                                                                connection_test_amount=1,
-                                                                connection_length=10)
-    results["long_connections"] = bench.repeat_test_connection(rooted=rooted,
-                                                               connect_from_ip=True,
-                                                               recovery=Recovery.INTERACTIVE,
-                                                               rounds=100,
-                                                               sleep_between_connections=0,
-                                                               connection_length=180,
-                                                               connection_test_amount=18)
-    # TODO: Add rest of table tests
+    recovery_type = Recovery.AUTO
+    try:
+        results["10x1x0"] = bench.repeat_test_connection(
+            rooted=True,  # Unused for now
+            connect_from_ip=True,  # Unused for now
+            recovery=recovery_type,
+            rounds=1000,
+            sleep_between_connections=0,
+            connection_test_amount=1,
+            connection_length=10)
+        print(results)
+    except Exception as e:
+        print(e)
+    try:
+        results["180x18x0"] = bench.repeat_test_connection(
+            rooted=rooted,
+            connect_from_ip=True,
+            recovery=recovery_type,
+            rounds=100,
+            sleep_between_connections=0,
+            connection_length=180,
+            connection_test_amount=18)
+        print(results)
+    except Exception as e:
+        print(e)
+    try:
+        results["180x1x0"] = bench.repeat_test_connection(
+            rooted=rooted,
+            connect_from_ip=True,
+            recovery=recovery_type,
+            rounds=100,
+            sleep_between_connections=0,
+            connection_length=180,
+            connection_test_amount=18)
+        print(results)
+    except Exception as e:
+        print(e)
+    try:
+        results["10x2x120"] = bench.repeat_test_connection(
+            rooted=rooted,
+            connect_from_ip=True,
+            recovery=recovery_type,
+            rounds=100,
+            sleep_between_connections=120,
+            connection_length=10,
+            connection_test_amount=2)
+        print(results)
+    except Exception as e:
+        print(e)
+    print(results)
+
+
+"""
+                   total_cons con_fail auto_rec_fail manu_rec_fail total_fail
+TestName                                                                     
+10x1x0xfrom ip           1000      100            80            20          0
+180x18x0xfrom ip          100       10             9             1          0
+180x1x0xfrom ip           100       10            10             0          0
+10x2x120xfrom ip          100        2             2             0          0
+
+Testname - length of connection X how many times to test per connection x sleep between connections x connect from ip or manually
+"""
+
+if __name__ == "__main__":
+    main()
