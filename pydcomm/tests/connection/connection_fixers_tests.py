@@ -1,10 +1,9 @@
 import unittest
 
-from StringIO import StringIO
 import mock
 from nose_parameterized import parameterized
 
-from pydcomm.general_android.connection.connection_fixers import add_adb_recovery_decorator, add_no_device_connected_recovery
+from pydcomm.general_android.connection.decorator_helpers import add_adb_recovery_decorator
 
 
 class AddDecoratorTests(unittest.TestCase):
@@ -78,3 +77,4 @@ class NoDeviceConnectedRecoveryTests(unittest.TestCase):
 #
 #         # assert
     # TODO: Get back to this when Dror is here and ask about testing prints and raw_inputs.
+    pass

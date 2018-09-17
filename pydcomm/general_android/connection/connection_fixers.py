@@ -1,5 +1,3 @@
-import logging
-
 import subprocess32 as subprocess
 import re
 
@@ -8,24 +6,6 @@ def add_rooted_impl(connection):
     connection.adb("root")
     connection.adb("remount")
     return connection
-
-
-def add_adb_recovery_decorator(fix_function, fix_name):
-    def inner(connection):
-        old_adb = connection.adb
-
-        def new_adb(self, *params):
-            if not self.test_connection():
-                try:
-                    fix_function(self)
-                except Exception as e:
-                    self.log.warn("Fix {} failed ".format(fix_name), exc_info=e)
-            return old_adb(self, *params)
-
-        connection.adb = new_adb
-        return connection
-
-    return inner
 
 
 # region Auto fixes
@@ -136,6 +116,7 @@ def get_connected_phones():
     phone_vendor_ids= [x[0] for x in known_phone_usb_ids if x[1].lower() in vendor_ids]
     return phone_vendor_ids
 
+# TODO: Change this to two separate adb() and __init__ decorators
 def add_no_device_connected_recovery(connection):
     old_init = connection.__init__
     old_adb = connection.adb

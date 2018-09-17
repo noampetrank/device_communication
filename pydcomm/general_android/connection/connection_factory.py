@@ -1,5 +1,5 @@
 from pydcomm.general_android.connection.device_selector import add_choose_first_behavior, add_user_choice_behavior, MultiDeviceBehavior
-from pydcomm.general_android.connection.wired_adb_connection import WiredAdbConnection
+from pydcomm.general_android.connection.adb_connection import WiredAdbConnection, add_connect_wireless
 
 
 class AdbConnectionFactory(object):
@@ -7,9 +7,11 @@ class AdbConnectionFactory(object):
     def create_connection(wired=False, ip=None, device=None, decorators=None, device_selector=MultiDeviceBehavior.CHOOSE_FIRST):
         """
         Create a connection to the given ip or device, add the given decorators
-        :param ip:
-        :param device:
-        :param decorators:
+        :param wired: Connect wired or wireless
+        :param ip: If given and connecting wireless, connect to this IP
+        :param device: If given, connect to this USB device
+        :param decorators: A list of decorators to apply on the connection
+        :param device_selector: A strategy to select the device to connect to
         :type device_selector: MultiDeviceBehavior
         :return
         """
@@ -17,11 +19,9 @@ class AdbConnectionFactory(object):
 
         decorators.append(AdbConnectionFactory.get_selection_behavior(device_selector))
 
-        if wired:
-            con_cls = WiredAdbConnection
-        else:
-            # con_cls = WirelessAdbConnection
-            con_cls = None
+        con_cls = WiredAdbConnection
+        if not wired:
+            con_cls = add_connect_wireless(con_cls)
         for d in decorators or []:
             con_cls = d(con_cls)
 
