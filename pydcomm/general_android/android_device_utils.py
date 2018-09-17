@@ -28,6 +28,10 @@ class FileAlreadyExists(AndroidDeviceUtilsError):
     pass
 
 
+class OperationUnsupported(AndroidDeviceUtilsError):
+    pass
+
+
 class AndroidDeviceUtils:
     """
     Class exposing basic operations on an android device.
@@ -253,26 +257,33 @@ class AndroidDeviceUtils:
     def _remote_file_exists(self, path):
         return '1' in self.connection.adb(['shell', '[ -f {} ] && echo 1 || echo 0'.format(path)])
 
-    # TODO: Change methods below this line to raise specific exceptions and not look for a return value from adb. Add unit tests.
     def get_time(self):
         """
         :rtype: datetime
         """
         line = self._shell('date', '+"%Y-%m-%d\\', '%H:%M:%S:%N"').strip()
-
         return self._parse_time(line)
 
+    def _parse_time(self, line):
+        """
+        helper for parse_time since oppo seems to work a bit differently from experia
+        :param line:
+        :return:
+        """
+        return datetime.datetime.strptime(line[:-3], '%Y-%m-%d\\ %H:%M:%S:%f')
 
     def get_device_name(self):
         """
         return the BUGATONE device name (used in recording scripts)
         :rtype: str
         """
-        name, success = self._shell("cat", "/data/local/tmp/devicename")
-        if success:
-            return name[-1]
-        else:
-            raise AndroidDeviceUtilsError("failed to get device name")
+        try:
+            return self._shell("cat", "/data/local/tmp/devicename")
+        except AdbConnectionError as err:
+            if 'No such file or directory' in err.stderr:
+                raise OperationUnsupported()
+            raise
+
 
     def get_prop(self, prop_name):
         """
@@ -280,16 +291,8 @@ class AndroidDeviceUtils:
         :type prop_name: str
         :rtype: str
         """
-        res, ok = self._shell("getprop", prop_name)
-        if not ok:
-            msg = "failed to get value of property: " + prop_name
-            log.error(msg)
-            raise AndroidDeviceUtilsError(msg)
-        elif len(res) == 0:
-            msg = "property not found on the device: " + prop_name
-            log.error(msg)
-            raise AndroidDeviceUtilsError(msg)
-        return res[-1]
+        return self._shell("getprop", prop_name).rstrip('\n')
+
 
     def set_prop(self, prop_name, value):
         """
@@ -298,7 +301,7 @@ class AndroidDeviceUtils:
         :type prop_name: str
         :type value: str
         """
-        self._shell("setprop", prop_name, value)
+        self._shell("setprop", prop_name, '"' + value + '"')
 
     def reboot(self):
         """
@@ -306,15 +309,24 @@ class AndroidDeviceUtils:
         """
         self.connection.adb("reboot")
 
-    def _check_earphone_connected(self, dumpsys_output):
-        """
-        parse the dumpsys audio and check if an earphone is connected
-        QUITE POSSIBLY DEVICE SPECIFIC
-        :type dumpsys_output: str
-        :rtype: bool
-        """
-        device = re.findall(r'STREAM_MUSIC.*?Devices: (\w+)', dumpsys_output, re.DOTALL)[0]
-        return device.lower() in 'headset'
+    def _parse_dumpsys_volume(self):
+        dumpsys_output = self._shell('dumpsys', 'audio')
+        fields = re.findall('- STREAM_MUSIC[^-]*Muted: (\w+)[^-]*Min: (\d+)[^-]*Max: (\d+)[^-]*Current: ([^\n]+)[^-]*Devices: ([^\n]+)\n', dumpsys_output)
+        if not fields:
+            raise AndroidDeviceUtilsError("Couldn't parse dumpsys")
+        fields = fields[0]
+        return dict(
+            muted=fields[0].lower() == "true",
+            min=int(fields[1]),
+            max=int(fields[2]),
+            current=map(lambda x: dict(
+                id=x[0],
+                name=x[1],
+                vol=int(x[2]),
+            ), re.findall('(\d+) \(([^)]+)\):\s*(\d+),?\s*', fields[3])),
+            devices=fields[4].split(),
+            device=fields[4].split()[0]
+        )
 
     def _check_device_volume(self, dumpsys_output):
         """
@@ -330,25 +342,30 @@ class AndroidDeviceUtils:
         """
         :rtype: bool
         """
-        txt, _ = self._shell('dumpsys', 'audio')
-        return self._check_earphone_connected(txt)
+        return 'headset' == self._parse_dumpsys_volume()['device'].lower()
 
     def get_volume(self):
         """
         :rtype: int
         """
-        txt, _ = self._shell('dumpsys', 'audio')
-        return self._check_device_volume(txt)
+        fields = self._parse_dumpsys_volume()
+        device = fields['device']
+        try:
+            return [x for x in fields['current'] if x['name'] == device][0]['vol']
+        except:
+            raise AndroidDeviceUtilsError("Can't get headphone volume, you probably need to connect a headphone first.")
 
     def set_volume(self, val):
         """
         set the stream volume on the device
         :type val: int
         """
-        if val > self.get_max_volume():
-            return False
+        max_vol = self.get_max_volume()
+        if val > max_vol:
+            raise ValueError("Can't set volume to {} because the maximum is {}".format(val, max_vol))
         self._shell("service", "call", "audio", "3", "i32", "3", "i32", str(val), "i32", "0")
-        return val == self.get_volume()
+        if val != self.get_volume():
+            raise AndroidDeviceUtilsError("Could not set volume")
 
     def is_max_volume(self):
         """
@@ -359,15 +376,6 @@ class AndroidDeviceUtils:
     def get_max_volume(self):
         """
         get the max volume supported on the device
-        device specific for sure
         :rtype: int
         """
-        raise NotImplementedError()
-
-    def _parse_time(self, line):
-        """
-        helper for parse_time since oppo seems to work a bit differently from experia
-        :param line:
-        :return:
-        """
-        return datetime.datetime.strptime(line[:-3], '%Y-%m-%d\\ %H:%M:%S:%f')
+        return self._parse_dumpsys_volume()['max']

@@ -1,13 +1,11 @@
-import datetime
 import unittest
 from textwrap import dedent
 
 import mock
 import tempfile
-import numpy as np
 
-from general_android.adb_connection import AdbConnection, AdbConnectionError
-from general_android.android_device_utils import AndroidDeviceUtils, LocalFileNotFound, RemoteFileNotFound, WrongPermissions, FileAlreadyExists
+from pydcomm.general_android.adb_connection import *
+from pydcomm.general_android.android_device_utils import *
 
 
 @mock.patch.object(AdbConnection, 'adb')
@@ -232,7 +230,6 @@ class UnitTestDeviceUtils(unittest.TestCase):
         device_time = self.device_utils.get_time()
         expected_time = datetime.datetime(2018, 9, 9, 11, 18, 4, 348158)
         self.assertEquals(device_time, expected_time)
-        pass
 
     # endregion
 
@@ -243,7 +240,6 @@ class UnitTestDeviceUtils(unittest.TestCase):
         stdout = "\n"
         mock_adb.return_value = stdout
         self.device_utils.remove(path)
-        pass
 
     def test_remove_non_existent(self, mock_adb):
         # TODO: Invoke device_utils.remove(path) where 'path' doesn't exist and expect a RemoteFileNotFound exception
@@ -258,97 +254,108 @@ class UnitTestDeviceUtils(unittest.TestCase):
     # region AndroidDeviceUtils.get_device_name() unit tests
 
     def test_get_device_name_ok(self, mock_adb):
-        # TODO: Invoke device_utils.get_device_name() and parse output.
-        pass
+        dne = "oppo845H_24bits_17"
+        mock_adb.return_value = dne
+        dna = self.device_utils.get_device_name()
+        self.assertEqual(dne, dna)
 
     def test_get_device_name_unsupported(self, mock_adb):
-        # TODO: Invoke device_utils.get_device_name() on a device that doesn't support this operation and expect OperationUnsupported exception.
-        pass
+        err = AdbConnectionError()
+        err.stderr = 'rm: /data/local/tmp/devicename: No such file or directory\n'
+        mock_adb.side_effect = err
+        self.assertRaises(OperationUnsupported, self.device_utils.get_device_name)
 
     # endregion
 
     # region AndroidDeviceUtils.get_prop() unit tests
 
     def test_get_prop_ok(self, mock_adb):
-        # TODO: Invoke device_utils.get_prop('xxx') and expect no exceptions and no output.
-        pass
+        pe = "testtesttest"
+        mock_adb.return_value = pe
+        pa = self.device_utils.get_prop("testprop")
+        self.assertEqual(pe, pa)
 
     # endregion
 
     # region AndroidDeviceUtils.set_prop() unit tests
 
     def test_set_prop_ok(self, mock_adb):
-        # TODO: Invoke device_utils.set_prop('xxx', '123') and expect no exceptions and no output (meaning that get_prop verified the value that was set).
-        pass
-
-    def test_set_prop_fail(self, mock_adb):
-        # TODO: Invoke device_utils.set_prop('xxx', '123') and expect OperationFailed exception (meaning that get_prop got the wrong value).
-        pass
+        def check_adb_input(*args):
+            self.assertTrue(args[-1][0] == '"' and args[-1][-1] == '"', 'setprop value should be wrapped in "double quotes" to keep whitespaces')
+        mock_adb.side_effect = check_adb_input
+        self.device_utils.set_prop("testprop", ' a b c ')
 
     # endregion
     
-    # region AndroidDeviceUtils.reboot() unit tests
-
-    def test_reboot_ok(self, mock_adb):
-        # TODO: Invoke device_utils.reboot() and expect the connection to be lost in a few seconds.
-        pass
-
-    def test_reboot_fail(self, mock_adb):
-        # TODO: Invoke device_utils.reboot() and expect OperationFailed exception (meaning that the phone doesn't disconnect after a few secs).
-        pass
-
-    # endregion
-
     # region AndroidDeviceUtils.is_earphone_connected() unit tests
 
+    OPPO_DUMPSYS_AUDIO = dedent("""\
+        - STREAM_RING:
+           Muted: true
+           Min: 0
+           Max: 16
+           Current: 2 (speaker): 0, 40000000 (default): 14
+           Devices: speaker, headset
+        - STREAM_MUSIC:
+           Muted: false
+           Min: 0
+           Max: 16
+           Current: 2 (speaker): 16, 4 (headset): 8, 8 (headphone): 8, 40000000 (default): 10
+           Devices: headset
+        - STREAM_ALARM:
+           Muted: false
+           Min: 1
+           Max: 16
+           Current: 40000000 (default): 12
+           Devices: speaker, headset
+        """)
+
     def test_is_earphone_connected_true_ok(self, mock_adb):
-        # TODO: Invoke device_utils.is_earphone_connected() and expect True result.
-        pass
+        mock_adb.return_value = UnitTestDeviceUtils.OPPO_DUMPSYS_AUDIO
+        self.assertTrue(self.device_utils.is_earphone_connected())
 
     def test_is_earphone_connected_false_ok(self, mock_adb):
-        # TODO: Invoke device_utils.is_earphone_connected() and expect False result.
-        pass
+        mock_adb.return_value = UnitTestDeviceUtils.OPPO_DUMPSYS_AUDIO.replace('headset', 'boombox')
+        self.assertFalse(self.device_utils.is_earphone_connected())
 
     def test_is_earphone_connected_fail(self, mock_adb):
-        # TODO: Invoke device_utils.is_earphone_connected() and expect OperationFailed exception (meaning that the output from `adb shell dumpsys audio` is wrong)
-        pass
+        mock_adb.return_value = ""
+        self.assertRaises(AndroidDeviceUtilsError, self.device_utils.is_earphone_connected)
 
     # endregion
 
     # region AndroidDeviceUtils.get_volume() unit tests
 
     def test_get_volume_ok(self, mock_adb):
-        # TODO: Invoke device_utils.get_volume() and expect a number from 0 to 16.
-        pass
+        mock_adb.return_value = UnitTestDeviceUtils.OPPO_DUMPSYS_AUDIO
+        self.assertEqual(self.device_utils.get_volume(), 8)
 
     def test_get_volume_fail(self, mock_adb):
-        # TODO: Invoke device_utils.get_volume() and expect OperationFailed exception (meaning that the output from `adb shell dumpsys audio` is wrong)
-        pass
+        mock_adb.return_value = ""
+        self.assertRaises(AndroidDeviceUtilsError, self.device_utils.get_volume)
 
     # endregion
 
     # region AndroidDeviceUtils.set_volume() unit tests
 
     def test_set_volume_ok(self, mock_adb):
-        # TODO: Invoke device_utils.set_volume() and expect no exceptions and no output. (meaning get_volume() verified the value)
-        pass
+        mock_adb.return_value = UnitTestDeviceUtils.OPPO_DUMPSYS_AUDIO.replace('8', '5')
+        self.device_utils.set_volume(5)
 
     def test_set_volume_fail(self, mock_adb):
-        # TODO: Invoke device_utils.set_volume() and expect OperationFailed exception (meaning that the output from `adb shell dumpsys audio` has a number different from what was set)
-        pass
+        mock_adb.return_value = UnitTestDeviceUtils.OPPO_DUMPSYS_AUDIO.replace('8', '5')
+        self.assertRaises(AndroidDeviceUtilsError, self.device_utils.set_volume, 6)
 
     # endregion
 
     # region AndroidDeviceUtils.is_max_volume() unit tests
 
     def test_is_max_volume_true_ok(self, mock_adb):
-        # TODO: Invoke device_utils.is_max_volume() and expect True result.
-        pass
+        mock_adb.return_value = UnitTestDeviceUtils.OPPO_DUMPSYS_AUDIO.replace('8', '16')
+        self.assertTrue(self.device_utils.is_max_volume())
 
     def test_is_max_volume_false_ok(self, mock_adb):
-        # TODO: Invoke device_utils.is_max_volume() and expect False result.
-        pass
+        mock_adb.return_value = UnitTestDeviceUtils.OPPO_DUMPSYS_AUDIO
+        self.assertFalse(self.device_utils.is_max_volume())
 
     # endregion
-
-
