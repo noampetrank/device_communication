@@ -20,8 +20,8 @@ public:
     Status call(ServerContext* context,
                 const GRequest* req,
                 GResponse* res) override {
-        MarshalledObject arg = std::make_shared<std::string>(req->buf());
-        MarshalledObject ret = listener.delegateProcedure(req->name(), arg);
+        MarshaledObject arg = std::make_shared<std::string>(req->buf());
+        MarshaledObject ret = listener.delegateProcedure(req->name(), arg);
         res->set_buf(*ret);
         return Status::OK;
     }

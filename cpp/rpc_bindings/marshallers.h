@@ -7,9 +7,9 @@
 
 
 template <>
-MarshalledObject marshal<std::string>(const std::string &p);
+MarshaledObject marshal<std::string>(const std::string &p);
 
 template <>
-std::string unmarshal<std::string>(const MarshalledObject &buf);
+std::string unmarshal<std::string>(const MarshaledObject &buf);
 
 #endif //CPP_MARSHALLERS_H

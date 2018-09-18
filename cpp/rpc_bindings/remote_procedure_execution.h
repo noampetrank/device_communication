@@ -6,18 +6,18 @@
 #include <stack>
 
 using Buffer = std::string;
-using MarshalledObject = std::shared_ptr<Buffer>;
+using MarshaledObject = std::shared_ptr<Buffer>;
 
 template <class T>
-MarshalledObject marshal(const T &p);
+MarshaledObject marshal(const T &p);
 
 template <class T>
-T unmarshal(const MarshalledObject &buf);
+T unmarshal(const MarshaledObject &buf);
 
 
 class IRemoteProcedureExecutor {
 public:
-    virtual MarshalledObject delegateProcedure(std::string procedureName, const MarshalledObject &params) = 0; // Delegate a procedure call from the caller
+    virtual MarshaledObject delegateProcedure(std::string procedureName, const MarshaledObject &params) = 0; // Delegate a procedure call from the caller
     virtual std::string getVersion() = 0; // Get current executor version
     virtual ~IRemoteProcedureExecutor() = default;
 };
@@ -25,22 +25,22 @@ public:
 
 class StandardRemoteProcedureExecutor : public IRemoteProcedureExecutor {
 public:
-    virtual MarshalledObject delegateProcedure(std::string procedureName, const MarshalledObject &params) final override;
+    virtual MarshaledObject delegateProcedure(std::string procedureName, const MarshaledObject &params) final override;
     virtual std::string getVersion() override { return "0.0"; }
 
 protected:
-    virtual void onStart(const MarshalledObject &params) {} // Connection established, do whatever initialization is needed after that.
-    virtual void onStop(const MarshalledObject &params) {} // Connection is about to close.
+    virtual void onStart(const MarshaledObject &params) {} // Connection established, do whatever initialization is needed after that.
+    virtual void onStop(const MarshaledObject &params) {} // Connection is about to close.
 
     // Unmarshalls the relevant params, runs the procedure, marshalls the returned params and returns them.
-    virtual MarshalledObject executeProcedure(std::string procedureName, const MarshalledObject &params) = 0;
+    virtual MarshaledObject executeProcedure(std::string procedureName, const MarshaledObject &params) = 0;
 
 private:
-    virtual MarshalledObject rpc_echo(const MarshalledObject &params) final;
-    virtual MarshalledObject rpc_echo_push(const MarshalledObject &params) final;
-    virtual MarshalledObject rpc_echo_pop(const MarshalledObject &params) final;
+    virtual MarshaledObject rpc_echo(const MarshaledObject &params) final;
+    virtual MarshaledObject rpc_echo_push(const MarshaledObject &params) final;
+    virtual MarshaledObject rpc_echo_pop(const MarshaledObject &params) final;
 
-    std::stack<MarshalledObject> stack;
+    std::stack<MarshaledObject> stack;
 };
 
 

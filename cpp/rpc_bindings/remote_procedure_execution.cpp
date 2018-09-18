@@ -1,7 +1,7 @@
 #include "remote_procedure_execution.h"
 #include "marshallers.h"
 
-MarshalledObject StandardRemoteProcedureExecutor::delegateProcedure(std::string procedureName, const MarshalledObject &params) {
+MarshaledObject StandardRemoteProcedureExecutor::delegateProcedure(std::string procedureName, const MarshaledObject &params) {
     if (procedureName == "_rpc_get_version") {
         return marshal(getVersion());
     } if (procedureName == "_rpc_echo") {
@@ -12,28 +12,28 @@ MarshalledObject StandardRemoteProcedureExecutor::delegateProcedure(std::string 
         return rpc_echo_pop(params);
     } if (procedureName == "_rpc_start") {
         onStart(params);
-        return MarshalledObject();
+        return MarshaledObject();
     } if (procedureName == "_rpc_stop") {
         onStop(params);
-        return MarshalledObject();
+        return MarshaledObject();
     } else {
         return executeProcedure(procedureName, params);
     }
 }
 
-MarshalledObject StandardRemoteProcedureExecutor::rpc_echo(const MarshalledObject &params) {
+MarshaledObject StandardRemoteProcedureExecutor::rpc_echo(const MarshaledObject &params) {
     return params;
 }
 
-MarshalledObject StandardRemoteProcedureExecutor::rpc_echo_push(const MarshalledObject &params) {
+MarshaledObject StandardRemoteProcedureExecutor::rpc_echo_push(const MarshaledObject &params) {
     stack.push(params);
     return marshal(std::string("OK"));
 }
 
-MarshalledObject StandardRemoteProcedureExecutor::rpc_echo_pop(const MarshalledObject &params) {
+MarshaledObject StandardRemoteProcedureExecutor::rpc_echo_pop(const MarshaledObject &params) {
     if (stack.empty())
         return marshal(std::string());
-    MarshalledObject mo = stack.top();
+    MarshaledObject mo = stack.top();
     stack.pop();
     return mo;
 }
