@@ -1,4 +1,4 @@
 include ':app'
 
-include 'libbugarpc'
-project(':libbugarpc').projectDir = file('/home/buga/device_communication/android/libbugarpc/lib')
+include 'bugarpc'
+project(':bugarpc').projectDir = file('../libbugarpc/bugarpc')
