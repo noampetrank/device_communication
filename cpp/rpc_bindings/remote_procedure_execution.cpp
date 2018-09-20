@@ -10,12 +10,6 @@ MarshaledObject StandardRemoteProcedureExecutor::delegateProcedure(std::string p
         return rpc_echo_push(params);
     } if (procedureName == "_rpc_echo_pop") {
         return rpc_echo_pop(params);
-    } if (procedureName == "_rpc_start") {
-        onStart(params);
-        return MarshaledObject();
-    } if (procedureName == "_rpc_stop") {
-        onStop(params);
-        return MarshaledObject();
     } else {
         return executeProcedure(procedureName, params);
     }

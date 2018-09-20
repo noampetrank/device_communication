@@ -19,6 +19,7 @@ class IRemoteProcedureExecutor {
 public:
     virtual MarshaledObject delegateProcedure(std::string procedureName, const MarshaledObject &params) = 0; // Delegate a procedure call from the caller
     virtual std::string getVersion() = 0; // Get current executor version
+
     virtual ~IRemoteProcedureExecutor() = default;
 };
 
@@ -29,8 +30,6 @@ public:
     virtual std::string getVersion() override { return "0.0"; }
 
 protected:
-    virtual void onStart(const MarshaledObject &params) {} // Connection established, do whatever initialization is needed after that.
-    virtual void onStop(const MarshaledObject &params) {} // Connection is about to close.
 
     // Unmarshalls the relevant params, runs the procedure, marshalls the returned params and returns them.
     virtual MarshaledObject executeProcedure(std::string procedureName, const MarshaledObject &params) = 0;
@@ -48,6 +47,8 @@ class IRemoteProcedureServer {
 public:
     // Listens; calls delegate when stuff arrives
     virtual void listen(IRemoteProcedureExecutor &listener, bool wait = true) = 0;
+    virtual void wait() = 0;
+    virtual void stop() = 0;
     virtual ~IRemoteProcedureServer() = default;
 };
 

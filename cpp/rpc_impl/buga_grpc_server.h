@@ -4,15 +4,19 @@
 #include "../rpc_bindings/remote_procedure_execution.h"
 #include "buga_rpc.grpc.pb.h"
 
+
 using GRpcServiceImpl = buga_rpc::DeviceRpc::Service;
 
 class GRemoteProcedureServer : public IRemoteProcedureServer {
     std::unique_ptr<GRpcServiceImpl> service;
+    std::unique_ptr<grpc::Server> server;
     std::string server_address;
 public:
     GRemoteProcedureServer(std::string server_address);
     ~GRemoteProcedureServer();
     virtual void listen(IRemoteProcedureExecutor &listener, bool wait = true) override;
+    virtual void wait() override;
+    virtual void stop() override;
 };
 
 struct GRPCServerError : public std::runtime_error {

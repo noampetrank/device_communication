@@ -17,6 +17,8 @@ class BugaGRpcServiceImpl final : public GRpcServiceImpl {
 public:
     explicit BugaGRpcServiceImpl(IRemoteProcedureExecutor &listener) : listener(listener) {}
 
+    IRemoteProcedureExecutor &getListener() { return listener; }
+
     Status call(ServerContext* context,
                 const GRequest* req,
                 GResponse* res) override {
@@ -57,7 +59,7 @@ void GRemoteProcedureServer::listen(IRemoteProcedureExecutor &listener, bool wai
     builder.SetMaxSendMessageSize(max_message_size);
     std::cout << max_message_size << std::endl;
     // Finally assemble the server.
-    std::unique_ptr<Server> server(builder.BuildAndStart());
+    server = builder.BuildAndStart();
     std::cout << "Server listening on " << server_address << std::endl;
 
     if (!server.get())
@@ -68,4 +70,16 @@ void GRemoteProcedureServer::listen(IRemoteProcedureExecutor &listener, bool wai
         // responsible for shutting down the server for this call to ever return.
         server->Wait();
     }
+}
+
+void GRemoteProcedureServer::wait() {
+    if (!server.get())
+        throw GRPCServerError("Server object is null");
+    server->Wait();
+}
+
+void GRemoteProcedureServer::stop() {
+    if (!server.get())
+        throw GRPCServerError("Server object is null");
+    server->Shutdown();
 }
