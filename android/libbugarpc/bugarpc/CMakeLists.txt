@@ -14,7 +14,6 @@ add_subdirectory(${GRPC_SRC_DIR} ${GRPC_BUILD_DIR})
 
 set(GRPC_PROTO_GENS_DIR ${CMAKE_BINARY_DIR}/gens)
 file(MAKE_DIRECTORY ${GRPC_PROTO_GENS_DIR})
-include_directories(${GRPC_PROTO_GENS_DIR})
 
 function(android_protobuf_grpc_generate_cpp SRC_FILES HDR_FILES INCLUDE_ROOT)
   if(NOT ARGN)
@@ -91,6 +90,7 @@ add_library(buga_grpc SHARED
 )
 
 target_include_directories(buga_grpc PRIVATE
+  ${GRPC_PROTO_GENS_DIR}
   ${BUGA_GRPC_SERVER_SRCS}
   ../../../3rdparty/nlohmann/include/
 )

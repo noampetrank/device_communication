@@ -1,3 +1,9 @@
+/*
+ * This is a toy example that runs a gRPC server on a thread, waits a bit and then makes a few RPC calls to it
+ * from a client on another thread.
+ * This could be used as an example to creating a C++ gRPC server.
+ */
+
 #include <iostream>
 
 #include <memory>
