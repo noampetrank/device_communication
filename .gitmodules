@@ -1,4 +1,4 @@
 [submodule "3rdparty/grpc"]
 	path = 3rdparty/grpc
-	url = git@github.com:Bugatone/grpc.git
+	url = ../grpc.git
 	branch = buga_grpc
