@@ -13,10 +13,11 @@
 #define JNI_VERSION JNI_VERSION_1_6
 
 
+// This function splits long gRPC log prints into messages that logcat can handle.
 void grpc_logcat_func(gpr_log_func_args *args) {
     const int n = 65536;
     const int limit = 1023;
-    char full[65536];
+    char full[n];
     char chunk[limit+1];
     char *p = full;
     snprintf(full, n, "%s:%d: %s", args->file, args->line, args->message);

@@ -55,6 +55,7 @@ public class BugaGrpcActivity extends AppCompatActivity {
         return TextUtils.isEmpty(portStr) ? DEFAULT_PORT : Integer.valueOf(portStr);
     }
 
+    // This is to show a toast (or do any other UI update) from the executor callback thread. This is a different thread started by the native code.
     Handler mHandler = new Handler(Looper.getMainLooper()) {
         @Override
         public void handleMessage(Message msg) {
