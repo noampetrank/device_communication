@@ -73,6 +73,7 @@ is_max_volume                 10.0         25.3        208.1    198      0.99   
 """
 import os
 from pydcomm.benchmarks.benchmark_utils import time_it, benchmark_it, create_summary
+from tqdm import tqdm
 
 
 def benchmark_dir_funcs(repeats, device):
@@ -107,22 +108,34 @@ def benchmark_touch_remove(repeats, device):
     return res_touch, res_remove
 
 
-def benchmark_push_pull(repeats, device, size_bytes):
+def benchmark_push_pull(repeats, device, size_bytes, use_tqdm=False):
     """
     :param repeats:
     :param device:
-    :param size:
+    :param size_bytes: size of random data or the random data itself
     :return:
     """
-    pc_path = "/tmp/tmp_file_%d"%size_bytes
+    if type(size_bytes) == str:
+        data = size_bytes
+        size_bytes = len(data)
+    else:
+        data = os.urandom(size_bytes)
+
     # create the file on the computer
-    # todo
-    device_path = "/sdcard/Documents/test_push_%d"%size_bytes
+    pc_path = "/tmp/tmp_file_%d" % size_bytes
+    with open(pc_path, 'w') as f:
+        f.write(data)
+
+    device_path = "/sdcard/Documents/test_push_%d" % size_bytes
     push_args = [pc_path, device_path]
     pull_args = [device_path, pc_path]
     res_push = []
     res_pull = []
-    for i in range(repeats):
+    if use_tqdm:
+        iters = tqdm(range(repeats), desc='Iteration', position=1)
+    else:
+        iters = range(repeats)
+    for _ in iters:
         res_push.append(time_it(device, "push", push_args, [True]))
         res_pull.append(time_it(device, "pull", pull_args, [True]))
 

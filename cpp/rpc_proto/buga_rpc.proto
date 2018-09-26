@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+//option java_multiple_files = true;
+//option java_package = "io.grpc.examples.helloworld";
+//option java_outer_classname = "HelloWorldProto";
+
+package buga_rpc;
+
+service DeviceRpc {
+    rpc call (GRequest) returns (GResponse) {}
+    rpc grpc_echo (GRequest) returns (GResponse) {}
+}
+
+message GRequest {
+    string name = 1;
+    bytes buf = 2;
+}
+
+message GResponse {
+    bytes buf = 1;
+}
