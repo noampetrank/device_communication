@@ -1,8 +1,11 @@
 from pydcomm.general_android.connection.device_selector import add_choose_first_behavior, add_user_choice_behavior, MultiDeviceBehavior
-from pydcomm.general_android.connection.adb_connection import AdbConnection, add_connect_wireless
+from pydcomm.general_android.connection.wired_adb_connection import AdbConnection
+from pydcomm.general_android.connection.wireless_adb_connection import add_connect_wireless
 
 
+# TODO: Add tests
 class AdbConnectionFactory(object):
+    # TODO: Add helper method for oppo devices.
     @staticmethod
     def create_connection(wired=False, ip=None, device=None, decorators=None, device_selector=MultiDeviceBehavior.CHOOSE_FIRST):
         """

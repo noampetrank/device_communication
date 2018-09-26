@@ -20,12 +20,11 @@ class AddDecoratorTests(unittest.TestCase):
         a.adb(a, "hi")
         self.assertTrue(d["success"])
 
-    # For some reason I couldn't get hte tests running with just one parameter.
     @parameterized.expand([
-        [True, True],
-        [False, True]
+        [True],
+        [False]
     ])
-    def test_add_adb_recovery_decorator__test_connection_fails__original_adb_is_called(self, connection_success, bla):
+    def test_add_adb_recovery_decorator__test_connection_fails__original_adb_is_called(self, connection_success):
         d = {"adb_called": False}
         mock_connection = mock.Mock()
 

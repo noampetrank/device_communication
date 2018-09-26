@@ -1,5 +1,4 @@
-import datetime
-from general_android.android_device_utils import AndroidDeviceUtils
+from pydcomm.general_android.android_device_utils import AndroidDeviceUtils
 
 
 class OppoDeviceUtils(AndroidDeviceUtils):

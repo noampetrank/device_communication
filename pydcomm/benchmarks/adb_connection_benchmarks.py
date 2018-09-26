@@ -41,6 +41,7 @@ class ConnectionBenchmark(object):
     def _create_connection(self, recovery, rooted, ip=None):
         self.fail_dict = defaultdict()
         cf = AdbConnectionFactory()
+        # TODO: Move all of these into the ConnectionFactory.
         decorators = []
         if rooted:
             decorators.append(add_init_decorator(add_rooted_impl, "add_rooted_impl"))
