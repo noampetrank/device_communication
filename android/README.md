@@ -2,12 +2,15 @@ gRPC on Android
 ===============
 
 This folder contains two projects:
+
 **bugarpc** - an Android library that provides JNI bindings to a gRPC implementation
 of the Bugatone RPC interface. 
+
 **echo** - an Android app that runs a gRPC server on a given port and responds to
 calls with echo. Depends on the bugarpc library.
 
-You can use the echo project as reference or starting point to build an Android gRPC server.
+
+You can use the echo project as reference or starting point to build an Android gRPC server.\
 To implement your executor, 
 - Implement the `BugaRpcExecutor` interface
 - Register it with the server using `BugaGrpc.registerExecutor`
@@ -16,7 +19,7 @@ To implement your executor,
 
 
 The user can communicate with the gRPC server from Python using a BugaGRpcCaller object:
-```
+```python
 from pydcomm.rpc.buga_grpc_caller import BugaGRpcCaller
 caller = BugaGRpcCaller(host_port)
 caller.start()
@@ -40,15 +43,16 @@ PREREQUISITES
 - Android NDK
 - `protoc` and `grpc_cpp_plugin` binaries on the host system
 
+
 INSTALL
 -------
 
 The example application can be built via Android Studio or on the command line
 using `gradle`:
 
-  ```sh
-  $ ./gradlew installDebug
-  ```
+```sh
+$ ./gradlew installDebug
+```
 
 
 _Note:_ Building the protobuf dependency for Android requires
