@@ -3,7 +3,7 @@ import unittest
 import mock
 from nose.tools import assert_raises
 
-from pydcomm.general_android.connection.adb_connection import WiredAdbConnection, AdbConnectionError, get_device_ip, ConnectingError, connect_wireless
+from pydcomm.general_android.connection.adb_connection import AdbConnection, AdbConnectionError, get_device_ip, ConnectingError, connect_wireless
 from pydcomm.tests.connection.consts import IFCONFIG_BAD, IFCONFIG_GOOD
 
 MODULE_NAME = "pydcomm.general_android.connection.adb_connection"
@@ -11,10 +11,10 @@ MODULE_NAME = "pydcomm.general_android.connection.adb_connection"
 
 class WiredAdbConnectionTests(unittest.TestCase):
     def setUp(self):
-        self.con = WiredAdbConnection(device_id="avocado")
+        self.con = AdbConnection(device_id="avocado")
 
     @mock.patch(MODULE_NAME + ".subprocess.Popen")
-    @mock.patch.object(WiredAdbConnection, "test_connection", lambda x: True)
+    @mock.patch.object(AdbConnection, "test_connection", lambda x: True)
     def test_adb__valid_input__adb_called_with_input_and_device_id(self, mock_popen):
         stdout = "WONDERFUL STDOUT!!!"
         mock_popen.return_value.communicate.return_value = stdout, mock.Mock()
@@ -27,7 +27,7 @@ class WiredAdbConnectionTests(unittest.TestCase):
         self.assertEqual(res, stdout)
 
     @mock.patch(MODULE_NAME + ".subprocess.Popen")
-    @mock.patch.object(WiredAdbConnection, "test_connection", lambda x: True)
+    @mock.patch.object(AdbConnection, "test_connection", lambda x: True)
     def test_adb__adb_returns_error_code__raises_appropriate_exception(self, mock_popen):
         stderr = "GREAT ERROR!"
         mock_popen.return_value.communicate.return_value = mock.Mock(), stderr
@@ -39,7 +39,7 @@ class WiredAdbConnectionTests(unittest.TestCase):
         self.assertEqual(e.exception.returncode, 4)
         self.assertEqual(e.exception.stderr, stderr)
 
-    @mock.patch.object(WiredAdbConnection, "test_connection", lambda x: False)
+    @mock.patch.object(AdbConnection, "test_connection", lambda x: False)
     def test_adb__test_connection_fails__raises_exception(self):
         with assert_raises(AdbConnectionError) as e:
             self.con.adb("hay")
@@ -74,15 +74,15 @@ class GetDeviceIpTests(unittest.TestCase):
     @mock.patch(MODULE_NAME + ".subprocess.check_output")
     def test_get_device_ip__valid_case__get_the_ip(self, mock_check_output):
         ifconfig = IFCONFIG_GOOD
-        mock_check_output.side_effect = lambda *args: ifconfig if args[0] == ["adb", "shell", "ifconfig"] else ""
-        ip = get_device_ip()
+        mock_check_output.side_effect = lambda *args: ifconfig if "ifconfig" in args[0] else ""
+        ip = get_device_ip("avocado")
         self.assertEqual(ip, "10.0.0.101")
 
     @mock.patch(MODULE_NAME + ".subprocess.check_output")
     def test_get_device_ip__device_not_connected_to_wifi__exception(self, mock_check_output):
         ifconfig = IFCONFIG_BAD
         mock_check_output.return_value = ifconfig
-        self.assertIsNone(get_device_ip())
+        self.assertIsNone(get_device_ip("avocado"))
 
 
 class WirelessAdbConnectionTests(unittest.TestCase):

@@ -1,3 +1,4 @@
+import json
 import time
 import tqdm
 from collections import defaultdict
@@ -74,16 +75,15 @@ class ConnectionBenchmark(object):
         :param connection_test_amount:
         :return:
         """
-        connection = self._create_connection(recovery, False)
+        connection = self._create_connection(recovery, rooted=False)
 
         ip = connection.device_id
         connection.disconnect()
         fails = defaultdict(lambda: 0)
-        it = tqdm.trange(rounds) if verbose else range(rounds)
-        for i in it:
+        for _ in tqdm.tqdm(range(rounds), disable=not verbose, desc="Connection rounds:", unit="connection"):
             connection = self._create_connection(recovery, rooted, ip if connect_from_ip else None)
             for j in range(connection_test_amount):
-                if self.test_connection(connection):
+                if not self.test_connection(connection):
                     fails["shell"] += 1
                 time.sleep(connection_test_amount / connection_length)
             connection.disconnect()
@@ -96,20 +96,20 @@ class ConnectionBenchmark(object):
 
 
 def main():
-    rooted = True
+    rooted = False
     bench = ConnectionBenchmark()
     results = {}
     recovery_type = Recovery.AUTO
     try:
         results["10x1x0"] = bench.repeat_test_connection(
-            rooted=True,  # Unused for now
+            rooted=rooted,  # Unused for now
             connect_from_ip=True,  # Unused for now
             recovery=recovery_type,
             rounds=1000,
             sleep_between_connections=0,
             connection_test_amount=1,
             connection_length=10)
-        print(results)
+        print_results(results)
     except Exception as e:
         print(e)
     try:
@@ -121,7 +121,7 @@ def main():
             sleep_between_connections=0,
             connection_length=180,
             connection_test_amount=18)
-        print(results)
+        print_results(results)
     except Exception as e:
         print(e)
     try:
@@ -133,7 +133,7 @@ def main():
             sleep_between_connections=0,
             connection_length=180,
             connection_test_amount=18)
-        print(results)
+        print_results(results)
     except Exception as e:
         print(e)
     try:
@@ -145,10 +145,15 @@ def main():
             sleep_between_connections=120,
             connection_length=10,
             connection_test_amount=2)
-        print(results)
+        print_results(results)
     except Exception as e:
         print(e)
     print(results)
+
+
+def print_results(res):
+    print("\n\n")
+    print(json.dumps(dict(res), indent=4, sort_keys=True))
 
 
 """

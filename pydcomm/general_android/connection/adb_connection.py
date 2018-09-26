@@ -27,7 +27,7 @@ class ConnectingError(DcommError):
     pass
 
 
-class WiredAdbConnection(object):
+class AdbConnection(object):
     def __init__(self, device_id=None):
         # TODO: test adb version
         self.log = logging.getLogger(__name__)
@@ -63,7 +63,9 @@ class WiredAdbConnection(object):
 
         if params[0] is "adb":
             self.log.warn("adb() called with 'adb' as first parameter. Is this intentional?")
+        return self._run_adb(params)
 
+    def _run_adb(self, params):
         p = subprocess.Popen(["adb", "-s", self.device_id] + list(params), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output, error = p.communicate()
         if p.returncode != 0:
@@ -81,12 +83,12 @@ class WiredAdbConnection(object):
             return False
 
 
-def get_device_ip():
+def get_device_ip(device_id):
     """
     get the ip address of the connected device.
     :return: ip. None if device is not connected to wifi
     """
-    ifconfig = subprocess.check_output('adb shell ifconfig'.split(" "))
+    ifconfig = subprocess.check_output('adb -s {} shell ifconfig'.format(device_id).split(" "))
     ips = re.findall(r"wlan0.*\n.*inet addr:(\d+\.\d+\.\d+\.\d+)", ifconfig)
     if ips:
         return ips[0]
@@ -104,7 +106,8 @@ def _run_with_exception(command, exception_message):
 def connect_wireless(self, device_id=None):
     if not self.test_connection():
         raise ConnectingError("No device connected to PC")
-    ip = get_device_ip()
+    ip = get_device_ip(device_id or self.device_id)
+    # TODO: Test that the ip is in the same subnet
     if not ip:
         raise ConnectingError("Device is not connected to wifi")
     else:
@@ -114,8 +117,9 @@ def connect_wireless(self, device_id=None):
     _run_with_exception("adb tcpip 5555".split(" "), "Failed to change to tcp mode")
     _run_with_exception("adb connect {}:5555".format(self.device_id).split(" "), "Can't connect to ip {}".format(self.device_id))
     print("Device is connected over wifi, disconnect and press enter to continue.")
-    raw_input()
-    _run_with_exception("adb connect {}:5555".format(self.device_id).split(" "), "Can't connect to ip {}".format(self.device_id))
+    # TODO: This needs to be in a fixer.
+    # raw_input()
+    # _run_with_exception("adb connect {}:5555".format(self.device_id).split(" "), "Can't connect to ip {}".format(self.device_id))
 
 
 add_connect_wireless = add_init_decorator(connect_wireless, "connect_wireless")

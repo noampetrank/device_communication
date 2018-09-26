@@ -1,5 +1,5 @@
 from pydcomm.general_android.connection.device_selector import add_choose_first_behavior, add_user_choice_behavior, MultiDeviceBehavior
-from pydcomm.general_android.connection.adb_connection import WiredAdbConnection, add_connect_wireless
+from pydcomm.general_android.connection.adb_connection import AdbConnection, add_connect_wireless
 
 
 class AdbConnectionFactory(object):
@@ -19,10 +19,10 @@ class AdbConnectionFactory(object):
 
         decorators.append(AdbConnectionFactory.get_selection_behavior(device_selector))
 
-        con_cls = WiredAdbConnection
+        con_cls = AdbConnection
         if not wired:
             con_cls = add_connect_wireless(con_cls)
-        for d in decorators or []:
+        for d in decorators:
             con_cls = d(con_cls)
 
         con = con_cls(ip or device)

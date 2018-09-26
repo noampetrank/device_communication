@@ -3,8 +3,8 @@ import re
 
 
 def add_rooted_impl(connection, device_id=None):
-    connection.adb("root")
-    connection.adb("remount")
+    connection._run_adb("root")
+    connection._run_adb("remount")
 
 
 # region Auto fixes
@@ -14,7 +14,7 @@ def restart_adb_server_fix(connection):
 
 
 def set_usb_mode_to_mtp_fix(connection):
-    subprocess.check_call(["adb", "shell", "setprop sys.usb.config \"mtp,adb\""])
+    connection._run_adb(["shell", "setprop sys.usb.config \"mtp,adb\""])
 
 
 # endregion
