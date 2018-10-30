@@ -18,13 +18,16 @@ def add_adb_recovery_decorator(fix_function, fix_name):
 
 
 # TODO: Add error handling?
-def add_init_decorator(function, function_name):
+def add_init_decorator(function, function_name, run_before=False):
     def adder(connection):
         original_init = connection.__init__
 
         def new_init(self, device_id=None):
+            if run_before:
+                function(self,device_id)
             original_init(self, device_id)
-            function(self, device_id)
+            if not run_before:
+                function(self, device_id)
 
         connection.__init__ = new_init
         return connection

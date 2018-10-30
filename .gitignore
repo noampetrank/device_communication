@@ -188,3 +188,5 @@ build_*/
 battery_builds
 profiles_settings.xml
 
+.idea/vcs.xml
+
