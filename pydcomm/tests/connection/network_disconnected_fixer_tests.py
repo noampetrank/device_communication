@@ -1,4 +1,5 @@
 import StringIO
+import __builtin__
 import sys
 import unittest
 
