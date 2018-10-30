@@ -3,7 +3,7 @@ import time
 
 import subprocess32 as subprocess
 
-TEST_CONNECTION_ATTEMPTS = 10
+TEST_CONNECTION_ATTEMPTS = 5
 ADB_CALL_MINIMAL_INTERVAL = 0.5
 
 
@@ -24,6 +24,10 @@ class AdbConnectionError(DcommError):
 
 class ConnectingError(DcommError):
     """Error that happens during the connection process"""
+    pass
+
+
+class ConnectionClosedError(DcommError):
     pass
 
 
@@ -51,7 +55,7 @@ class AdbConnection(object):
         """
         In wired connection does nothing
         """
-        pass
+        self.device_id = None
 
     def adb(self, command, timeout=None, specific_device=True, disable_fixers=False):
         """
@@ -70,7 +74,10 @@ class AdbConnection(object):
         :raises ValueError is case the command start with 'adb'
         :raises TimeoutExpired is case the ADB command was timed out
         """
-        if specific_device:
+        if specific_device and self.device_id is None:
+            raise ConnectionClosedError()
+
+        if specific_device and not disable_fixers:
             if not self.test_connection():
                 raise AdbConnectionError("test_connection failed")
 
@@ -92,6 +99,8 @@ class AdbConnection(object):
         :return: ADB command output
         :raises TimeoutExpired is case the ADB command was timed out
         """
+        if self.device_id is None:
+            raise ConnectionClosedError()
         return self._run_adb_command(["-s", self.device_id] + params, timeout=timeout)
 
     def _run_adb_command(self, params, timeout):
@@ -130,6 +139,9 @@ class AdbConnection(object):
             except subprocess.TimeoutExpired:
                 pass
             except AdbConnectionError as e:
+                # TODO: Change this message
                 self.log.exception("Exception while connecting to wireless ADB:")
                 self.log.exception(e)
+            except ConnectionClosedError:
+                raise
         return False

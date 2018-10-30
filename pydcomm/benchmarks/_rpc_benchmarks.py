@@ -5,7 +5,7 @@ from collections import OrderedDict
 import time
 from tqdm import tqdm
 import os
-from pydcomm.rpc.marshallers import cbor_marshal, cbor_unmarshal, nparray_marshal, nparray_unmarshal
+from pydcomm.rpc._marshallers import cbor_marshal, cbor_unmarshal, nparray_marshal, nparray_unmarshal
 
 """
 Format:
@@ -138,7 +138,7 @@ if __name__ == "__main__":
     else:
         host_port = '{}:60004'.format(ips[0])
         print('Connecting to RPC server ' + host_port)
-        from pydcomm.rpc.buga_grpc_caller import BugaGRpcCaller
+        from pydcomm.rpc._buga_grpc_caller import BugaGRpcCaller
         caller = BugaGRpcCaller(host_port)
         caller.start()
         print('Running benchmark')

@@ -1,13 +1,11 @@
 import StringIO
-import __builtin__
 import sys
-
-import subprocess32 as subprocess
 import unittest
-import mock
 from nose.tools import assert_raises
 
-from pydcomm.general_android.connection.wired_adb_connection import AdbConnection, AdbConnectionError, ConnectingError
+import mock
+import subprocess32 as subprocess
+from pydcomm.general_android.connection.wired_adb_connection import AdbConnection, AdbConnectionError, ConnectingError, ConnectionClosedError
 from pydcomm.general_android.connection.wireless_adb_connection import get_device_ip, connect_wireless
 from pydcomm.tests.connection.consts import IFCONFIG_BAD, IFCONFIG_GOOD
 from pydcomm.tests.helpers import TestCasePatcher
@@ -78,6 +76,11 @@ class WiredAdbConnectionTests(unittest.TestCase):
         mock_popen.return_value.returncode = 0
         res = self.con.test_connection()
         self.assertFalse(res)
+
+    def test_disconnect__disconnect__cant_run_adb(self):
+        self.con.disconnect()
+        with self.assertRaises(ConnectionClosedError):
+            self.con.adb("shell echo hi")
 
 
 class GetDeviceIpTests(unittest.TestCase):
