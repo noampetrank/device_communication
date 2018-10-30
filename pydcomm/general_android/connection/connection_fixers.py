@@ -1,3 +1,5 @@
+import ipaddress
+import netifaces as netifaces
 import subprocess32 as subprocess
 import re
 
@@ -8,6 +10,7 @@ def add_rooted_impl(connection, device_id=None):
 
 
 # region Auto fixes
+
 def restart_adb_server_fix(connection):
     subprocess.check_call(["adb", "kill-server"])
     subprocess.check_call(["adb", "start-server"])
@@ -17,7 +20,7 @@ def set_usb_mode_to_mtp_fix(connection):
     connection._run_adb(["shell", "setprop sys.usb.config \"mtp,adb\""])
 
 
-# endregion
+# endregion Auto fixes
 
 # region Manual fixes
 
@@ -147,6 +150,7 @@ def add_no_device_connected_recovery(connection):
 
 
 # TODO: These fixes should be applied to __init__ and not adb()
+# TODO: These fixes need to check if a device exists in adb devices instead of test_connection
 def forgot_device_fix(connection):
     if not get_connected_phones():
         print("I can't see any phone connected, is the phone connected?")
@@ -161,4 +165,37 @@ def device_turned_off(connection):
     else:
         print("Is the phone turned on?")
     raw_input()
-# endregion
+
+
+def network_disconnected_init(connection):
+    # Save computer's original ip and subnet mask
+    interfaces_and_addresses = [(x, netifaces.ifaddresses(x).get(netifaces.AF_INET)) for x in netifaces.interfaces()]
+    interfaces_and_addresses = [x for x in interfaces_and_addresses if x[1] is not None and x[1][0]["addr"] != u"127.0.0.1"]
+    for iface, addresses in interfaces_and_addresses:
+        for address in addresses:
+            if ipaddress.ip_address(connection.device_id) in ipaddress.ip_network(address["addr"] + u"/" + address["netmask"], strict=False):
+                connection._initial_ip_address = address
+                return
+    else:
+        # Will happen only in the extreme case that after you connected to the device and before this fixer is run you are disconnected from the network
+        print("Are you connected to a network?")
+
+
+def network_disconnected_adb(connection):
+    # if no IP - write that you are not connected
+    # if IP, compare with original ip, if different, check that same subnet as device
+    interfaces_and_addresses = [(x, netifaces.ifaddresses(x).get(netifaces.AF_INET)) for x in netifaces.interfaces()]
+    interfaces_and_addresses = [x for x in interfaces_and_addresses if x[1] is not None and x[1][0]["addr"] != u"127.0.0.1"]
+    for iface, addresses in interfaces_and_addresses:
+        if any([addr["addr"] == connection._initial_ip_address["addr"] for addr in addresses]):
+            # All is good, we are connected to the same network.
+            return
+        if any([ipaddress.ip_address(connection.device_id) in ipaddress.ip_network(addr["addr"] + u"/" + addr["netmask"], strict=False)
+                for addr in addresses]):
+            # We don't have the same ip, but we are still connected to the same network
+            return
+    print("Your computer is no longer connected to the network")
+    print("Check that you are still on the correct wifi")
+    raw_input()
+
+# endregion Manual fixes

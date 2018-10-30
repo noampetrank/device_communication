@@ -6,6 +6,7 @@ from nose.tools import assert_raises
 from pydcomm.general_android.connection.wired_adb_connection import AdbConnection, AdbConnectionError, ConnectingError
 from pydcomm.general_android.connection.wireless_adb_connection import get_device_ip, connect_wireless
 from pydcomm.tests.connection.consts import IFCONFIG_BAD, IFCONFIG_GOOD
+from pydcomm.tests.helpers import TestCasePatcher
 
 WIRED_MODULE_NAME = "pydcomm.general_android.connection.wired_adb_connection"
 
@@ -88,21 +89,17 @@ class GetDeviceIpTests(unittest.TestCase):
 WIRELESS_MODULE_NAME = "pydcomm.general_android.connection.wireless_adb_connection"
 
 class WirelessAdbConnectionTests(unittest.TestCase):
-    def addPatch(self, name):
-        patcher = mock.patch(name)
-        self.addCleanup(patcher.stop)
-        return patcher.start()
-
     def assert_raises_with_message(self, message):
         with assert_raises(ConnectingError) as e:
             connect_wireless(self.mock_wired_connection, None)
         self.assertIn(message, e.exception.message)
 
     def setUp(self):
-        self.mock_get_device_ip = self.addPatch(WIRELESS_MODULE_NAME + ".get_device_ip")
+        self.patcher =TestCasePatcher(self)
+        self.mock_get_device_ip = self.patcher.addPatch(WIRELESS_MODULE_NAME + ".get_device_ip")
         self.mock_get_device_ip.return_value = "10.0.0.101"
-        self.mock_check_call = self.addPatch(WIRELESS_MODULE_NAME + ".subprocess.check_call")
-        self.mock_raw_input = self.addPatch(WIRELESS_MODULE_NAME + ".raw_input")
+        self.mock_check_call = self.patcher.addPatch(WIRELESS_MODULE_NAME + ".subprocess.check_call")
+        self.mock_raw_input = self.patcher.addPatch(WIRELESS_MODULE_NAME + ".raw_input")
         self.mock_wired_connection = mock.Mock()
         self.mock_wired_connection.device_id = "penguin"
         self.mock_wired_connection.test_connection.return_value = True
