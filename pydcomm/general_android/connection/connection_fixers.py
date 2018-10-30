@@ -1,3 +1,5 @@
+import ipaddress
+import netifaces as netifaces
 import subprocess32 as subprocess
 
 
