@@ -1,11 +1,16 @@
 import re
+import time
 
 import subprocess32 as subprocess
 
-from pydcomm.general_android.connection.fixes.computer_network_disconnected_fixes import is_ip_in_ips_network, get_connected_interfaces_and_addresses
-from pydcomm.general_android.connection.wired_adb_connection import ConnectingError
+from pydcomm.general_android.connection.fixers.computer_network_disconnected_fixes import is_ip_in_ips_network, \
+    get_connected_interfaces_and_addresses
+from pydcomm.general_android.connection.wired_adb_connection import ConnectingError, AdbConnectionError
 from pydcomm.general_android.connection.decorator_helpers import add_init_decorator
 from subprocess32 import CalledProcessError
+
+ADB_TCP_PORT = 5555
+CONNECTION_ATTEMPTS = 10
 
 
 def get_device_ip(device_id):
@@ -16,14 +21,31 @@ def get_device_ip(device_id):
     ifconfig = subprocess.check_output('adb -s {} shell ifconfig'.format(device_id).split(" "))
     ips = re.findall(r"wlan0.*\n.*inet addr:(\d+\.\d+\.\d+\.\d+)", ifconfig)
     if ips:
-        return ips[0]
+        return unicode(ips[0])
     else:
         return None
 
 
-def _run_with_exception(command, exception_message):
+def _run_adb_with_exception(connection, command, exception_message):
     try:
-        subprocess.check_call(command)
+        connection.run_adb_without_fixers(command)
+    except AdbConnectionError:
+        raise ConnectingError(exception_message)
+
+
+def _connect_to_wireless_adb(device_addr, exception_message):
+    try:
+        attempts = CONNECTION_ATTEMPTS
+        connected = False
+        while not connected and attempts > 0:
+            output = subprocess.check_output("adb connect {}".format(device_addr).split(" "))
+            if "connected to " + device_addr in output:
+                connected = True
+            attempts -= 1
+            time.sleep(0.5)
+
+        if not connected:
+            raise ConnectingError(exception_message)
     except CalledProcessError:
         raise ConnectingError(exception_message)
 
@@ -35,6 +57,8 @@ def connect_wireless(self, device_id=None):
     :param self: AdbConnection
     :param device_id:
     """
+    # TODO: maybe append :5555 if needed
+
     if not self.test_connection():
         raise ConnectingError("No device connected to PC")
 
@@ -51,12 +75,13 @@ def connect_wireless(self, device_id=None):
             print("Device is not connected to the same network as the computer, please change and press enter")
             raw_input()
 
+    _run_adb_with_exception(self, ("tcpip " + str(ADB_TCP_PORT)).split(" "), "Failed to change to tcp mode")
+
     self.device_serial = self.device_id
-    self.device_id = ip
+    self.device_id = ip + ":" + str(ADB_TCP_PORT)
 
     # TODO: Possibly need to change to mtp mode
-    _run_with_exception("adb tcpip 5555".split(" "), "Failed to change to tcp mode")
-    _run_with_exception("adb connect {}:5555".format(self.device_id).split(" "), "Can't connect to ip {}".format(self.device_id))
+    _connect_to_wireless_adb(self.device_id, "Can't connect to ip {}".format(self.device_id))
     print("Device is connected over wifi, disconnect and press enter to continue.")
     # TODO: This needs to be in a fixer.
     # raw_input()

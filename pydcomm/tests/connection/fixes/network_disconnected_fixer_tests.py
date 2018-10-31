@@ -4,15 +4,16 @@ import sys
 import unittest
 
 import mock
+from pydcomm.general_android.connection.fixers.computer_network_disconnected_fixes import network_disconnected_init, \
+    network_disconnected_adb
 
-from pydcomm.general_android.connection.fixes.computer_network_disconnected_fixes import network_disconnected_init, network_disconnected_adb
 from pydcomm.tests.helpers import TestCasePatcher
 
 
 class NetworkDisconnectedFixerTests(unittest.TestCase):
     def setUp(self):
         self.patcher = TestCasePatcher(self)
-        self.mock_netifaces = self.patcher.addPatch("pydcomm.general_android.connection.fixes.computer_network_disconnected_fixes.netifaces")
+        self.mock_netifaces = self.patcher.addPatch("pydcomm.general_android.connection.fixers.computer_network_disconnected_fixes.netifaces")
 
         self.mock_netifaces.interfaces.return_value = ["real", "lo", "virtual"]
         self.mock_netifaces.AF_INET = 2

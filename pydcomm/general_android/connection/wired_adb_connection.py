@@ -4,6 +4,9 @@ import subprocess32 as subprocess
 from subprocess32 import CalledProcessError
 
 
+TEST_CONNECTION_ATTEMPTS = 10
+
+
 class DcommError(Exception):
     pass
 
@@ -54,15 +57,17 @@ class AdbConnection(object):
         :return: Adb command output
         :raises AdbConnectionError
         """
+        params = list(params)[0]
+
         if not self.test_connection():
             raise AdbConnectionError("test_connection failed")
         self.log.info("adb params: %s", list(params))
 
         if params[0] is "adb":
             self.log.warn("adb() called with 'adb' as first parameter. Is this intentional?")
-        return self._run_adb(params)
+        return self.run_adb_without_fixers(params)
 
-    def _run_adb(self, params):
+    def run_adb_without_fixers(self, params):
         p = subprocess.Popen(["adb", "-s", self.device_id] + list(params), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output, error = p.communicate()
         if p.returncode != 0:
@@ -70,12 +75,15 @@ class AdbConnection(object):
         return output
 
     def test_connection(self):
-        try:
-            return subprocess.check_output(["adb", "-s", self.device_id, "shell", "echo hi"], timeout=1).strip() == "hi"
-        except subprocess.TimeoutExpired:
-            self.log.warn("test_connection timed out")
-            return False
-        except CalledProcessError as e:
-            self.log.exception(e)
-            return False
-
+        attempts = TEST_CONNECTION_ATTEMPTS
+        connected = False
+        while not connected and attempts > 0:
+            try:
+                attempts -= 1
+                return subprocess.check_output(["adb", "-s", self.device_id, "shell", "echo hi"], timeout=1).strip() == "hi"
+            except subprocess.TimeoutExpired:
+                pass
+            except CalledProcessError as e:
+                self.log.exception(e)
+                return False
+        return False

@@ -4,8 +4,8 @@ import subprocess32 as subprocess
 
 
 def add_rooted_impl(connection, device_id=None):
-    connection._run_adb("root")
-    connection._run_adb("remount")
+    connection.run_adb_without_fixers("root")
+    connection.run_adb_without_fixers("remount")
 
 
 # region Auto fixes
@@ -16,7 +16,7 @@ def restart_adb_server_fix(connection):
 
 
 def set_usb_mode_to_mtp_fix(connection):
-    connection._run_adb(["shell", "setprop sys.usb.config \"mtp,adb\""])
+    connection.run_adb_without_fixers(["shell", "setprop sys.usb.config \"mtp,adb\""])
 
 
 # endregion Auto fixes
