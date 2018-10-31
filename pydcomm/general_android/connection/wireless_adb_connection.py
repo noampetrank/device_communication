@@ -2,7 +2,7 @@ import re
 
 import subprocess32 as subprocess
 
-from pydcomm.general_android.connection.connection_fixers import get_connected_interfaces_and_addresses, is_ip_in_ips_network
+from pydcomm.general_android.connection.fixes.computer_network_disconnected_fixes import is_ip_in_ips_network, get_connected_interfaces_and_addresses
 from pydcomm.general_android.connection.wired_adb_connection import ConnectingError
 from pydcomm.general_android.connection.decorator_helpers import add_init_decorator
 from subprocess32 import CalledProcessError

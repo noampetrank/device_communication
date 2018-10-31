@@ -6,8 +6,8 @@ from collections import defaultdict
 from enum import IntEnum
 
 from pydcomm.general_android.connection.connection_factory import AdbConnectionFactory
-from pydcomm.general_android.connection.connection_fixers import add_rooted_impl, set_usb_mode_to_mtp_fix, restart_adb_server_fix, add_no_device_connected_recovery, \
-    forgot_device_fix, device_turned_off
+from pydcomm.general_android.connection.connection_fixers import add_rooted_impl, set_usb_mode_to_mtp_fix, restart_adb_server_fix, add_no_device_connected_recovery
+from pydcomm.general_android.connection.fixes.connected_usb_device_fixes import forgot_device_fix, device_turned_off
 from pydcomm.general_android.connection.decorator_helpers import add_adb_recovery_decorator, add_init_decorator
 
 """
