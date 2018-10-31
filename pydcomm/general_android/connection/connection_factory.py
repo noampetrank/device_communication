@@ -3,6 +3,11 @@ from pydcomm.general_android.connection.wired_adb_connection import AdbConnectio
 from pydcomm.general_android.connection.wireless_adb_connection import add_connect_wireless
 
 
+# Save AdbConnection functions that can be decorated in order to allow resetting the class
+AdbConnection.original_init = AdbConnection.__init__
+AdbConnection.original_adb = AdbConnection.adb
+
+
 # TODO: Add tests
 class AdbConnectionFactory(object):
     # TODO: Add helper method for oppo devices.
@@ -21,6 +26,10 @@ class AdbConnectionFactory(object):
         decorators = decorators or []
 
         decorators.append(AdbConnectionFactory.get_selection_behavior(device_selector))
+
+        # Reset AdbConnection decorated functions
+        AdbConnection.__init__ = AdbConnection.original_init
+        AdbConnection.adb = AdbConnection.original_adb
 
         con_cls = AdbConnection
         if not wired:
