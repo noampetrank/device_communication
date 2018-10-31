@@ -15,11 +15,12 @@ def get_connected_phones():
     return phone_vendor_ids
 
 
-def not_device_connected_init_fix(connection):
+def no_device_connected_init_fix(connection, device_id):
     connection._initial_usb_list = get_connected_usb_devices()
 
 
-def not_device_connected_adb_fix(connection):
+#TODO: This fix raises false positives when he device has chnaged mode to charging only. Requires further research.
+def no_device_connected_adb_fix(connection):
     connected_usbs = get_connected_usb_devices()
     difference = list(set(connection._initial_usb_list) - set(connected_usbs))
     vendor_ids = [x[0] for x in difference]
@@ -32,6 +33,7 @@ def not_device_connected_adb_fix(connection):
         raw_input()
 
 
+# TODO: Requires rethinking, where this runs
 def forgot_device_fix(connection):
     if not get_connected_phones():
         print("I can't see any phone connected, is the phone connected?")
@@ -128,5 +130,8 @@ known_phone_usb_ids = [
     ('Xiaomi', '2717'),
     ('YotaDevices', '2916'),
     ('Yulong Coolpad', '1EBF'),
-    ('ZTE', '19D2')
+    ('ZTE', '19D2'),
+
+    # Manually added
+    ('OnePlus', '2a70')
 ]
