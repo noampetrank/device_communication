@@ -61,7 +61,7 @@ class ConnectionBenchmark(object):
 
     @staticmethod
     def test_connection(connection):
-        return connection.adb("shell", "echo hi").strip() == "hi"
+        return connection.adb("shell echo hi") == "hi"
 
     def repeat_test_connection(self, rooted, connect_from_ip, recovery, rounds, sleep_between_connections, connection_test_amount,
                                connection_length, verbose=True):
