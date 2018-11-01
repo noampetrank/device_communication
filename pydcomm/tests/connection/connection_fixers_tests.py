@@ -46,7 +46,7 @@ class TestConnection(object):
         self.connection_good = True
         pass
 
-    def adb(self, *params):
+    def adb(self, command, timeout=None, specific_device=True, disable_fixers=False):
         pass
 
     def test_connection(self):

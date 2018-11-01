@@ -3,13 +3,13 @@ def add_adb_recovery_decorator(fix_function, fix_name):
     def inner(connection):
         old_adb = connection.adb
 
-        def new_adb(self, *params):
-            if not self.test_connection():
+        def new_adb(self, command, timeout=None, specific_device=True, disable_fixers=False):
+            if not disable_fixers and specific_device and not self.test_connection():
                 try:
                     fix_function(self)
                 except Exception as e:
                     self.log.warn("Fix {} failed ".format(fix_name), exc_info=e)
-            return old_adb(self, *params)
+            return old_adb(self, command, timeout, specific_device, disable_fixers)
 
         connection.adb = new_adb
         return connection

@@ -7,7 +7,7 @@ from pydcomm.general_android.connection.fixes.connected_usb_device_fixes import 
     no_device_connected_adb_fix
 from pydcomm.tests.helpers import TestCasePatcher, MockStdout
 
-MODULE_NAME = "pydcomm.general_android.connection.fixes.connected_usb_device_fixes"
+MODULE_NAME = "pydcomm.general_android.connection.fixers.connected_usb_device_fixes"
 
 
 class NoDeviceConnectedRecoveryTests(unittest.TestCase):

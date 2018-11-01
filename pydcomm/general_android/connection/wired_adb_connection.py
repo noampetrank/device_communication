@@ -1,10 +1,10 @@
 import logging
+import time
 
 import subprocess32 as subprocess
-from subprocess32 import CalledProcessError
-
 
 TEST_CONNECTION_ATTEMPTS = 10
+ADB_CALL_MINIMAL_INTERVAL = 0.5
 
 
 class DcommError(Exception):
@@ -31,6 +31,10 @@ class AdbConnection(object):
     def __init__(self, device_id=None):
         # TODO: test adb version
         self.log = logging.getLogger(__name__)
+
+        # Initially set the last call to be "old" enough to allow the next call
+        self.last_adb_call_time = time.time() - ADB_CALL_MINIMAL_INTERVAL
+
         if not device_id:
             self.device_id = self._get_device_to_connect()
             if not self.device_id:
@@ -39,6 +43,7 @@ class AdbConnection(object):
             self.device_id = device_id
         self.log.info("Connected to device: \"{}\"".format(self.device_id))
 
+    # noinspection PyMethodMayBeStatic
     def _get_device_to_connect(self):
         return ""
 
@@ -48,42 +53,83 @@ class AdbConnection(object):
         """
         pass
 
-    def adb(self, *params):
+    def adb(self, command, timeout=None, specific_device=True, disable_fixers=False):
         """
         Send the given command over adb.
-        :type params: str
-        :param params: array of split args to adb command
+        :type timeout: float | None
+        :param timeout: ADB call timeout
+        :type disable_fixers: bool
+        :param disable_fixers: Whether to disable connection fixers when running this ADB command
+        :type specific_device: bool
+        :param specific_device: Whether the command is general or specific to the device connected by this connection
+        :type command: str
+        :param command: adb command (without "adb" in the beginning)
         :rtype: str
-        :return: Adb command output
-        :raises AdbConnectionError
+        :return: ADB command output
+        :raises AdbConnectionError is case of a connection error
+        :raises ValueError is case the command start with 'adb'
+        :raises TimeoutExpired is case the ADB command was timed out
         """
-        params = list(params)[0]
+        if specific_device:
+            if not self.test_connection():
+                raise AdbConnectionError("test_connection failed")
 
-        if not self.test_connection():
-            raise AdbConnectionError("test_connection failed")
-        self.log.info("adb params: %s", list(params))
+        if command.startswith("adb"):
+            raise ValueError("Command should start with 'adb'")
 
-        if params[0] is "adb":
-            self.log.warn("adb() called with 'adb' as first parameter. Is this intentional?")
-        return self.run_adb_without_fixers(params)
+        if specific_device:
+            return self._run_adb_for_specific_device(command.split(), timeout)
+        else:
+            return self._run_adb_command(command.split(), timeout)
 
-    def run_adb_without_fixers(self, params):
-        p = subprocess.Popen(["adb", "-s", self.device_id] + list(params), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        output, error = p.communicate()
+    def _run_adb_for_specific_device(self, params, timeout):
+        """
+        :type params: list[str]
+        :param params: list of ADB params (split by spaces)
+        :type timeout: float
+        :param timeout: ADB call timeout
+        :rtype: str
+        :return: ADB command output
+        :raises TimeoutExpired is case the ADB command was timed out
+        """
+        return self._run_adb_command(["-s", self.device_id] + params, timeout=timeout)
+
+    def _run_adb_command(self, params, timeout):
+        """
+        :type params: list[str]
+        :param params: list of ADB params (split by spaces)
+        :type timeout: float
+        :param timeout: ADB call timeout
+        :rtype: str
+        :return: ADB command output
+        :raises TimeoutExpired is case the ADB command was timed out
+        :raises AdbConnectionError is case of ADB connection error
+        """
+        # Make sure enough time passed since the last ASB call
+        time_since_last_adb_call = time.time() - self.last_adb_call_time
+        if time_since_last_adb_call < ADB_CALL_MINIMAL_INTERVAL:
+            time.sleep(ADB_CALL_MINIMAL_INTERVAL - time_since_last_adb_call)
+
+        # Call ADB
+        p = subprocess.Popen(["adb"] + params, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        try:
+            output, error = p.communicate(timeout=timeout)
+        finally:
+            self.last_adb_call_time = time.time()
+
         if p.returncode != 0:
             raise AdbConnectionError("adb returned with non-zero error code", stderr=error, returncode=p.returncode)
-        return output
+        return output.strip("\r\n")
 
     def test_connection(self):
         attempts = TEST_CONNECTION_ATTEMPTS
-        connected = False
-        while not connected and attempts > 0:
+        while attempts > 0:
             try:
                 attempts -= 1
-                return subprocess.check_output(["adb", "-s", self.device_id, "shell", "echo hi"], timeout=1).strip() == "hi"
+                return self._run_adb_for_specific_device(["shell", "echo hi"], timeout=1) == "hi"
             except subprocess.TimeoutExpired:
                 pass
-            except CalledProcessError as e:
+            except AdbConnectionError as e:
+                self.log.exception("Exception while connecting to wireless ADB:")
                 self.log.exception(e)
-                return False
         return False

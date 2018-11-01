@@ -15,8 +15,13 @@ wireless_single = ("10.0.0.101:5555\tdevice\n", ("wireless", "10.0.0.101:5555", 
 
 
 class AdbDevicesTests(unittest.TestCase):
-    @mock.patch("pydcomm.general_android.connection.device_selector.subprocess.check_output")
-    def test_permutations(self, mock_subprocess):
+    @staticmethod
+    def get_mock_connection_with_adb_output(output):
+        conn = mock.Mock()
+        conn.adb.return_value = output
+        return conn
+
+    def test_permutations(self):
         temporary = [
             [no_permissions_single_device],
             [no_permissions_single_device, wired_device],
@@ -29,14 +34,11 @@ class AdbDevicesTests(unittest.TestCase):
         for devicelist in temporary:
             subprocess_output, expected_output = zip(*devicelist)
             input = empty_devices + "".join(subprocess_output) + "\n\n"
-            mock_subprocess.return_value = input
-            output = adb_devices()
+            output = adb_devices(self.get_mock_connection_with_adb_output(input))
             self.assertSequenceEqual(output, expected_output)
 
-    @mock.patch("pydcomm.general_android.connection.device_selector.subprocess")
-    def test_empty_device_list(self, mock_subprocess):
-        mock_subprocess.check_output.returns(empty_devices)
-        output = adb_devices()
+    def test_empty_device_list(self):
+        output = adb_devices(self.get_mock_connection_with_adb_output(empty_devices))
         self.assertEqual(output, [])
 
 

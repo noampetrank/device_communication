@@ -26,10 +26,11 @@ class WiredAdbConnectionTests(unittest.TestCase):
         mock_popen.return_value.communicate.return_value = stdout, mock.Mock()
         mock_popen.return_value.returncode = 0
 
-        command = ["hello", "darkness", "my", "old", "friend"]
-        res = self.con.adb(*command)
+        command = "hello darkness my old friend"
+        res = self.con.adb(command)
 
-        mock_popen.assert_has_calls([mock.call(["adb", "-s", "avocado"] + command, stderr=subprocess.PIPE, stdout=subprocess.PIPE)])
+        mock_popen.assert_has_calls(
+            [mock.call(["adb", "-s", "avocado"] + command.split(), stderr=subprocess.PIPE, stdout=subprocess.PIPE)])
         self.assertEqual(res, stdout)
 
     @mock.patch(WIRED_MODULE_NAME + ".subprocess.Popen")
@@ -51,44 +52,47 @@ class WiredAdbConnectionTests(unittest.TestCase):
             self.con.adb("hay")
         self.assertIn("test_connection", e.exception.message)
 
-    @mock.patch(WIRED_MODULE_NAME + ".subprocess.check_output")
-    def test_test_connection__valid_connection__return_true(self, mock_check_output):
-        mock_check_output.return_value = "hi\n"
+    @mock.patch(WIRED_MODULE_NAME + ".subprocess.Popen")
+    def test_test_connection__valid_connection__return_true(self, mock_popen):
+        mock_popen.return_value.communicate.return_value = "hi", mock.Mock()
+        mock_popen.return_value.returncode = 0
         res = self.con.test_connection()
         self.assertTrue(res)
 
-    @mock.patch(WIRED_MODULE_NAME + ".subprocess.check_output")
-    def test_test_connection__time_out__return_false(self, mock_check_output):
-        mock_check_output.side_effect = subprocess.TimeoutExpired("echo hi", 1)
+    @mock.patch(WIRED_MODULE_NAME + ".subprocess.Popen")
+    def test_test_connection__time_out__return_false(self, mock_popen):
+        mock_popen.side_effect = subprocess.TimeoutExpired("echo hi", 1)
         res = self.con.test_connection()
         self.assertFalse(res)
 
-    @mock.patch(WIRED_MODULE_NAME + ".subprocess.check_output")
-    def test_test_connection__no_device_connected__return_false(self, mock_check_output):
-        mock_check_output.side_effect = subprocess.CalledProcessError(1, "echo hi")
+    @mock.patch(WIRED_MODULE_NAME + ".subprocess.Popen")
+    def test_test_connection__no_device_connected__return_false(self, mock_popen):
+        mock_popen.return_value.communicate.return_value = "hi", mock.Mock()
+        mock_popen.return_value.returncode = 1
         res = self.con.test_connection()
         self.assertFalse(res)
 
-    @mock.patch(WIRED_MODULE_NAME + ".subprocess.check_output")
-    def test_test_connection__no_echo__return_false(self, mock_check_output):
-        mock_check_output.return_value = ""
+    @mock.patch(WIRED_MODULE_NAME + ".subprocess.Popen")
+    def test_test_connection__no_echo__return_false(self, mock_popen):
+        mock_popen.return_value.communicate.return_value = "", mock.Mock()
+        mock_popen.return_value.returncode = 0
         res = self.con.test_connection()
         self.assertFalse(res)
 
 
 class GetDeviceIpTests(unittest.TestCase):
-    @mock.patch(WIRED_MODULE_NAME + ".subprocess.check_output")
-    def test_get_device_ip__valid_case__get_the_ip(self, mock_check_output):
+    def test_get_device_ip__valid_case__get_the_ip(self):
         ifconfig = IFCONFIG_GOOD
-        mock_check_output.side_effect = lambda *args: ifconfig if "ifconfig" in args[0] else ""
-        ip = get_device_ip("avocado")
+        mock_connection = mock.Mock()
+        mock_connection.adb.side_effect = lambda *args, **kwargs: ifconfig if "ifconfig" in args[0] else ""
+        ip = get_device_ip(mock_connection)
         self.assertEqual(ip, "10.0.0.101")
 
-    @mock.patch(WIRED_MODULE_NAME + ".subprocess.check_output")
-    def test_get_device_ip__device_not_connected_to_wifi__exception(self, mock_check_output):
+    def test_get_device_ip__device_not_connected_to_wifi__exception(self):
         ifconfig = IFCONFIG_BAD
-        mock_check_output.return_value = ifconfig
-        self.assertIsNone(get_device_ip("avocado"))
+        mock_connection = mock.Mock()
+        mock_connection.adb.return_value = ifconfig
+        self.assertIsNone(get_device_ip(mock_connection))
 
 
 WIRELESS_MODULE_NAME = "pydcomm.general_android.connection.wireless_adb_connection"
@@ -104,7 +108,6 @@ class WirelessAdbConnectionTests(unittest.TestCase):
         self.patcher = TestCasePatcher(self)
         self.mock_get_device_ip = self.patcher.addPatch(WIRELESS_MODULE_NAME + ".get_device_ip")
         self.mock_get_device_ip.return_value = u"10.0.0.101"
-        self.mock_check_call = self.patcher.addPatch(WIRELESS_MODULE_NAME + ".subprocess.check_call")
         self.mock_raw_input = self.patcher.addPatch(WIRELESS_MODULE_NAME + ".raw_input")
         self.mock_wired_connection = mock.Mock()
         self.mock_wired_connection.device_id = "penguin"
@@ -119,25 +122,37 @@ class WirelessAdbConnectionTests(unittest.TestCase):
         self.mock_wired_connection.test_connection.return_value = False
         self.assert_raises_with_message("connected to PC")
 
-    def raise_exeception_if_correct_command(self, command):
-        def side_effect(*args):
+    @staticmethod
+    def raise_exception_error_if_command_equals(command):
+        def side_effect(*args, **kwargs):
             if args[0] == command:
-                raise subprocess.CalledProcessError(1, command)
+                raise AdbConnectionError(command)
+
+            return None
+
+        return side_effect
+
+    @staticmethod
+    def return_value_if_command_equals(command, value):
+        def side_effect(*args, **kwargs):
+            if args[0] == command:
+                return value
+
             return None
 
         return side_effect
 
     def test_connect__device_got_disconnected_before_adb_tcpip__raise_exception(self):
-        self.mock_check_call.side_effect = self.raise_exeception_if_correct_command(["adb", "tcpip", "5555"])
+        self.mock_wired_connection.adb.side_effect = self.raise_exception_error_if_command_equals("tcpip 5555")
         self.assert_raises_with_message("tcp mode")
 
     def test_connect__cant_connect_ip__raise_exception(self):
-        self.mock_check_call.side_effect = self.raise_exeception_if_correct_command("adb connect 10.0.0.101:5555".split(" "))
+        self.mock_wired_connection.adb.side_effect = self.raise_exception_error_if_command_equals(
+            "connect 10.0.0.101:5555")
         self.assert_raises_with_message("10.0.0.101")
 
     @mock.patch(WIRELESS_MODULE_NAME + ".get_connected_interfaces_and_addresses")
-    @mock.patch.object(__builtin__, 'raw_input')
-    def test_connect__device_is_not_on_same_network__user_is_asked_to_change_network(self, mock_raw_input, mock_get_interfaces):
+    def test_connect__device_is_not_on_same_network__user_is_asked_to_change_network(self, mock_get_interfaces):
         mock_get_interfaces.return_value = [(u'enx000acd2b99a2',
                                              [{'addr': u'10.0.0.107',
                                                'broadcast': u'10.0.0.255',
@@ -147,11 +162,14 @@ class WirelessAdbConnectionTests(unittest.TestCase):
                                                'broadcast': u'172.17.255.255',
                                                'netmask': u'255.255.0.0'}])]
         self.mock_get_device_ip.side_effect = [u"192.168.1.1", u"10.0.0.104"]
+        self.mock_wired_connection.adb.side_effect = self.return_value_if_command_equals("connect 10.0.0.104:5555",
+                                                                                         "connected to 10.0.0.104:5555")
 
-        capturedOutput = StringIO.StringIO()
-        sys.stdout = capturedOutput
+        captured_output = StringIO.StringIO()
+        sys.stdout = captured_output
 
         connect_wireless(self.mock_wired_connection, None)
 
         sys.stdout = sys.__stdout__
-        self.assertIn("Device is not connected to the same network as the computer, please change and press enter", capturedOutput.getvalue())
+        self.assertIn("Device is not connected to the same network as the computer, please change and press enter",
+                      captured_output.getvalue())

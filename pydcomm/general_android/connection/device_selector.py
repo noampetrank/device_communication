@@ -1,5 +1,4 @@
 import re
-import subprocess
 
 from enum import IntEnum
 from pybuga.infra.utils.user_input import UserInput
@@ -18,7 +17,7 @@ def add_choose_first_behavior(connection):
     """
 
     def _get_device_to_connect(self):
-        devices = adb_devices()
+        devices = adb_devices(self)
         if not devices:
             raise EnvironmentError("No devices connected")
         return devices[0][1]
@@ -35,10 +34,10 @@ def add_user_choice_behavior(connection):
     """
 
     def _get_device_to_connect(self):
-        devices = adb_devices()
+        devices = adb_devices(self)
         while not devices:
             UserInput.text("No devices connected. Please connect a device and press enter.", lambda x: True)
-            devices = adb_devices()
+            devices = adb_devices(self)
         print("Please select a device")
         choice = UserInput.menu(([(x[1], x[2]) for x in devices]))
         return choice
@@ -47,7 +46,7 @@ def add_user_choice_behavior(connection):
     return connection
 
 
-def adb_devices():
+def adb_devices(connection):
     def parse_line(line):
         device_id, status = line.split("\t")
         if "no permissions" in status or "unauthorized" in status:
@@ -58,7 +57,7 @@ def adb_devices():
             connection_type = "wired"
         return connection_type, device_id, status.strip()
 
-    output = subprocess.check_output(["adb", "devices"])
+    output = connection.adb("devices", timeout=1, specific_device=False, disable_fixers=True)
     if not output.startswith("List of devices attached"):
         raise ValueError("Unexpected output from \"adb devices\"")
 

@@ -5,14 +5,16 @@ import unittest
 
 import mock
 
-from pydcomm.general_android.connection.connection_fixers import network_disconnected_init, network_disconnected_adb
+from pydcomm.general_android.connection.fixers.computer_network_disconnected_fixes import network_disconnected_init, \
+    network_disconnected_adb
 from pydcomm.tests.helpers import TestCasePatcher
 
 
 class NetworkDisconnectedFixerTests(unittest.TestCase):
     def setUp(self):
         self.patcher = TestCasePatcher(self)
-        self.mock_netifaces = self.patcher.addPatch("pydcomm.general_android.connection.connection_fixers.netifaces")
+        self.mock_netifaces = self.patcher.addPatch(
+            "pydcomm.general_android.connection.fixers.computer_network_disconnected_fixes.netifaces")
 
         self.mock_netifaces.interfaces.return_value = ["real", "lo", "virtual"]
         self.mock_netifaces.AF_INET = 2
@@ -129,7 +131,8 @@ class NetworkDisconnectedFixerTests(unittest.TestCase):
         mock_raw_input.assert_called()
 
     @mock.patch.object(__builtin__, 'raw_input')
-    def test_network_disconnected_adb__computer_not_connected_to_correct_network__user_is_prompted(self, mock_raw_input):
+    def test_network_disconnected_adb__computer_not_connected_to_correct_network__user_is_prompted(self,
+                                                                                                   mock_raw_input):
         self.default_interface = {17: [{'addr': u'9c:5c:8e:97:41:21', 'broadcast': u'ff:ff:ff:ff:ff:ff'}]}
         self.interfaces["real"] = {2: [{'addr': u'10.0.0.107',
                                         'broadcast': u'10.0.0.255',
