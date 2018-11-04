@@ -70,7 +70,7 @@ class AdbConnection(object):
         :raises ValueError is case the command start with 'adb'
         :raises TimeoutExpired is case the ADB command was timed out
         """
-        if specific_device:
+        if specific_device and not disable_fixers:
             if not self.test_connection():
                 raise AdbConnectionError("test_connection failed")
 
