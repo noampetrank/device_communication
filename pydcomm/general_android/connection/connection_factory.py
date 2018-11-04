@@ -1,11 +1,11 @@
 from pydcomm.general_android.connection.device_selector import add_choose_first_behavior, add_user_choice_behavior, MultiDeviceBehavior
 from pydcomm.general_android.connection.wired_adb_connection import AdbConnection
-from pydcomm.general_android.connection.wireless_adb_connection import add_connect_wireless
-
+from pydcomm.general_android.connection.wireless_adb_connection import add_connect_wireless, add_disconnect_wireless
 
 # Save AdbConnection functions that can be decorated in order to allow resetting the class
 AdbConnection.original_init = AdbConnection.__init__
 AdbConnection.original_adb = AdbConnection.adb
+AdbConnection.original_disconnect = AdbConnection.disconnect
 
 
 # TODO: Add tests
@@ -29,11 +29,13 @@ class AdbConnectionFactory(object):
 
         # Reset AdbConnection decorated functions
         AdbConnection.__init__ = AdbConnection.original_init
+        AdbConnection.disconnect = AdbConnection.original_disconnect
         AdbConnection.adb = AdbConnection.original_adb
 
         con_cls = AdbConnection
         if not wired:
             con_cls = add_connect_wireless(con_cls)
+            con_cls = add_disconnect_wireless(con_cls)
         for d in decorators:
             con_cls = d(con_cls)
 

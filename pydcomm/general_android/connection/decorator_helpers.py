@@ -24,12 +24,29 @@ def add_init_decorator(function, function_name, run_before=False):
 
         def new_init(self, device_id=None):
             if run_before:
-                function(self,device_id)
+                function(self, device_id)
             original_init(self, device_id)
             if not run_before:
                 function(self, device_id)
 
         connection.__init__ = new_init
+        return connection
+
+    return adder
+
+
+def add_disconnect_decorator(function, function_name, run_before=False):
+    def adder(connection):
+        original_disconnect = connection.disconnect
+
+        def new_disconnect(self):
+            if run_before:
+                function(self)
+            original_disconnect(self)
+            if not run_before:
+                function(self)
+
+        connection.disconnect = new_disconnect
         return connection
 
     return adder
