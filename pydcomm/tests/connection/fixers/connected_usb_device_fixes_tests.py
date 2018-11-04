@@ -3,7 +3,8 @@ import unittest
 
 import mock
 
-from pydcomm.general_android.connection.fixes.connected_usb_device_fixes import get_connected_usb_devices, get_connected_phones, no_device_connected_init_fix, \
+from pydcomm.general_android.connection.fixers.connected_usb_device_fixes import get_connected_usb_devices, \
+    get_connected_phones, no_device_connected_init_fix, \
     no_device_connected_adb_fix
 from pydcomm.tests.helpers import TestCasePatcher, MockStdout
 
