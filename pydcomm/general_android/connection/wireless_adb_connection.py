@@ -4,7 +4,6 @@ from pydcomm.general_android.connection.fixers.computer_network_disconnected_fix
     get_connected_interfaces_and_addresses, is_ip_in_ips_network
 from pydcomm.general_android.connection.decorator_helpers import add_init_decorator
 from pydcomm.general_android.connection.wired_adb_connection import ConnectingError, AdbConnectionError
-from subprocess32 import CalledProcessError
 
 ADB_TCP_PORT = 5555
 CONNECTION_ATTEMPTS = 10
@@ -31,25 +30,25 @@ def _run_adb_with_exception(connection, command, exception_message):
 
 
 def connect_to_wireless_adb(connection, exception_message):
+    # First, try disconnecting from previous wireless ADB to completely shut down any current connection
     try:
-        # First, try disconnecting from previous wireless ADB to completely shut down any current connection
-        try:
-            connection.adb("disconnect " + connection.device_id, specific_device=False, disable_fixers=True)
-        except AdbConnectionError:
-            pass  # Disconnection will fail if a current connection doesn't exist, so we're ok with it.
+        connection.adb("disconnect " + connection.device_id, specific_device=False, disable_fixers=True)
+    except AdbConnectionError:
+        pass  # Disconnection will fail if a current connection doesn't exist, so we're ok with it.
 
-        attempts = CONNECTION_ATTEMPTS
-        connected = False
-        while not connected and attempts > 0:
+    attempts = CONNECTION_ATTEMPTS
+    connected = False
+    while not connected and attempts > 0:
+        try:
             output = connection.adb("connect " + connection.device_id, specific_device=False, disable_fixers=True)
             if "connected to " + connection.device_id in output:
                 connected = True
                 break
-            attempts -= 1
+        except AdbConnectionError:
+            pass # We can still retry
+        attempts -= 1
 
-        if not connected:
-            raise ConnectingError(exception_message)
-    except CalledProcessError:
+    if not connected:
         raise ConnectingError(exception_message)
 
 
