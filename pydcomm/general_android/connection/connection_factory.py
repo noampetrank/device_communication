@@ -32,12 +32,12 @@ class AdbConnectionFactory(object):
         """
         decorators = decorators or []
 
-        decorators.append(AdbConnectionFactory.get_selection_behavior(device_selector))
-
         # Reset AdbConnection decorated functions
         AdbConnection.__init__ = AdbConnection.original_init
         AdbConnection.disconnect = AdbConnection.original_disconnect
         AdbConnection.adb = AdbConnection.original_adb
+
+        decorators.append(AdbConnectionFactory.get_selection_behavior(device_selector))
 
         con_cls = AdbConnection
         if not wired:
