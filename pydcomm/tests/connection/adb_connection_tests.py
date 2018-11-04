@@ -79,6 +79,11 @@ class WiredAdbConnectionTests(unittest.TestCase):
         res = self.con.test_connection()
         self.assertFalse(res)
 
+    def test_disconnect__disconnect__cant_run_adb(self):
+        self.con.disconnect()
+        with self.assertRaises(AdbConnectionError):
+            self.con.adb("shell echo hi")
+
 
 class GetDeviceIpTests(unittest.TestCase):
     def test_get_device_ip__valid_case__get_the_ip(self):

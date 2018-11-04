@@ -51,6 +51,7 @@ class AdbConnection(object):
         """
         In wired connection does nothing
         """
+        self.device_id = None
         pass
 
     def adb(self, command, timeout=None, specific_device=True, disable_fixers=False):
@@ -70,6 +71,9 @@ class AdbConnection(object):
         :raises ValueError is case the command start with 'adb'
         :raises TimeoutExpired is case the ADB command was timed out
         """
+        if self.device_id is None:
+            raise AdbConnectionError("This connection was closed")
+
         if specific_device and not disable_fixers:
             if not self.test_connection():
                 raise AdbConnectionError("test_connection failed")
