@@ -38,28 +38,6 @@ def create_log_fix(fail_dict, name):
 
 
 class ConnectionBenchmark(object):
-    # Not good, need to find a better solution
-    def _create_connection(self, recovery, rooted, ip=None):
-        self.fail_dict = defaultdict()
-        cf = AdbConnectionFactory()
-        # TODO: Move all of these into the ConnectionFactory.
-        decorators = []
-        if rooted:
-            decorators.append(add_init_decorator(add_rooted_impl, "add_rooted_impl"))
-        decorators.append(create_log_fix(self.fail_dict, "connection_fail"))
-        if recovery >= Recovery.AUTO:
-            decorators.append(add_adb_recovery_decorator(restart_adb_server_fix, "restart_adb_server_fix"))
-            decorators.append(add_adb_recovery_decorator(set_usb_mode_to_mtp_fix, "set_usb_mode_to_mtp_fix"))
-            decorators.append(create_log_fix(self.fail_dict, "auto_recover_fail"))
-        if recovery >= Recovery.INTERACTIVE:
-            decorators.append(add_no_device_connected_recovery)
-            decorators.append(add_adb_recovery_decorator(set_usb_mode_to_mtp_fix, "set_usb_mode_to_mtp_fix"))
-            decorators.append(add_adb_recovery_decorator(forgot_device_fix, "forgot_device_fix"))
-            decorators.append(add_adb_recovery_decorator(device_turned_off, "device_turned_off"))
-            decorators.append(create_log_fix(self.fail_dict, "manual_recover_fail"))
-        con = cf.create_connection(wired=True, ip=ip, decorators=decorators)
-        return con
-
     @staticmethod
     def test_connection(connection, test_disconnection=False):
         try:
@@ -82,14 +60,14 @@ class ConnectionBenchmark(object):
         :param connection_test_amount:
         :return:
         """
-        connection = self._create_connection(recovery, rooted=False)
+        connection = AdbConnectionFactory.get_oppo_wireless_device()
 
         ip = connection.device_id
         connection.disconnect()
         time.sleep(0.5)
         fails = defaultdict(lambda: 0)
         for _ in tqdm.tqdm(range(rounds), disable=not verbose, desc="Connection rounds:", unit="connection"):
-            connection = self._create_connection(recovery, rooted, ip if connect_from_ip else None)
+            connection = AdbConnectionFactory.get_oppo_wireless_device()
             for j in range(connection_test_amount):
                 if not self.test_connection(connection):
                     fails["shell"] += 1
