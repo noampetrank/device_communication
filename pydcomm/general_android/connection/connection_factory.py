@@ -63,14 +63,14 @@ class AdbConnectionFactory(object):
         decorators = []
 
         if rooted:
-            decorators.append(add_init_decorator(add_rooted_impl, "add_rooted_impl"))
+            decorators.append(add_init_decorator(add_rooted_impl))
 
-        decorators.append(add_adb_recovery_decorator(restart_adb_server_fix, "restart_adb_server_fix"))
-        decorators.append(add_adb_recovery_decorator(set_usb_mode_to_mtp_fix, "set_usb_mode_to_mtp_fix"))
+        decorators.append(add_adb_recovery_decorator(restart_adb_server_fix))
+        decorators.append(add_adb_recovery_decorator(set_usb_mode_to_mtp_fix))
 
         if use_manual_fixes:
-            decorators.append(add_adb_recovery_decorator(get_user_attention_fix, "get_user_attention_fix"))
-            decorators.append(add_adb_recovery_decorator(forgot_device_fix, "forgot_device_fix"))
-            decorators.append(add_adb_recovery_decorator(device_turned_off, "device_turned_off"))
+            decorators.append(add_adb_recovery_decorator(get_user_attention_fix))
+            decorators.append(add_adb_recovery_decorator(forgot_device_fix))
+            decorators.append(add_adb_recovery_decorator(device_turned_off))
         return AdbConnectionFactory._create_connection(wired=False, decorators=decorators,
                                                        device_selector=device_selector)

@@ -95,6 +95,6 @@ def connect_wireless(self, device_id=None):
     # _run_with_exception("adb connect {}:5555".format(self.device_id).split(" "), "Can't connect to ip {}".format(self.device_id))
 
 
-add_connect_wireless = add_init_decorator(connect_wireless, "connect_wireless")
-add_disconnect_wireless = add_disconnect_decorator(disconnect_wireles, "disconnect_wireless")
+add_connect_wireless = add_init_decorator(connect_wireless)
+add_disconnect_wireless = add_disconnect_decorator(disconnect_wireles)
 

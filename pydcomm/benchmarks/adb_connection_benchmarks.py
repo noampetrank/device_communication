@@ -34,7 +34,7 @@ def create_log_fix(fail_dict, name):
     def f(connection):
         fail_dict[name] += 1
 
-    return add_adb_recovery_decorator(f, "counter for " + name)
+    return add_adb_recovery_decorator(f)
 
 
 class ConnectionBenchmark(object):
