@@ -33,7 +33,7 @@ def create_log_fix(fail_dict, name):
     def f(connection):
         fail_dict[name] += 1
 
-    return add_adb_recovery_decorator(f, "counter for " + name)
+    return add_adb_recovery_decorator(f)
 
 
 class ConnectionBenchmark(object):
@@ -44,17 +44,17 @@ class ConnectionBenchmark(object):
         # TODO: Move all of these into the ConnectionFactory.
         decorators = []
         if rooted:
-            decorators.append(add_init_decorator(add_rooted_impl, "add_rooted_impl"))
+            decorators.append(add_init_decorator(add_rooted_impl))
         decorators.append(create_log_fix(self.fail_dict, "connection_fail"))
         if recovery >= Recovery.AUTO:
-            decorators.append(add_adb_recovery_decorator(restart_adb_server_fix, "restart_adb_server_fix"))
-            decorators.append(add_adb_recovery_decorator(set_usb_mode_to_mtp_fix, "set_usb_mode_to_mtp_fix"))
+            decorators.append(add_adb_recovery_decorator(restart_adb_server_fix))
+            decorators.append(add_adb_recovery_decorator(set_usb_mode_to_mtp_fix))
             decorators.append(create_log_fix(self.fail_dict, "auto_recover_fail"))
         if recovery >= Recovery.INTERACTIVE:
             decorators.append(add_no_device_connected_recovery)
-            decorators.append(add_adb_recovery_decorator(set_usb_mode_to_mtp_fix, "set_usb_mode_to_mtp_fix"))
-            decorators.append(add_adb_recovery_decorator(forgot_device_fix, "forgot_device_fix"))
-            decorators.append(add_adb_recovery_decorator(device_turned_off, "device_turned_off"))
+            decorators.append(add_adb_recovery_decorator(set_usb_mode_to_mtp_fix))
+            decorators.append(add_adb_recovery_decorator(forgot_device_fix))
+            decorators.append(add_adb_recovery_decorator(device_turned_off))
             decorators.append(create_log_fix(self.fail_dict, "manual_recover_fail"))
         con = cf.create_connection(wired=True, ip=ip, decorators=decorators)
         return con

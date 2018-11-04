@@ -13,7 +13,7 @@ class AddDecoratorTests(unittest.TestCase):
         def decorator(connection):
             d["success"] = True
 
-        adder = add_adb_recovery_decorator(decorator, "tester")
+        adder = add_adb_recovery_decorator(decorator)
         a = mock.Mock()
         a.test_connection.return_value = False
         a = adder(a)
@@ -36,7 +36,7 @@ class AddDecoratorTests(unittest.TestCase):
 
         mock_connection.adb.side_effect = adb
         mock_connection.test_connection.return_value = connection_success
-        mock_connection = add_adb_recovery_decorator(decorator, "tester")(mock_connection)
+        mock_connection = add_adb_recovery_decorator(decorator)(mock_connection)
         mock_connection.adb(mock_connection, "hi")
         self.assertTrue(d["adb_called"])
 
