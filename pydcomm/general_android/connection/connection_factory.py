@@ -2,6 +2,7 @@ from general_android.connection.connection_fixers import add_rooted_impl, restar
     set_usb_mode_to_mtp_fix
 from general_android.connection.decorator_helpers import add_init_decorator, add_adb_recovery_decorator
 from general_android.connection.fixers.connected_usb_device_fixes import forgot_device_fix, device_turned_off
+from general_android.connection.fixers.get_user_attention_fixer import get_user_attention_fix
 from pydcomm.general_android.connection.device_selector import add_choose_first_behavior, add_user_choice_behavior, \
     MultiDeviceBehavior
 from pydcomm.general_android.connection.wired_adb_connection import AdbConnection
@@ -68,6 +69,7 @@ class AdbConnectionFactory(object):
         decorators.append(add_adb_recovery_decorator(set_usb_mode_to_mtp_fix, "set_usb_mode_to_mtp_fix"))
 
         if use_manual_fixes:
+            decorators.append(add_adb_recovery_decorator(get_user_attention_fix, "get_user_attention_fix"))
             decorators.append(add_adb_recovery_decorator(forgot_device_fix, "forgot_device_fix"))
             decorators.append(add_adb_recovery_decorator(device_turned_off, "device_turned_off"))
         return AdbConnectionFactory._create_connection(wired=False, decorators=decorators,
