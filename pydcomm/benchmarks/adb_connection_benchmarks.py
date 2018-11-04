@@ -4,6 +4,7 @@ import tqdm
 from collections import defaultdict
 
 from enum import IntEnum
+from pydcomm.general_android.connection.wired_adb_connection import AdbConnectionError
 
 from pydcomm.general_android.connection.connection_factory import AdbConnectionFactory
 from pydcomm.general_android.connection.connection_fixers import add_rooted_impl, set_usb_mode_to_mtp_fix, restart_adb_server_fix
@@ -60,8 +61,13 @@ class ConnectionBenchmark(object):
         return con
 
     @staticmethod
-    def test_connection(connection):
-        return connection.adb("shell echo hi") == "hi"
+    def test_connection(connection, test_disconnection=False):
+        try:
+            return connection.adb("shell echo hi", disable_fixers=test_disconnection) == "hi"
+        except AdbConnectionError:
+            if not test_disconnection:
+                raise
+            return False
 
     def repeat_test_connection(self, rooted, connect_from_ip, recovery, rounds, sleep_between_connections, connection_test_amount,
                                connection_length, verbose=True):
@@ -80,6 +86,7 @@ class ConnectionBenchmark(object):
 
         ip = connection.device_id
         connection.disconnect()
+        time.sleep(0.5)
         fails = defaultdict(lambda: 0)
         for _ in tqdm.tqdm(range(rounds), disable=not verbose, desc="Connection rounds:", unit="connection"):
             connection = self._create_connection(recovery, rooted, ip if connect_from_ip else None)
@@ -88,7 +95,7 @@ class ConnectionBenchmark(object):
                     fails["shell"] += 1
                 time.sleep(connection_test_amount / connection_length)
             connection.disconnect()
-            if self.test_connection(connection):
+            if self.test_connection(connection, test_disconnection=True):
                 fails["disconnect"] += 1
             for k in self.fail_dict:
                 fails[k] += self.fail_dict[k]
@@ -104,7 +111,7 @@ def main():
     try:
         results["10x1x0"] = bench.repeat_test_connection(
             rooted=rooted,  # Unused for now
-            connect_from_ip=True,  # Unused for now
+            connect_from_ip=False,  # Unused for now
             recovery=recovery_type,
             rounds=1000,
             sleep_between_connections=0,
