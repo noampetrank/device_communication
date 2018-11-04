@@ -43,6 +43,7 @@ class AdbConnection(object):
         """
         In wired connection does nothing
         """
+        self.device_id = None
         pass
 
     def adb(self, *params):
@@ -54,6 +55,9 @@ class AdbConnection(object):
         :return: Adb command output
         :raises AdbConnectionError
         """
+        if self.device_id is None:
+            raise AdbConnectionError("This connection was closed")
+
         if not self.test_connection():
             raise AdbConnectionError("test_connection failed")
         self.log.info("adb params: %s", list(params))
@@ -78,4 +82,3 @@ class AdbConnection(object):
         except CalledProcessError as e:
             self.log.exception(e)
             return False
-

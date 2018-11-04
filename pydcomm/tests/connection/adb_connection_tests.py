@@ -75,6 +75,11 @@ class WiredAdbConnectionTests(unittest.TestCase):
         res = self.con.test_connection()
         self.assertFalse(res)
 
+    def test_disconnect__disconnect__cant_run_adb(self):
+        self.con.disconnect()
+        with self.assertRaises(AdbConnectionError):
+            self.con.adb("shell", "echo", "hi")
+
 
 class GetDeviceIpTests(unittest.TestCase):
     @mock.patch(WIRED_MODULE_NAME + ".subprocess.check_output")
