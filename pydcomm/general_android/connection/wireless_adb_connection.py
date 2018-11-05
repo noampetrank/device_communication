@@ -29,16 +29,19 @@ def _run_adb_with_exception(connection, command, exception_message):
         raise ConnectingError(exception_message)
 
 
-def disconnect_wireles(connection):
+def disconnect_wireless(connection):
     try:
         connection.adb("disconnect " + connection.device_id, specific_device=False, disable_fixers=True)
-    except AdbConnectionError:
-        pass  # Disconnection will fail if a current connection doesn't exist, so we're ok with it.
+    except AdbConnectionError as e:
+        if "error: no such device" in e.stderr:
+            pass  # Disconnection will fail if a current connection doesn't exist, so we're ok with it.
+        else:
+            raise
 
 
 def connect_to_wireless_adb(connection, exception_message):
     # First, try disconnecting from previous wireless ADB to completely shut down any current connection
-    disconnect_wireles(connection)
+    disconnect_wireless(connection)
 
     attempts = CONNECTION_ATTEMPTS
     connected = False
@@ -49,7 +52,7 @@ def connect_to_wireless_adb(connection, exception_message):
                 connected = True
                 break
         except AdbConnectionError:
-            pass # We can still retry
+            pass  # We can still retry
         attempts -= 1
 
     if not connected:
@@ -96,5 +99,4 @@ def connect_wireless(self, device_id=None):
 
 
 add_connect_wireless = add_init_decorator(connect_wireless)
-add_disconnect_wireless = add_disconnect_decorator(disconnect_wireles)
-
+add_disconnect_wireless = add_disconnect_decorator(disconnect_wireless, run_before=True)

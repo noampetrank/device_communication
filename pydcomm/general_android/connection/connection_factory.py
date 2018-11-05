@@ -1,10 +1,8 @@
-from general_android.connection.connection_fixers import add_rooted_impl, restart_adb_server_fix, \
-    set_usb_mode_to_mtp_fix
-from general_android.connection.decorator_helpers import add_init_decorator, add_adb_recovery_decorator
-from general_android.connection.fixers.connected_usb_device_fixes import forgot_device_fix, device_turned_off
-from general_android.connection.fixers.get_user_attention_fixer import get_user_attention_fix
-from pydcomm.general_android.connection.device_selector import add_choose_first_behavior, add_user_choice_behavior, \
-    MultiDeviceBehavior
+from pydcomm.general_android.connection.connection_fixers import add_rooted_impl, restart_adb_server_fix, set_usb_mode_to_mtp_fix
+from pydcomm.general_android.connection.decorator_helpers import add_init_decorator, add_adb_recovery_decorator
+from pydcomm.general_android.connection.fixers.connected_usb_device_fixes import forgot_device_fix, device_turned_off
+from pydcomm.general_android.connection.fixers.get_user_attention_fixer import get_user_attention_fix
+from pydcomm.general_android.connection.device_selector import add_choose_first_behavior, add_user_choice_behavior, MultiDeviceBehavior
 from pydcomm.general_android.connection.wired_adb_connection import AdbConnection
 from pydcomm.general_android.connection.wireless_adb_connection import add_connect_wireless, add_disconnect_wireless
 

@@ -26,6 +26,8 @@ class ConnectingError(DcommError):
     """Error that happens during the connection process"""
     pass
 
+class ConnectionClosedError(DcommError):
+    pass
 
 class AdbConnection(object):
     def __init__(self, device_id=None):
@@ -71,7 +73,7 @@ class AdbConnection(object):
         :raises TimeoutExpired is case the ADB command was timed out
         """
         if specific_device and self.device_id is None:
-            raise AdbConnectionError("This connection was closed")
+            raise ConnectionClosedError()
 
         if specific_device and not disable_fixers:
             if not self.test_connection():
@@ -95,6 +97,8 @@ class AdbConnection(object):
         :return: ADB command output
         :raises TimeoutExpired is case the ADB command was timed out
         """
+        if self.device_id is None:
+            raise ConnectionClosedError()
         return self._run_adb_command(["-s", self.device_id] + params, timeout=timeout)
 
     def _run_adb_command(self, params, timeout):
@@ -135,4 +139,6 @@ class AdbConnection(object):
             except AdbConnectionError as e:
                 self.log.exception("Exception while connecting to wireless ADB:")
                 self.log.exception(e)
+            except ConnectionClosedError:
+                raise
         return False
