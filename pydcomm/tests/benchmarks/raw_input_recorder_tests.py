@@ -44,7 +44,7 @@ class TesterRawInputTests(unittest.TestCase):
         tester_raw_input = RawInputRecorder()
         tester_raw_input()
         tester_raw_input()
-        self.assertAlmostEqual(tester_raw_input.get_total_input_time(), 2, delta=0.5)
+        self.assertEqual(tester_raw_input.get_total_input_time(), 2)
 
     def test_raw_input__reset_counter__dont_count_previous_calls(self):
         self.mock_calls.append(("", 3))
@@ -53,4 +53,19 @@ class TesterRawInputTests(unittest.TestCase):
         tester_raw_input()
         tester_raw_input.reset_counter()
         tester_raw_input()
-        self.assertAlmostEqual(tester_raw_input.get_total_input_time(), 1, delta=0.5)
+        self.assertEqual(tester_raw_input.get_total_input_time(), 1)
+
+    def test_contextmanager__normal_usage__return_sum_of_times_per_Wih_run(self):
+        self.mock_calls.append(("", 3))
+        self.mock_calls.append(("", 1))
+        self.mock_calls.append(("", 4))
+        with RawInputRecorder() as r:
+            raw_input()
+            raw_input()
+            raw_input()
+        self.assertEqual(r.get_total_input_time(), 3+1+4)
+
+        self.mock_calls.append(("",2))
+        with r:
+            raw_input()
+        self.assertEqual(r.get_total_input_time(),2)

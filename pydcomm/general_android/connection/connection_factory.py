@@ -67,8 +67,27 @@ class AdbConnectionFactory(object):
         decorators.append(add_adb_recovery_decorator(set_usb_mode_to_mtp_fix))
 
         if use_manual_fixes:
-            decorators.append(add_adb_recovery_decorator(get_user_attention_fix))
-            decorators.append(add_adb_recovery_decorator(forgot_device_fix))
             decorators.append(add_adb_recovery_decorator(device_turned_off))
+            decorators.append(add_adb_recovery_decorator(forgot_device_fix))
+            decorators.append(add_adb_recovery_decorator(get_user_attention_fix))
+            # TODO: Add ping fix
+            # TODO: REmove wired fixers
         return AdbConnectionFactory._create_connection(wired=False, decorators=decorators,
+                                                       device_selector=device_selector)
+
+    @staticmethod
+    def get_oppo_wired_device(use_manual_fixes=True, device_selector=MultiDeviceBehavior.CHOOSE_FIRST, rooted=True):
+        decorators = []
+
+        if rooted:
+            decorators.append(add_init_decorator(add_rooted_impl))
+
+        decorators.append(add_adb_recovery_decorator(restart_adb_server_fix))
+        decorators.append(add_adb_recovery_decorator(set_usb_mode_to_mtp_fix))
+
+        if use_manual_fixes:
+            decorators.append(add_adb_recovery_decorator(device_turned_off))
+            decorators.append(add_adb_recovery_decorator(forgot_device_fix))
+            decorators.append(add_adb_recovery_decorator(get_user_attention_fix))
+        return AdbConnectionFactory._create_connection(wired=True, decorators=decorators,
                                                        device_selector=device_selector)

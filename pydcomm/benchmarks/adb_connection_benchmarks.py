@@ -41,17 +41,15 @@ class ConnectionBenchmark(object):
     def __init__(self):
         self.stats = []  # type: list[ApiCallData]
 
-    @mock.patch.object(__builtin__, 'raw_input')
-    def benchmark_adb(self, connection, mock_raw_input):
-        input_recorder = RawInputRecorder()
-        mock_raw_input.side_effect = input_recorder
-
+    def benchmark_adb(self, connection):
         success = False
         failure_reason = None
         start_time = time.time()
+        input_recorder = RawInputRecorder(ignore_first=True)
 
         try:
-            success = connection.adb("shell echo hi") == "hi"
+            with input_recorder:
+                success = connection.adb("shell echo hi") == "hi"
         except Exception as e:
             failure_reason = e
         finally:
@@ -64,17 +62,15 @@ class ConnectionBenchmark(object):
                                           failure_reason))  # failure_reason
             return success
 
-    @mock.patch.object(__builtin__, 'raw_input')
-    def benchmark_connect(self, mock_raw_input):
-        input_recorder = RawInputRecorder()
-        mock_raw_input.side_effect = input_recorder
-
+    def benchmark_connect(self):
         connection = None
         failure_reason = None
         start_time = time.time()
+        input_recorder = RawInputRecorder(ignore_first=True)
 
         try:
-            connection = AdbConnectionFactory.get_oppo_wireless_device(use_manual_fixes=False)
+            with input_recorder:
+                connection = AdbConnectionFactory.get_oppo_wired_device(use_manual_fixes=True)
         except Exception as e:
             failure_reason = e
             raise

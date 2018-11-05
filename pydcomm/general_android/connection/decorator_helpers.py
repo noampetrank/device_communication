@@ -28,6 +28,7 @@ def add_init_decorator(function, run_before=False):
                     function(self, device_id)
                 except Exception as e:
                     self.log.warn("Init decorator {} failed".format(function.__name__), exc_info=e)
+                    raise
 
             if run_before:
                 run()
