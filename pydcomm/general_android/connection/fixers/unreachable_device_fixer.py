@@ -1,7 +1,7 @@
 import socket
 import subprocess
 
-from general_android.connection.common import query_yes_no
+from pydcomm.general_android.connection.common import query_yes_no
 from pydcomm.general_android.connection.wired_adb_connection import ConnectingError
 from pydcomm.general_android.connection.wireless_adb_connection import connect_to_wireless_adb
 from pydcomm.general_android.connection.wired_adb_connection import AdbConnection

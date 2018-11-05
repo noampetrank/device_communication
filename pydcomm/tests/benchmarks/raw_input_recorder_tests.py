@@ -14,7 +14,7 @@ class TesterRawInputTests(unittest.TestCase):
         self.mock_calls = []  # type: list[tuple[str,int]]
         self.mock_calls_index = 0
 
-        self.mock_timeit = self.patcher.addPatch("pydcomm.benchmarks.tester_raw_input.timeit.timeit")
+        self.mock_timeit = self.patcher.addPatch("pydcomm.benchmarks.raw_input_recorder.timeit.timeit")
         self.mock_timeit.side_effect = self.my_timeit
 
     def my_timeit(self, *args, **kwargs):
