@@ -82,7 +82,7 @@ known_phone_usb_ids = [
     ('HTC', '0bb4'),
     ('Huawei', '12D1'),
     ('INQ Mobile', '2314'),
-    ('Intel', '8087'),
+    # ('Intel', '8087'),
     ('Intermec', '067e'),
     ('IRiver', '2420'),
     ('K-Touch', '24E3'),

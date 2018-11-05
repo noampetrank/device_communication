@@ -1,7 +1,9 @@
-import __builtin__
+import pandas as pd
+import numpy as np
 import time
+from traceback import print_exc
 
-import mock
+import subprocess32
 from enum import IntEnum
 
 from pydcomm.benchmarks.raw_input_recorder import RawInputRecorder
@@ -35,6 +37,9 @@ class ApiCallData(object):
         self.manual_interactions_count = manual_interactions_count
         self.manual_times = manual_times
         self.failure_reason = failure_reason
+
+    def __repr__(self):
+        return "{}, {}".format(type(self).__name__, self.__dict__)
 
 
 class ConnectionBenchmark(object):
@@ -130,27 +135,98 @@ class ConnectionBenchmark(object):
             self.benchmark_disconnect(connection)
             print("Disconnecting done")  # TODO: remove
         except Exception as e:
-            print("Got exception. Aborting this run. Details: " + e.__class__.__name__ + ": " + e.message)
+            print("Got exception. Aborting this run. Details:")
+            print_exc(e)
 
 
-"""
-                   total_cons con_fail auto_rec_fail manu_rec_fail total_fail
-TestName                                                                     
-10x1x0xfrom ip           1000      100            80            20          0
-180x18x0xfrom ip          100       10             9             1          0
-180x1x0xfrom ip           100       10            10             0          0
-10x2x120xfrom ip          100        2             2             0          0
+class TestDefinition(object):
+    def __init__(self, rounds, num_connection_checks, check_interval):
+        self.rounds = rounds
+        self.num_connection_checks = num_connection_checks
+        self.check_interval = check_interval
 
-Testname - length of connection X how many times to test per connection x sleep between connections x connect from ip or manually
-"""
+    def __repr__(self):
+        return "{} <num_connection_checks={}, check_interval={}>".format(self.__class__.__name__, self.num_connection_checks, self.check_interval)
+
+
+class TestResult(object):
+    def __init__(self, rounds, test_definition, success_count, timeout_exceptions, adb_connection_errors, total_manual_fix_count, median_fix_time):
+        self.rounds = rounds
+        self.test_definition = test_definition
+        self.success_count = success_count
+        self.timeout_exceptions = timeout_exceptions
+        self.adb_connection_errors = adb_connection_errors
+        self.total_manual_fix_count = total_manual_fix_count
+        self.median_fix_time = median_fix_time
+
+    def __repr__(self):
+        return "{}, {}".format(type(self).__name__, self.__dict__)
+
+
+tests = [
+    TestDefinition(2, 2, 0),
+    # TestDefinition(2, 2, 1)
+]
+
+
+def flatten(l):
+    return [item for sublist in l for item in sublist]
+
+
+def print_table(test_results_summed):
+    pd.set_option('display.max_columns', 500)
+    pd.set_option('display.width', 1000)
+
+    columns = [
+        "rounds",
+        "test_definition",
+        "success_count",
+        "timeout_exceptions",
+        "adb_connection_errors",
+        "total_manual_fix_count",
+        "median_fix_time",
+    ]
+    data = []
+    for t in test_results_summed:
+        row = [getattr(t, c) for c in columns]
+        data.append(row)
+    df = pd.DataFrame(data, columns=columns).set_index(columns[0])
+    print (df)
+
+
+def create_run_summary(runs):
+    test_results_summed = []
+    for i, run_result in enumerate(runs):
+        flat = flatten(run_result)
+        rounds = len(flat)
+        success_count = len([x for x in flat if x.success])
+        timeout_exceptions = len([x for x in flat if type(x.failure_reason) is subprocess32.TimeoutExpired])
+        adb_connection_error = len([x for x in flat if type(x.failure_reason) is AdbConnectionError])
+        total_manual_fix_count = sum([x.manual_interactions_count for x in flat])
+        flat_manual_times = flatten([x.manual_times for x in flat])
+        median_fix_time = np.median(flat_manual_times) if flat_manual_times else None
+        result = TestResult(rounds, tests[i], success_count, timeout_exceptions, adb_connection_error, total_manual_fix_count, median_fix_time)
+        test_results_summed.append(result)
+    return test_results_summed
+
+
+def run_rounds():
+    runs = []
+    for test in tests:
+        run_results = []
+        for i in range(test.rounds):
+            b = ConnectionBenchmark()
+            b.run(test.num_connection_checks, test.check_interval)
+            run_results.append(b.stats)
+        runs.append(run_results)
+    return runs
+
+
+def main():
+    runs = run_rounds()
+    test_results_summed = create_run_summary(runs)
+    print_table(test_results_summed)
+
 
 if __name__ == "__main__":
-    # main()
-    b = ConnectionBenchmark()
-    b.run(num_connection_checks=3, check_interval=1)
-    for idx, stat in enumerate(b.stats):
-        print("Stats[{}]".format(idx))
-        for key in dir(stat):
-            if not key.startswith('__'):
-                print(key + ": " + str(getattr(stat, key)))
-        print("\n")
+    main()
