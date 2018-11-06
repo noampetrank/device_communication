@@ -26,8 +26,10 @@ class ConnectingError(DcommError):
     """Error that happens during the connection process"""
     pass
 
+
 class ConnectionClosedError(DcommError):
     pass
+
 
 class AdbConnection(object):
     def __init__(self, device_id=None):
@@ -137,6 +139,7 @@ class AdbConnection(object):
             except subprocess.TimeoutExpired:
                 pass
             except AdbConnectionError as e:
+                # TODO: Change this message
                 self.log.exception("Exception while connecting to wireless ADB:")
                 self.log.exception(e)
             except ConnectionClosedError:

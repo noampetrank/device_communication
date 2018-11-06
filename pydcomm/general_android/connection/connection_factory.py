@@ -71,7 +71,7 @@ class AdbConnectionFactory(object):
             decorators.append(add_adb_recovery_decorator(forgot_device_fix))
             decorators.append(add_adb_recovery_decorator(get_user_attention_fix))
             # TODO: Add ping fix
-            # TODO: REmove wired fixers
+            # TODO: Remove wired fixers
         return AdbConnectionFactory._create_connection(wired=False, decorators=decorators,
                                                        device_selector=device_selector)
 

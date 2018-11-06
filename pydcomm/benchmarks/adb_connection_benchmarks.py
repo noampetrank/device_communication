@@ -1,28 +1,14 @@
 import pickle
-
-import pandas as pd
-import numpy as np
 import time
 from traceback import print_exc
 
+import numpy as np
+import pandas as pd
 import subprocess32
 from enum import IntEnum
-
 from pydcomm.benchmarks.raw_input_recorder import RawInputRecorder
 from pydcomm.general_android.connection.connection_factory import AdbConnectionFactory
 from pydcomm.general_android.connection.wired_adb_connection import AdbConnectionError, ConnectionClosedError
-
-"""
-                   total_cons con_fail auto_rec_fail manu_rec_fail total_fail
-TestName                                                                     
-10x1x0xfrom ip           1000      100            80            20          0
-180x18x0xfrom ip          100       10             9             1          0
-180x1x0xfrom ip           100       10            10             0          0
-10x2x120xfrom ip          100        2             2             0          0
-10x2x0xfrom device         50        0             0             0          0
-
-Testname - length of connection X how many times to test per connection x sleep between connections x connect from ip or manually
-"""
 
 
 class Recovery(IntEnum):
@@ -233,13 +219,30 @@ def run_rounds():
     return runs
 
 
+from pybuga.tests.utils.test_helpers import Tee
+import sys
+
+
+# TODO: Extract code from pybuga to someplace else
+class BetterTee(Tee):
+    def __enter__(self):
+        sys.stdout = self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        sys.stdout = self.__stdout
+        pass
+
+
 def main():
-    # Run with "<cmd> | ts [%H:%M:%S]'
-    runs = run_rounds()
-    with open("raw_data_" + time.strftime("%H:%M:%S") + ".pickle") as f:
-        pickle.dump(runs, f)
-    test_results_summed = create_run_summary(runs)
-    print_table(test_results_summed)
+    from pybuga.infra.utils.buga_utils import indent_printing
+    start_time_string = time.strftime("%H:%M:%S")
+    with BetterTee("run_{}.log".format(start_time_string)):
+        with indent_printing(lambda: time.strftime('[%H:%M:%S] ')):
+            runs = run_rounds()
+            with open("raw_data_" + start_time_string + ".pickle", "w") as f:
+                pickle.dump(runs, f)
+            test_results_summed = create_run_summary(runs)
+            print_table(test_results_summed)
 
 
 if __name__ == "__main__":
