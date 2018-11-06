@@ -63,9 +63,9 @@ class TesterRawInputTests(unittest.TestCase):
             raw_input()
             raw_input()
             raw_input()
-        self.assertEqual(r.get_total_input_time(), 3+1+4)
+        self.assertEqual(r.get_total_input_time(), 3 + 1 + 4)
 
-        self.mock_calls.append(("",2))
+        self.mock_calls.append(("", 2))
         with r:
             raw_input()
-        self.assertEqual(r.get_total_input_time(),2)
+        self.assertEqual(r.get_total_input_time(), 2)

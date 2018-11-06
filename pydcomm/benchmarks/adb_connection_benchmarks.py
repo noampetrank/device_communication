@@ -1,3 +1,5 @@
+import pickle
+
 import pandas as pd
 import numpy as np
 import time
@@ -75,7 +77,7 @@ class ConnectionBenchmark(object):
 
         try:
             with input_recorder:
-                connection = AdbConnectionFactory.get_oppo_wired_device(use_manual_fixes=True)
+                connection = AdbConnectionFactory.get_oppo_wireless_device(use_manual_fixes=True)
         except Exception as e:
             failure_reason = e
             raise
@@ -146,7 +148,9 @@ class TestDefinition(object):
         self.check_interval = check_interval
 
     def __repr__(self):
-        return "{} <num_connection_checks={}, check_interval={}>".format(self.__class__.__name__, self.num_connection_checks, self.check_interval)
+        # Temporary
+        return "{}x{}x{}".format(self.rounds, self.num_connection_checks, self.check_interval)
+        # return "{} <num_connection_checks={}, check_interval={}>".format(self.__class__.__name__, self.num_connection_checks, self.check_interval)
 
 
 class TestResult(object):
@@ -164,8 +168,10 @@ class TestResult(object):
 
 
 tests = [
-    TestDefinition(2, 2, 0),
-    # TestDefinition(2, 2, 1)
+    # rounds, num_connection_checks, check_interval
+    TestDefinition(100, 10, 0),
+    TestDefinition(20, 2, 20),
+    TestDefinition(100, 1, 1)
 ]
 
 
@@ -212,18 +218,24 @@ def create_run_summary(runs):
 
 def run_rounds():
     runs = []
-    for test in tests:
-        run_results = []
-        for i in range(test.rounds):
-            b = ConnectionBenchmark()
-            b.run(test.num_connection_checks, test.check_interval)
-            run_results.append(b.stats)
-        runs.append(run_results)
+    try:
+        for test in tests:
+            run_results = []
+            for i in range(test.rounds):
+                b = ConnectionBenchmark()
+                b.run(test.num_connection_checks, test.check_interval)
+                run_results.append(b.stats)
+            runs.append(run_results)
+    except KeyboardInterrupt:
+        pass
     return runs
 
 
 def main():
+    # Run with "<cmd> | ts [%H:%M:%S]'
     runs = run_rounds()
+    with open("raw_data_" + time.strftime("%H:%M:%S") + ".pickle") as f:
+        pickle.dump(runs, f)
     test_results_summed = create_run_summary(runs)
     print_table(test_results_summed)
 
