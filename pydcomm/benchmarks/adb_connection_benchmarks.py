@@ -58,6 +58,7 @@ class ConnectionBenchmark(object):
             with input_recorder:
                 success = connection.adb("shell echo hi") == "hi"
         except Exception as e:
+            print(e.message)
             failure_reason = e
         finally:
             end_time = time.time()
@@ -79,6 +80,7 @@ class ConnectionBenchmark(object):
             with input_recorder:
                 connection = AdbConnectionFactory.get_oppo_wireless_device(use_manual_fixes=True)
         except Exception as e:
+            print(e.message)
             failure_reason = e
             raise
         finally:
