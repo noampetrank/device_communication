@@ -157,9 +157,9 @@ class TestResult(object):
 
 tests = [
     # rounds, num_connection_checks, check_interval
-    TestDefinition(100, 10, 0),
-    TestDefinition(20, 2, 20),
-    TestDefinition(100, 1, 1)
+    TestDefinition(20, 5, 0),
+    TestDefinition(7, 2, 20),
+    TestDefinition(20, 1, 1)
 ]
 
 
@@ -226,11 +226,11 @@ import sys
 # TODO: Extract code from pybuga to someplace else
 class BetterTee(Tee):
     def __enter__(self):
+        self.old_stdout = sys.stdout
         sys.stdout = self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        sys.stdout = self.__stdout
-        pass
+        sys.stdout = self.old_stdout
 
 
 def main():
