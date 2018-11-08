@@ -58,10 +58,12 @@ def time_it(obj, method, args, expected=None, kwargs=None):
         kwargs = {}
 
     ok = True
-    start = time.time()
+    start = 0
     end = None
+    method = getattr(obj, method)
     try:
-        res = getattr(obj, method)(*args, **kwargs)
+        start = time.time()
+        res = method(*args, **kwargs)
         end = time.time()
         # if we got expected return value(s) check against them
         if expected is None:

@@ -1,3 +1,13 @@
+"""
+Connection interfaces classes
+
+These interfaces are meant to be almost permanent.
+The interfaces have absolutely no implementation.
+Every function has names for arguments, types for arguments, and return type, which are fixed for all implemenations.
+
+"""
+
+
 from pydcomm import DcommError
 
 
@@ -11,6 +21,14 @@ class ConnectionClosedError(DcommError):
 
 
 class Connection(object):
+    """Interface for connections.
+
+    Generally speaking, this wraps (almost) all functionality of google's adb, without mentioning adb.
+    Since it wraps (almost) all functionality, this interface is comprehensive enough for all hardcore users of device
+    communications, and any code that previously needed adb.
+    Since it doesn't mention adb by name, the actual implementation can be different (there are alternatives to adb
+    out there), benchmarks don't know about adb, and everyone can be happy.
+    """
     def pull(self, path_on_device, local_path):
         """
         Pull a file/dir to the device.
@@ -107,9 +125,19 @@ class Connection(object):
         """
         raise NotImplementedError
 
+    def test_connection(self):
+        """Tests and returns if the connection is still available.
+
+        :rtype: bool
+        """
+        raise NotImplementedError
+
 
 # noinspection PyAbstractClass
 class BugaConnection(Connection):
+    """Like a Connection, but with added Buga things that we just must have.
+
+    """
     def device_name(self):
         """Returns device name given by Bugatone
 
@@ -127,10 +155,39 @@ class BugaConnection(Connection):
         raise NotImplementedError
 
 
+class ConnectionFactory(object):
+    """Interface for factories creating connections."""
+    @classmethod
+    def wired_connection(cls, **kwargs):
+        """Get wired connection
+
+        :param kwargs:
+        :rtype: Connection
+        """
+        raise NotImplementedError
+
+
+class BugaConnectionFactory(ConnectionFactory):
+    """Interface for factories creating buga connections."""
+    @classmethod
+    def wired_connection(cls, **kwargs):
+        """Get wired buga connection
+
+        :param kwargs:
+        :rtype: BugaConnection
+        """
+        raise NotImplementedError
+
+########################################################################################################################
+
+
 class DummyBugaConnection(BugaConnection):
     def __init__(self):
         self._pushed = {}
         self._connected = True
+
+    def test_connection(self):
+        return self._connected
 
     def disconnect(self):
         if not self._connected:
@@ -218,3 +275,9 @@ class DummyBugaConnection(BugaConnection):
             raise ConnectionClosedError
 
         return "dummybugadevice01"
+
+
+class DummyBugaConnectionFactory(BugaConnectionFactory):
+    @classmethod
+    def wired_connection(cls, **kwargs):
+        return DummyBugaConnection()
