@@ -1,3 +1,4 @@
+import sys
 import time
 import pandas as pd
 import numpy as np
@@ -6,9 +7,11 @@ import timeit
 import timeit
 import time
 
-
 # https://stackoverflow.com/a/24812460/365408
 # set timeit to return the value
+from pybuga.tests.utils.test_helpers import Tee
+
+
 def _template_func(setup, func):
     """Create a timer function. Used if the "statement" is a callable."""
 
@@ -155,3 +158,24 @@ def pandas_config_for_bench():
     pd.set_option('display.max_columns', 100)
     pd.set_option('display.width', 160)
     pd.set_option('display.max_colwidth', 32)
+
+
+def flatten(l):
+    return [item for sublist in l for item in sublist]
+
+
+class BetterTee(Tee):
+    def __init__(self, name, stderr=False):
+        super(BetterTee, self).__init__(name)
+        self.use_stderr = stderr
+
+    def __enter__(self):
+        if self.use_stderr:
+            self.old_stdout = sys.stderr
+            sys.stderr = self
+        else:
+            self.old_stdout = sys.stdout
+            sys.stdout = self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        sys.stdout = self.old_stdout

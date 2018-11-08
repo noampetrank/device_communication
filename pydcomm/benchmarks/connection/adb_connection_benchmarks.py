@@ -5,29 +5,12 @@ from traceback import print_exc
 import numpy as np
 import pandas as pd
 import subprocess32
-from enum import IntEnum
+
+from pydcomm.benchmarks.benchmark_utils import flatten, BetterTee
+from pydcomm.benchmarks.connection.data import ApiCallData, TestDefinition, PerCallTestResult, TestResult
 from pydcomm.benchmarks.raw_input_recorder import RawInputRecorder
 from pydcomm.general_android.connection.connection_factory import AdbConnectionFactory
-from pydcomm.general_android.connection.wired_adb_connection import AdbConnectionError, ConnectionClosedError
-
-
-class Recovery(IntEnum):
-    NONE = 0
-    AUTO = 1
-    INTERACTIVE = 2
-
-
-class ApiCallData(object):
-    def __init__(self, type, total_time, success, manual_interactions_count, manual_times, failure_reason):
-        self.type = type
-        self.total_time = total_time
-        self.success = success
-        self.manual_interactions_count = manual_interactions_count
-        self.manual_times = manual_times
-        self.failure_reason = failure_reason
-
-    def __repr__(self):
-        return "{}, {}".format(type(self).__name__, self.__dict__)
+from pydcomm.general_android.connection.wired_adb_connection import AdbConnectionError, ConnectionClosedError, ConnectingError
 
 
 class ConnectionBenchmark(object):
@@ -129,32 +112,6 @@ class ConnectionBenchmark(object):
             print_exc(e)
 
 
-class TestDefinition(object):
-    def __init__(self, rounds, num_connection_checks, check_interval):
-        self.rounds = rounds
-        self.num_connection_checks = num_connection_checks
-        self.check_interval = check_interval
-
-    def __repr__(self):
-        # Temporary
-        return "{}x{}x{}".format(self.rounds, self.num_connection_checks, self.check_interval)
-        # return "{} <num_connection_checks={}, check_interval={}>".format(self.__class__.__name__, self.num_connection_checks, self.check_interval)
-
-
-class TestResult(object):
-    def __init__(self, rounds, test_definition, success_count, timeout_exceptions, adb_connection_errors, total_manual_fix_count, median_fix_time):
-        self.rounds = rounds
-        self.test_definition = test_definition
-        self.success_count = success_count
-        self.timeout_exceptions = timeout_exceptions
-        self.adb_connection_errors = adb_connection_errors
-        self.total_manual_fix_count = total_manual_fix_count
-        self.median_fix_time = median_fix_time
-
-    def __repr__(self):
-        return "{}, {}".format(type(self).__name__, self.__dict__)
-
-
 tests = [
     # rounds, num_connection_checks, check_interval
     TestDefinition(20, 5, 0),
@@ -163,11 +120,12 @@ tests = [
 ]
 
 
-def flatten(l):
-    return [item for sublist in l for item in sublist]
-
-
 def print_table(test_results_summed):
+    """
+
+    :type test_results_summed: list[pydcomm.benchmarks.connection.data.TestResult]
+    :return:
+    """
     pd.set_option('display.max_columns', 500)
     pd.set_option('display.width', 1000)
 
@@ -179,13 +137,62 @@ def print_table(test_results_summed):
         "adb_connection_errors",
         "total_manual_fix_count",
         "median_fix_time",
+        "connection_failed",
+
+        "connect_data.total_calls",
+        "connect_data.mean_time",
+        "connect_data.mean_manual_fix_time",
+        "connect_data.success_amount",
+        "connect_data.manual_fix_pct",
+        "connect_data.adb_connection_error_pct",
+        "connect_data.timeout_error_pct",
+
+        "adb_data.total_calls",
+        "adb_data.mean_time",
+        "adb_data.mean_manual_fix_time",
+        "adb_data.success_amount",
+        "adb_data.manual_fix_pct",
+        "adb_data.adb_connection_error_pct",
+        "adb_data.timeout_error_pct",
+
+        "disconnect_data.total_calls",
+        "disconnect_data.mean_time",
+        "disconnect_data.mean_manual_fix_time",
+        "disconnect_data.success_amount",
+        "disconnect_data.manual_fix_pct",
+        "disconnect_data.adb_connection_error_pct",
+        "disconnect_data.timeout_error_pct",
     ]
     data = []
-    for t in test_results_summed:
-        row = [getattr(t, c) for c in columns]
+    for result in test_results_summed:
+        row = [getattr(result, col) if col.find(".") == -1 else getattr(getattr(result, col.split(".")[0]), col.split(".")[1]) for col in columns]
         data.append(row)
     df = pd.DataFrame(data, columns=columns).set_index(columns[0])
     print (df)
+
+
+def get_call_stats(call_type, flat):
+    """
+
+    :type call_type: str
+    :type flat: list[ApiCallData]
+    :return:
+    """
+    calls_of_type = [x for x in flat if x.type == call_type]
+    total_calls = len(calls_of_type)
+    mean_time = np.average([x.total_time for x in calls_of_type])
+    mean_manual_fix_time = np.average(flatten([x.manual_times for x in calls_of_type]))
+    success_amount = len([x for x in calls_of_type if x.success])
+    manual_fix_pct = float(len([x for x in calls_of_type if x.manual_interactions_count])) / total_calls
+    adb_connection_error_pct = float(len([x for x in calls_of_type if type(x.failure_reason) is AdbConnectionError])) / total_calls
+    timeout_error_pct = float(len([x for x in calls_of_type if type(x.failure_reason) is subprocess32.TimeoutExpired])) / total_calls
+    return PerCallTestResult(total_calls=total_calls,
+                             mean_time=mean_time,
+                             mean_manual_fix_time=mean_manual_fix_time,
+                             success_amount=success_amount,
+                             manual_fix_pct=manual_fix_pct,
+                             adb_connection_error_pct=adb_connection_error_pct,
+                             timeout_error_pct=timeout_error_pct)
 
 
 def create_run_summary(runs):
@@ -193,15 +200,33 @@ def create_run_summary(runs):
     for i, run_result in enumerate(runs):
         flat = flatten(run_result)
         rounds = len(flat)
-        success_count = len([x for x in flat if x.success])
-        timeout_exceptions = len([x for x in flat if type(x.failure_reason) is subprocess32.TimeoutExpired])
-        adb_connection_error = len([x for x in flat if type(x.failure_reason) is AdbConnectionError])
-        total_manual_fix_count = sum([x.manual_interactions_count for x in flat])
-        flat_manual_times = flatten([x.manual_times for x in flat])
-        median_fix_time = np.median(flat_manual_times) if flat_manual_times else None
-        result = TestResult(rounds, tests[i], success_count, timeout_exceptions, adb_connection_error, total_manual_fix_count, median_fix_time)
+        adb_connection_error, median_fix_time, success_count, timeout_exceptions, total_manual_fix_count, connection_failed = get_general_stats(flat)
+        result = TestResult(
+            rounds,
+            tests[i],
+            success_count,
+            timeout_exceptions,
+            adb_connection_error,
+            total_manual_fix_count,
+            median_fix_time,
+            connection_failed,
+            get_call_stats("connect", flat),
+            get_call_stats("adb", flat),
+            get_call_stats("disconnect", flat),
+        )
         test_results_summed.append(result)
     return test_results_summed
+
+
+def get_general_stats(flat):
+    success_count = len([x for x in flat if x.success])
+    timeout_exceptions = len([x for x in flat if type(x.failure_reason) is subprocess32.TimeoutExpired])
+    adb_connection_error = len([x for x in flat if type(x.failure_reason) is AdbConnectionError or type(x.failure_reason) is ConnectingError])
+    connection_failed = len([x for x in flat if type(x.failure_reason) is AttributeError])
+    total_manual_fix_count = sum([x.manual_interactions_count for x in flat])
+    flat_manual_times = flatten([x.manual_times for x in flat])
+    median_fix_time = np.median(flat_manual_times) if flat_manual_times else None
+    return adb_connection_error, median_fix_time, success_count, timeout_exceptions, total_manual_fix_count, connection_failed
 
 
 def run_rounds():
@@ -217,20 +242,6 @@ def run_rounds():
     except KeyboardInterrupt:
         pass
     return runs
-
-
-from pybuga.tests.utils.test_helpers import Tee
-import sys
-
-
-# TODO: Extract code from pybuga to someplace else
-class BetterTee(Tee):
-    def __enter__(self):
-        self.old_stdout = sys.stdout
-        sys.stdout = self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        sys.stdout = self.old_stdout
 
 
 def main():
