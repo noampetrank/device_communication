@@ -1,10 +1,14 @@
 """
-Connection interfaces classes
+Connection interfaces, factories and default user interface
 
-These interfaces are meant to be almost permanent.
-The interfaces have absolutely no implementation.
-Every function has names for arguments, types for arguments, and return type, which are fixed for all implemenations.
+This file defines the Connection interface: what functions must exist for basic connections, with their argument
+names, types, and return type. A main theme is the lack of mention of "adb", and instead the names of all the
+different functionalities of adb appear.
 
+This files includes the definitions and imports of all existing connection factories. Factories that aren't defined
+in this file are imported, and all factories are added to the global dictionary at the bottom section.
+
+Lastly this file
 """
 
 
@@ -136,10 +140,11 @@ class Connection(object):
 # noinspection PyAbstractClass
 class BugaConnection(Connection):
     """Like a Connection, but with added Buga things that we just must have.
-
+    This is currently out of scope, to be done later.
     """
     def device_name(self):
         """Returns device name given by Bugatone
+        This is currently out of scope, to be done later.
 
         :rtype: str
         :raises: NameError
@@ -158,9 +163,20 @@ class BugaConnection(Connection):
 class ConnectionFactory(object):
     """Interface for factories creating connections."""
     @classmethod
-    def wired_connection(cls, **kwargs):
+    def wired_connection(cls, device_id=None, **kwargs):
         """Get wired connection
 
+        :param str|None device_id: Specific device id to connect to. If none given, must call `choose_device_id()`.
+        :param kwargs:
+        :rtype: Connection
+        """
+        raise NotImplementedError
+
+    @classmethod
+    def wireless_connection(cls, device_id=None, **kwargs):
+        """Get wireless connection
+
+        :param str|None device_id: Specific device id to connect to. If none given, must call `choose_device_id()`.
         :param kwargs:
         :rtype: Connection
         """
@@ -169,17 +185,30 @@ class ConnectionFactory(object):
 
 class BugaConnectionFactory(ConnectionFactory):
     """Interface for factories creating buga connections."""
-    @classmethod
-    def wired_connection(cls, **kwargs):
-        """Get wired buga connection
 
-        :param kwargs:
-        :rtype: BugaConnection
-        """
+    @classmethod
+    def wireless_connection(cls, device_id=None, **kwargs):
+        raise NotImplementedError
+
+    @classmethod
+    def wired_connection(cls, device_id=None, **kwargs):
         raise NotImplementedError
 
 ########################################################################################################################
+#   Choose device id user interface
+#
+# This section is dedicated to a method that will show a user menu for choosing a device id.
+# The method is meant to be our go to way to get a device id when there isn't exactly one connected to the pc.
 
+
+def choose_device_id():
+    raise NotImplementedError
+
+
+########################################################################################################################
+#   Dummy connections
+#
+# This section is for a fixed dummy implementation of connection.
 
 class DummyBugaConnection(BugaConnection):
     def __init__(self):
@@ -277,7 +306,32 @@ class DummyBugaConnection(BugaConnection):
         return "dummybugadevice01"
 
 
+########################################################################################################################
+#
+# Connection Factories
+#
+# Add definitions and imports of connection factories in this section and add them to the global dictionary of
+# connection factories. Choose a short, indicative key, one that will be easy to identify and type in a user menu.
+
+all_connection_factories = {}
+
+#
+# Example:
+#   class MyConnectionFactory(ConnectionFactory):
+#       ...
+#
+#   all_connection_factories.append(MyConnectionFactory)
+#
+
+
 class DummyBugaConnectionFactory(BugaConnectionFactory):
+    @classmethod
+    def wireless_connection(cls, **kwargs):
+        return DummyBugaConnection()
+
     @classmethod
     def wired_connection(cls, **kwargs):
         return DummyBugaConnection()
+
+
+all_connection_factories['dummy'] = DummyBugaConnectionFactory

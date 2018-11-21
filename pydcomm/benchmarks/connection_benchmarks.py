@@ -9,7 +9,9 @@ import pandas as pd
 import subprocess32
 from enum import IntEnum
 from pybuga.tests.utils.test_helpers import Tee
-from pydcomm.general_android.connection.connection import DummyBugaConnection, ConnectionError, ConnectionClosedError
+from pybuga.infra.utils.user_input import UserInput
+from pydcomm.general_android.connection.connection import (ConnectionError, ConnectionClosedError,
+                                                           all_connection_factories)
 
 from pydcomm.benchmarks.raw_input_recorder import RawInputRecorder
 
@@ -169,7 +171,7 @@ def flatten(l):
     return [item for sublist in l for item in sublist]
 
 
-def print_table(test_results_summed):
+def print_table(connection_factory_name, conn_type, test_results_summed):
     pd.set_option('display.max_columns', 500)
     pd.set_option('display.width', 1000)
 
@@ -187,7 +189,11 @@ def print_table(test_results_summed):
         row = [getattr(t, c) for c in columns]
         data.append(row)
     df = pd.DataFrame(data, columns=columns).set_index(columns[0])
-    print (df)
+
+    print 'Summary for connection factory: {}'.format(connection_factory_name)
+    print 'connection o type "{}"'.format(conn_type)
+
+    print df
 
 
 def create_run_summary(runs):
@@ -240,14 +246,42 @@ def main():
             # from functools import partial
             # from pydcomm.general_android.connection.connection_factory import AdbConnectionFactory
             # connection_factory = partial(AdbConnectionFactory.get_oppo_wireless_device, use_manual_fixes=True)
-            connection_factory = DummyBugaConnection
-            time.sleep = lambda _: None
 
-            runs = run_rounds(connection_factory)
+            print "Choose connection factory for benchmark:"
+            factory_name = UserInput.menu(all_connection_factories.keys(), False)
+            if factory_name is None:
+                print "Thanks, goodbye!"
+                return
+
+            connection_factory = all_connection_factories[factory_name]
+
+            print "Choose connection type:"
+            conn_type = UserInput.menu(["wired", "wireless"], False)
+            if conn_type is None:
+                print "Thanks, goodbye!"
+                return
+
+            connection_factory_method = getattr(connection_factory, conn_type + "_connection")
+
+            runs = run_rounds(connection_factory_method)
             with open("raw_data_" + start_time_string + ".pickle", "w") as f:
-                pickle.dump(runs, f)
+                pickle.dump((connection_factory.__name__, conn_type, runs), f)
             test_results_summed = create_run_summary(runs)
-            print_table(test_results_summed)
+            print_table(connection_factory.__name__, conn_type, test_results_summed)
+
+
+def test_main():
+    import mock
+    import __builtin__
+
+    @mock.patch.object(__builtin__, "raw_input")
+    @mock.patch.object(time, "sleep")
+    def call_main(msleep, mraw_input):
+        msleep.return_value = None
+        mraw_input.side_effect = ["dummy", "wired"]
+        main()
+
+    call_main()
 
 
 if __name__ == "__main__":

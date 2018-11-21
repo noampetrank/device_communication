@@ -62,7 +62,7 @@ class ICallerFactory:
 
     @classmethod
     @abstractmethod
-    def create(cls):
+    def create_connection(cls, port, device_ip=None):
         """
         Creates an rpc object. User must take care to connect.
 
