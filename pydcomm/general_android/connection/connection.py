@@ -121,14 +121,6 @@ class Connection(object):
         """Closes connection."""
         raise NotImplementedError
 
-    @classmethod
-    def connected_devices_serials(cls):
-        """Returns list of serial numbers of connected devices.
-
-        :rtype: list[str]
-        """
-        raise NotImplementedError
-
     def test_connection(self):
         """Tests and returns if the connection is still available.
 
@@ -182,9 +174,21 @@ class ConnectionFactory(object):
         """
         raise NotImplementedError
 
+    @classmethod
+    def connected_devices_serials(cls):
+        """Returns list of serial numbers of connected devices.
+
+        :rtype: list[str]
+        """
+        raise NotImplementedError
+
 
 class BugaConnectionFactory(ConnectionFactory):
     """Interface for factories creating buga connections."""
+
+    @classmethod
+    def connected_devices_serials(cls):
+        raise NotImplementedError
 
     @classmethod
     def wireless_connection(cls, device_id=None, **kwargs):

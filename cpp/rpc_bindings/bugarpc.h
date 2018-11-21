@@ -81,9 +81,10 @@ public:
      *  This function blocks until `stop` is called.
      *
      * @param listener Executor implementation that responds to messages.
-     * @param port Port to use.
+     * @param rpc_id Unique identifier for your executor to listen to. Please choose a fixed random number between
+     * 30,000 - 50,000 (so it can also be a good port number).
      */
-    virtual void listen(IRemoteProcedureExecutor &executor, int port) = 0;
+    virtual void listen(IRemoteProcedureExecutor &executor, int rpc_id) = 0;
 
     /**
      * Stop listening, makes the listen thread return.
@@ -102,7 +103,7 @@ public:
  *      1. If python calls the procedure "_rpc_get_version", server must call `getVersion` on the executor
  *          instance and return the result.
  *      2. If python calls the procedure "_rpc_stop", server must call its `stop` method.
- *      
+ *
  */
 
 /**
