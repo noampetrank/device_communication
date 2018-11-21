@@ -162,6 +162,9 @@ class ConnectionFactory(object):
         :param kwargs:
         :rtype: Connection
         """
+        if device_id is None:
+            return cls.wired_connection(device_id=choose_device_id(), **kwargs)
+
         raise NotImplementedError
 
     @classmethod
@@ -172,6 +175,9 @@ class ConnectionFactory(object):
         :param kwargs:
         :rtype: Connection
         """
+        if device_id is None:
+            return cls.wireless_connection(device_id=choose_device_id(), **kwargs)
+
         raise NotImplementedError
 
     @classmethod
@@ -182,9 +188,22 @@ class ConnectionFactory(object):
         """
         raise NotImplementedError
 
+    @classmethod
+    def choose_device_id(cls):
+        """
+        This opens a user interface for choosing possible device for this factory.
+        :return: String representing device id, that can be passed to `wired_connection` and to `wireless_conenction`.
+        :type: str
+        """
+        raise NotImplementedError
+
 
 class BugaConnectionFactory(ConnectionFactory):
     """Interface for factories creating buga connections."""
+
+    @classmethod
+    def choose_device_id(cls):
+        pass
 
     @classmethod
     def connected_devices_serials(cls):
@@ -197,17 +216,6 @@ class BugaConnectionFactory(ConnectionFactory):
     @classmethod
     def wired_connection(cls, device_id=None, **kwargs):
         raise NotImplementedError
-
-########################################################################################################################
-#   Choose device id user interface
-#
-# This section is dedicated to a method that will show a user menu for choosing a device id.
-# The method is meant to be our go to way to get a device id when there isn't exactly one connected to the pc.
-
-
-def choose_device_id():
-    raise NotImplementedError
-
 
 ########################################################################################################################
 #   Dummy connections
