@@ -1,10 +1,12 @@
 import time
+from collections import namedtuple
 from functools import wraps
 from types import FunctionType
 
+namedtuple("ApiCall", "class_name, function_name, start_time, end_time, manual_times,exception_msg, is_exception".split(", "))
 
-raw_input_stats = []
-exception_stats = []
+api_stats = []
+"""@type: ApiCall"""
 
 
 def save_raw_input_time(funcname, start, end):
