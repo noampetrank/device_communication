@@ -163,7 +163,7 @@ class ConnectionFactory(object):
         :rtype: Connection
         """
         if device_id is None:
-            return cls.wired_connection(device_id=choose_device_id(), **kwargs)
+            return cls.wired_connection(device_id=cls.choose_device_id(), **kwargs)
 
         raise NotImplementedError
 
@@ -176,7 +176,7 @@ class ConnectionFactory(object):
         :rtype: Connection
         """
         if device_id is None:
-            return cls.wireless_connection(device_id=choose_device_id(), **kwargs)
+            return cls.wireless_connection(device_id=cls.choose_device_id(), **kwargs)
 
         raise NotImplementedError
 
