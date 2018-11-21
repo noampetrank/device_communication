@@ -1,6 +1,8 @@
 """
 Contains the class `metacollectstats` which is to be used as a metaclass for classes that you want to save ApiCall
 summaries of.
+
+There is also the class `ApiCallsRecorder` for usage in benchmarks.
 """
 
 import time

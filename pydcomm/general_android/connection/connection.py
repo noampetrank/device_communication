@@ -13,6 +13,7 @@ Lastly this file
 
 
 from pydcomm import DcommError
+from pydcomm.utils.userexpstats import metacollectstats
 
 
 class ConnectionError(DcommError):
@@ -33,6 +34,8 @@ class Connection(object):
     Since it doesn't mention adb by name, the actual implementation can be different (there are alternatives to adb
     out there), benchmarks don't know about adb, and everyone can be happy.
     """
+    __metaclass__ = metacollectstats
+
     def pull(self, path_on_device, local_path):
         """
         Pull a file/dir to the device.
@@ -154,6 +157,8 @@ class BugaConnection(Connection):
 
 class ConnectionFactory(object):
     """Interface for factories creating connections."""
+    __metaclass__ = metacollectstats
+
     @classmethod
     def wired_connection(cls, device_id=None, **kwargs):
         """Get wired connection
