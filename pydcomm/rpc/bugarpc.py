@@ -40,13 +40,6 @@ class IRemoteProcedureCaller:
         :rtype: str
         """
 
-    @abstractmethod
-    def connect(self, port, host=None):
-        """
-        Do whatever it takes to make the remote executor listen.
-        :rtype: None
-        """
-
     def get_executor_version(self):
         """
         :return: Returns the version string of the remote executor.
@@ -62,13 +55,25 @@ class ICallerFactory:
 
     @classmethod
     @abstractmethod
-    def create_connection(cls, port, device_ip=None):
+    def create_connection(cls, port, device_id=None):
         """
         Creates an rpc object. User must take care to connect.
 
         :return: A RemoteProcedureCaller.
         :rtype: IRemoteProcedureCaller
         """
+        if device_id is None:
+            return cls.create_connection(port, cls.choose_device_id())
+
+        raise NotImplementedError
+
+    @classmethod
+    def choose_device_id(cls):
+        raise NotImplementedError
+
+    @classmethod
+    def install(cls, so_path):
+        raise NotImplementedError
 
 
 # region Factories
