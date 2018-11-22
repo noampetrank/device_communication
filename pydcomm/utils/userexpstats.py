@@ -10,7 +10,7 @@ from collections import namedtuple
 from functools import wraps
 from types import FunctionType
 
-ApiCall = namedtuple("ApiCall", "class_name function_name start_time end_time manual_times exception_msg is_exception")
+ApiCall = namedtuple("ApiCall", "class_name function_name start_time end_time manual_times exception_type exception_msg is_exception")
 
 api_stats = []
 """@type: list[ApiCall]"""
@@ -40,6 +40,7 @@ class ApiCallsRecorder(object):
         >>> assert api_call.function_name == "bar"
         >>> assert len(api_call.manual_times) == 0
         >>> assert api_call.is_exception
+        >>> assert api_call.exception_type is NotImplementedError
         >>> assert api_call.exception_msg == "Bummer"
     """
     @staticmethod
@@ -94,6 +95,7 @@ def collectstats(class_name=None):
         ...     assert api_call.class_name == "no class!"
         ...     assert api_call.function_name == "foo"
         ...     assert api_call.manual_times == []
+        ...     assert api_call.exception_type is NotImplementedError
         ...     assert api_call.exception_msg == "never will be :)"
         ...     assert api_call.is_exception
 
@@ -110,6 +112,7 @@ def collectstats(class_name=None):
             if getattr(orig, "_UserExperienceStats_fake", None) is not _fake_sentinel:
                 start = time.time()
                 manual_times = []
+                exception_type = None
                 exception_msg = None
                 is_exception = False
 
@@ -127,13 +130,14 @@ def collectstats(class_name=None):
                     return func(*args, **kwargs)
                 except Exception as e:
                     is_exception = True
+                    exception_type = type(e)
                     exception_msg = e.message
                     raise
                 finally:
                     __builtin__.raw_input = orig
                     end = time.time()
                     ApiCallsRecorder.save_api_call(ApiCall(class_name, funcname, start, end, manual_times,
-                                                           exception_msg, is_exception))
+                                                           exception_type, exception_msg, is_exception))
             else:
                 return func(*args, **kwargs)
 
@@ -299,6 +303,7 @@ def test_metacollectstats():
     assert api_call.function_name == "bar"
     assert len(api_call.manual_times) == 1
     assert api_call.is_exception
+    assert api_call.exception_type is RuntimeError
     assert api_call.exception_msg == "Hello, World!"
 
     api_call = recorder.api_stats[1]  # type: ApiCall
@@ -306,6 +311,7 @@ def test_metacollectstats():
     assert api_call.function_name == "bar"
     assert len(api_call.manual_times) == 1
     assert api_call.is_exception
+    assert api_call.exception_type is RuntimeError
     assert api_call.exception_msg == "Hello, and goodbye!"
 
     api_call = recorder.api_stats[2]  # type: ApiCall

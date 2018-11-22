@@ -132,29 +132,6 @@ class Connection(object):
         raise NotImplementedError
 
 
-# noinspection PyAbstractClass
-class BugaConnection(Connection):
-    """Like a Connection, but with added Buga things that we just must have.
-    This is currently out of scope, to be done later.
-    """
-    def device_name(self):
-        """Returns device name given by Bugatone
-        This is currently out of scope, to be done later.
-
-        :rtype: str
-        :raises: NameError
-        """
-        raise NotImplementedError
-
-    @classmethod
-    def connected_devices_names(cls):
-        """Returns list of names of connected devices.
-
-        :rtype: list[str]
-        """
-        raise NotImplementedError
-
-
 class ConnectionFactory(object):
     """Interface for factories creating connections."""
     __metaclass__ = metacollectstats
@@ -202,32 +179,13 @@ class ConnectionFactory(object):
         """
         raise NotImplementedError
 
-
-class BugaConnectionFactory(ConnectionFactory):
-    """Interface for factories creating buga connections."""
-
-    @classmethod
-    def choose_device_id(cls):
-        pass
-
-    @classmethod
-    def connected_devices_serials(cls):
-        raise NotImplementedError
-
-    @classmethod
-    def wireless_connection(cls, device_id=None, **kwargs):
-        raise NotImplementedError
-
-    @classmethod
-    def wired_connection(cls, device_id=None, **kwargs):
-        raise NotImplementedError
-
 ########################################################################################################################
 #   Dummy connections
 #
 # This section is for a fixed dummy implementation of connection.
 
-class DummyBugaConnection(BugaConnection):
+
+class DummyConnection(Connection):
     def __init__(self):
         self._pushed = {}
         self._connected = True
@@ -245,11 +203,8 @@ class DummyBugaConnection(BugaConnection):
     def connected_devices_names(cls):
         return ["DummyBugaDevice"]
 
-    @classmethod
-    def connected_devices_serials(cls):
-        return ["dummybugadevice01"]
-
-    def device_name(self):
+    @staticmethod
+    def device_name():
         return "DummyBugaDevice"
 
     def pull(self, path_on_device, local_path):
@@ -341,14 +296,22 @@ all_connection_factories = {}
 #
 
 
-class DummyBugaConnectionFactory(BugaConnectionFactory):
+class DummyConnectionFactory(ConnectionFactory):
+    @classmethod
+    def choose_device_id(cls):
+        return "dummybugadevice01"
+
+    @classmethod
+    def connected_devices_serials(cls):
+        return ["dummybugadevice01"]
+
     @classmethod
     def wireless_connection(cls, **kwargs):
-        return DummyBugaConnection()
+        return DummyConnection()
 
     @classmethod
     def wired_connection(cls, **kwargs):
-        return DummyBugaConnection()
+        return DummyConnection()
 
 
-all_connection_factories['dummy'] = DummyBugaConnectionFactory
+all_connection_factories['dummy'] = DummyConnectionFactory

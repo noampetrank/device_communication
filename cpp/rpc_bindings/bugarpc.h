@@ -68,6 +68,11 @@ public:
 };
 
 
+// Alias to make the `rpc_id` requirement a bit more explicit.
+// Doesn't really do anything, developers can use `int` instead in their code.
+using int_between_30000_and_50000 = int;
+
+
 /**
  * Public interface to RPC servers. This is implemented by the library owners and used by the library clients.
  * See below for creating instances of specific implementations.
@@ -81,10 +86,9 @@ public:
      *  This function blocks until `stop` is called.
      *
      * @param listener Executor implementation that responds to messages.
-     * @param rpc_id Unique identifier for your executor to listen to. Please choose a fixed random number between
-     * 30,000 - 50,000 (so it can also be a good port number).
+     * @param rpc_id Unique identifier for your executor to listen to, must be between 30,000 and 50,000.
      */
-    virtual void listen(IRemoteProcedureExecutor &executor, int rpc_id) = 0;
+    virtual void listen(IRemoteProcedureExecutor &executor, int_between_30000_and_50000 rpc_id) = 0;
 
     /**
      * Stop listening, makes the listen thread return.
