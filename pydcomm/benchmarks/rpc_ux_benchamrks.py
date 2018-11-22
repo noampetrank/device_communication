@@ -34,6 +34,7 @@ def single_api_call_summary(api_call, params=None, ret=None):
         res['data_size'] = len(params[1])
         if ret is not None:
             res['corrupted_data'] = np.array(map(ord,params[1]))+1 != ret
+            res['recv_data_size'] = len(ret)
 
     return res
 
@@ -46,7 +47,7 @@ def print_run_summary(rpc_factory_name, stats, params, ret_val, print_all=False)
 
 
     summary_per_function = pandas.DataFrame(all_calls_table).assign(total_calls=lambda x : 1)
-    summary_per_function = summary_per_function.groupby(['function_name', "data_size"]).\
+    summary_per_function = summary_per_function.groupby(['function_name', "send_data_size", "recv_data_size"]).\
         agg({"call_time": np.mean,
              "total_calls" : np.sum,
              "manual_fixes_count": np.mean,
@@ -96,11 +97,10 @@ class RPCDummyAction:
 
 
 def run_scenario(actions, so_path, rpc_factory): # TBD flag for only parameters lengths?
-    # TBD probably a better python way to do it
-    # TBD probably we can get ret_vals and params from stats
+    # TBD probably we can get ret_vals lengths and params from stats
     api_stats = []  # TBD initialize stats?
     ret_vals = []
-    params = [api_action.params for api_action in test]
+    params = [api_action.params for api_action in actions]
     try:
         for api_action in actions:
             if api_action.function_name == "install":
@@ -202,6 +202,3 @@ def test_main():
 
 if __name__ == "__main__":
     main()
-
-
-# TBD - different scenarios for different situations? tags between?
