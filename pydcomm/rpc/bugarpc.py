@@ -5,7 +5,7 @@ Using RPC should be as simple as calling a factory and connecting to a remote se
 
 The file is meant to remain unchanged, except for the possible additions of factories at its bottom.
 """
-from abc import ABCMeta, abstractmethod
+from pydcomm.utils.userexpstats import metacollectstats
 
 
 class IRemoteProcedureCaller:
@@ -14,9 +14,8 @@ class IRemoteProcedureCaller:
     Users must write their own "executors", but not their own server, see `bugarpc.h` for more details on the remote
     side.
     """
-    __metaclass__ = ABCMeta
+    __metaclass__ = metacollectstats
 
-    @abstractmethod
     def call(self, procedure_name, params, marshaller=None, unmarshaller=None):
         """
         Marshalls the params and sends them to the executor side. Then receives params that are returned from the
@@ -31,14 +30,14 @@ class IRemoteProcedureCaller:
         :return: Unmarshalled returned params (i.e. float, dict, object etc.)
         :rtype: dict[str: object]
         """
-        pass
+        raise NotImplementedError
 
-    @abstractmethod
     def get_version(self):
         """
         Returns the version string of this class.
         :rtype: str
         """
+        raise NotImplementedError
 
     def get_executor_version(self):
         """
@@ -51,10 +50,9 @@ class ICallerFactory:
     """
 
     """
-    __metaclass__ = ABCMeta
+    __metaclass__ = metacollectstats
 
     @classmethod
-    @abstractmethod
     def create_connection(cls, port, device_id=None):
         """
         Creates an rpc object. User must take care to connect.
