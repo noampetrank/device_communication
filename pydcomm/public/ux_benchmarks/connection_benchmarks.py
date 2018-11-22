@@ -10,8 +10,8 @@ import subprocess32
 from enum import IntEnum
 from pybuga.tests.utils.test_helpers import Tee
 from pybuga.infra.utils.user_input import UserInput
-from pydcomm.general_android.connection.connection import (ConnectionError, ConnectionClosedError,
-                                                           all_connection_factories)
+from pydcomm.public.iconnection import (ConnectionError, ConnectionClosedError,
+                                        all_connection_factories)
 
 from pydcomm.benchmarks.raw_input_recorder import RawInputRecorder
 
@@ -79,7 +79,7 @@ class ConnectionBenchmark(object):
 
     def benchmark_disconnect(self, connection):
         """
-        :param pydcomm.general_android.connection.Connection connection: Connection to disconnect.
+        :param pydcomm.general_android.connection.IConnection connection: Connection to disconnect.
         :return:
         """
         success = False

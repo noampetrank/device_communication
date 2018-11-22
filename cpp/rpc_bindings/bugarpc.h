@@ -54,7 +54,7 @@ public:
      *  Procedure names beginning with "_rpc_" are reserved for server implementers, and therefore must not be used.
      *
      * @param procedureName Name of procedure called, not beginning with "_rpc_".
-     * @param params String of characters (or bytes) representing the parameters sent from python.
+     * @param params The string sent from python.
      * @return String representing return value to be sent back to python.
      */
     virtual std::string executeProcedure(std::string procedureName, std::string params) = 0;

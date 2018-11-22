@@ -16,20 +16,15 @@ class IRemoteProcedureCaller(object):
     """
     __metaclass__ = metacollectstats
 
-    def call(self, procedure_name, params, marshaller=None, unmarshaller=None):
+    def call(self, procedure_name, params):
         """
         Marshalls the params and sends them to the executor side. Then receives params that are returned from the
         executor and unmarshalls them.
 
         :param str procedure_name: Name of procedure that device side handles.
-        :param T params: Can be any type marshallable by the marshaller, possibly generators that will be converted to
-                        streams on the executor.
-        :param ((T)->U)|None marshaller: Function that can convert `params` to something the undelying technology knows
-                                        how to send to the device. If None, the identity function is used.
-        :param None|(V)->W unmarshaller: Function that can convert the raw return from device (whatever that is) into
-                                        something you want to return for reals. If None, the identity function is used.
-        :return: Unmarshalled returned params (e.g. float, dict, object etc.)
-        :rtype: W
+        :param str params: String, equivalently bytes, to send.
+        :return: String sent from device.
+        :rtype: str
         """
         raise NotImplementedError
 
@@ -44,7 +39,7 @@ class IRemoteProcedureCaller(object):
         """
         :return: Returns the version string of the remote executor.
         """
-        return self.call("_rpc_get_version", {})
+        return self.call("_rpc_get_version", "")
 
 
 class ICallerFactory(object):
@@ -101,7 +96,7 @@ all_rpc_test_so = {}
 
 
 class DummyRemoteProcedureCaller(IRemoteProcedureCaller):
-    def call(self, procedure_name, params, marshaller=None, unmarshaller=None):
+    def call(self, procedure_name, params):
         if procedure_name == "_rpc_get_version":
             return "1.0"
         elif procedure_name == "dummy_send":
