@@ -74,6 +74,27 @@ class Connection(object):
         """
         raise NotImplementedError
 
+    def streaming_shell(self, command, timeout_ms=None):
+        """
+        Calls the shell command and returns an iterator of line from the stdout.
+        The return object must have a method to stop the stream.
+        TODO: Define this "stoppable" iterator thing.
+
+        :param str command: Command to run.
+        :param int|None timeout_ms: Maximum time to allow the command to run.
+        :return: Stoppable iterator of lines from output.
+        """
+        raise NotImplementedError
+
+    def logcat(self, timeout_ms=None):
+        """
+        Stream of lines from logcat. Needs to be "stoppable".
+        TODO: Define return object; maybe allow more parameters, e.g. -d.
+        :param int|None timeout_ms: Maximum time to allow the command to run.
+        :return: Stoppable iterator of lines from log.
+        """
+        raise NotImplementedError
+
     def reboot(self):
         """Reboot the device"""
         raise NotImplementedError
@@ -239,6 +260,12 @@ class DummyConnection(Connection):
             return subprocess32.check_output(command, shell=True).strip()
 
         raise TypeError
+
+    def logcat(self, timeout_ms=None):
+        return ["bah"]
+
+    def streaming_shell(self, command, timeout_ms=None):
+        return [self.shell(command)]
 
     def reboot(self):
         if not self._connected:
