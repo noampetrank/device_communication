@@ -1,13 +1,12 @@
-import pickle
+import cPickle as pickle
 import time
 import sys
-from random import randint
 from collections import namedtuple
 
 import numpy as np
 from pybuga.tests.utils.test_helpers import Tee
 from pybuga.infra.utils.user_input import UserInput
-from pydcomm.rpc.bugarpc import all_rpc_factories, all_rpc_test_so
+from pydcomm.public.rpcfactories import all_rpc_factories, all_rpc_test_so
 
 from pydcomm.utils.userexpstats import ApiCallsRecorder
 
@@ -18,7 +17,7 @@ ApiAction = namedtuple("ApiAction", "function_name params")
 def single_api_call_summary(api_call, params=None, ret=None, ignore_first_manual=True):
     res = {
         "function_name":        api_call.function_name,
-        "call_time":            api_call.end_timme - api_call.start_time,
+        "call_time":            api_call.end_time - api_call.start_time,
         "manual_fixes_count":   len(api_call.manual_times),
         "manual_fixes_time":    sum([end-start for start, end in api_call.manual_times[ignore_first_manual:]]),
         "is_exception":         api_call.is_exception,
@@ -27,21 +26,24 @@ def single_api_call_summary(api_call, params=None, ret=None, ignore_first_manual
     }
 
     if api_call.function_name == "call" and params is not None:
-        res['data_size'] = len(params[1])
+        res['send_data_size'] = len(params[1])
         if ret is not None:
-            res['corrupted_data'] = np.any(np.array(map(ord, params[1])) + 1 != ret)
+            res['corrupted_data'] = (np.frombuffer(params[1], np.uint8) + 1).tostring() != ret
             res['recv_data_size'] = len(ret)
 
     return res
 
 
 def print_run_summary(rpc_factory_name, stats, params, ret_val, print_all=False):
-    import pandas
+    import pandas as pd
+    pd.set_option('display.max_columns', 500)
+    pd.set_option('display.width', 1000)
+
     all_calls_raw = [single_api_call_summary(call, p, ret) for call, p, ret in zip(stats, params, ret_val)]
 
-    all_calls_table = pandas.DataFrame(all_calls_raw).set_index(['function_name'])
+    all_calls_table = pd.DataFrame(all_calls_raw).set_index(['function_name'])
 
-    summary_per_function = pandas.DataFrame(all_calls_table).assign(total_calls=lambda x: 1)
+    summary_per_function = pd.DataFrame(all_calls_table).assign(total_calls=lambda x: 1)
     summary_per_function = summary_per_function.groupby(['function_name', "send_data_size", "recv_data_size"]).\
         agg({"call_time": np.mean,
              "total_calls": np.sum,
@@ -77,12 +79,8 @@ class RPCDummyAction(object):
         return ApiAction(function_name="install", params=())
 
     @staticmethod
-    def INIT():
-        return ApiAction(function_name="__init__", params=())
-
-    @staticmethod
     def CALL_DUMMY_SEND(length):
-        random_string = "".join(chr(randint(0, 256)) for _ in range(length))
+        random_string = np.random.randint(0, 256, int(length), np.uint8).tostring()
         return ApiAction(function_name="call", params=["dummy_send", random_string])
 
     @staticmethod
@@ -91,26 +89,35 @@ class RPCDummyAction(object):
 
 
 def run_scenario(actions, so_path, rpc_factory):  # TBD flag for only parameters lengths?
+    """
+
+    :param list[ApiAction] actions: Action to run.
+    :param str so_path: Path to test so relative to test-files repository.
+    :param pydcomm.public.bugarpc.ICallerFactory rpc_factory: Caller factory to use.
+    :return: Results of run.
+    :rtype: dict
+    """
+    stats = []
     ret_vals = []
     params = [api_action.params for api_action in actions]
-    factory = None
-    recorder = ApiCallsRecorder()
+    connection = None
+    """@type: pydcomm.public.bugarpc.IRemoteProcedureCaller"""
 
-    with recorder:
-        try:
-            for api_action in actions:
+    try:
+        for api_action in actions:
+            recorder = ApiCallsRecorder()
+            with recorder:
                 if api_action.function_name == "install":
-                    rpc_factory.install(so_path)
-                if api_action.function_name == "__init__":
-                    factory = rpc_factory()
-                    ret_vals.append(factory)
+                    ret_vals.append(rpc_factory.install(so_path))
                 elif api_action.function_name == "create_connection":
-                    factory.create_connection(*api_action.params)
+                    connection = rpc_factory.create_connection(*api_action.params)
+                    ret_vals.append(None)
                 elif api_action.function_name == "call":
-                    factory.call(*api_action.params)
-        except KeyboardInterrupt:
-            pass
-    return {"stats": recorder.api_stats, "params": params, "ret_vals": ret_vals}
+                    ret_vals.append(connection.call(*api_action.params))
+            stats.append(recorder.api_stats[0])
+    except KeyboardInterrupt:
+        pass
+    return {"stats": stats, "params": params, "ret_vals": ret_vals}
 
 
 # TODO: Extract code from pybuga to someplace else
@@ -126,7 +133,7 @@ class BetterTee(Tee):
 def get_basic_scenario(rep_num=3, create_connections_num=10, input_lengths=(1, 1000, 1e5, 1e6, 1e7)):
     scenario = []
     for _ in range(rep_num):
-        scenario += [RPCDummyAction.INSTALL(), RPCDummyAction.INIT()]
+        scenario += [RPCDummyAction.INSTALL()]
         for _ in range(create_connections_num):
             scenario += [RPCDummyAction.CREATE_CONNECTION()]
             scenario += [RPCDummyAction.CALL_DUMMY_SEND(l) for l in input_lengths]
@@ -142,7 +149,8 @@ def get_small_msgs_scenario(rep_num=1):
 
 
 def get_long_connection_scenario(rep_num=1):
-    return get_basic_scenario(rep_num, create_connections_num=1, input_lengths=[1e6] * 1000)
+    input_lengths = [1e6] * 1000
+    return get_basic_scenario(rep_num, create_connections_num=1, input_lengths=input_lengths)
 
 
 def get_scenario_similar_to_recording_script():
@@ -151,29 +159,29 @@ def get_scenario_similar_to_recording_script():
 
 
 def main():
-    test_scenario = get_basic_scenario()  # TBD choose from menu? add repr string?
+
     from pybuga.infra.utils.buga_utils import indent_printing
     start_time_string = time.strftime("%H:%M:%S")
-    with BetterTee("run_{}.log".format(start_time_string)):
-        with indent_printing.time():
 
+    with BetterTee("run_rpc_{}.log".format(start_time_string)):
+        with indent_printing.time():
             print "Choose connection factory for benchmark:"
             factory_name = UserInput.menu(all_rpc_factories.keys(), False)
             if factory_name is None:
                 print "Thanks, goodbye!"
                 return
 
-            rpc_factory_cls = all_rpc_factories[factory_name]  # TBD
-            rpc_test_so = all_rpc_test_so[factory_name]  # TBD
-            # TBD
-            # The test .so should have a dummy excecuter with port 29999 and one method:
-            # dummy_send(string input) which returns the string input + 1 (each character is increased by 1 modulu 256)
+            rpc_factory_cls = all_rpc_factories[factory_name]
+            """@type: pydcomm.public.bugarpc.ICallerFactory"""
+            rpc_test_so = all_rpc_test_so[factory_name]
 
+            test_scenario = get_basic_scenario()
             runs = run_scenario(test_scenario, rpc_test_so, rpc_factory_cls)
             runs['rpc_factory_name'] = rpc_factory_cls.__name__
+
             with open("raw_data_" + start_time_string + ".pickle", "w") as f:
                 pickle.dump((rpc_factory_cls.__name__, runs), f)
-                print_run_summary(runs['rpc_factory_name'], runs['stats'], runs['params'], runs['ret_val'],
+                print_run_summary(runs['rpc_factory_name'], runs['stats'], runs['params'], runs['ret_vals'],
                                   print_all=False)
 
 
@@ -181,11 +189,19 @@ def test_main():
     import mock
     import __builtin__
 
+    @mock.patch.object(__builtin__, "open")
+    @mock.patch.object(pickle, "dump")
     @mock.patch.object(__builtin__, "raw_input")
     @mock.patch.object(time, "sleep")
-    def call_main(msleep, mraw_input):
+    def call_main(msleep, mraw_input, mdump, mopen):
         msleep.return_value = None
-        mraw_input.side_effect = ["dummy", "wired"]
+
+        def dummy_raw_input():
+            print "dummy"
+            yield "dummy"
+
+        mraw_input.side_effect = dummy_raw_input()
+
         main()
 
     call_main()

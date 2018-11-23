@@ -2,8 +2,8 @@
 #   Dummy connections
 #
 # This section is for a fixed dummy implementation of connection.
-from pydcomm.general_android.connection import IConnection
-from pydcomm.public.iconnection import ConnectionClosedError, ConnectionFactory
+from pydcomm.public.bugarpc import IRemoteProcedureCaller, ICallerFactory
+from pydcomm.public.iconnection import IConnection, ConnectionClosedError, ConnectionFactory
 
 
 class DummyConnection(IConnection):
@@ -121,3 +121,34 @@ class DummyConnectionFactory(ConnectionFactory):
     @classmethod
     def wired_connection(cls, **kwargs):
         return DummyConnection()
+
+
+class DummyRemoteProcedureCaller(IRemoteProcedureCaller):
+    def call(self, procedure_name, params):
+        import numpy as np
+        if procedure_name == "_rpc_get_version":
+            return "1.0"
+        elif procedure_name == "dummy_send":
+            return (np.frombuffer(params, np.uint8) + 1).tostring()
+        elif procedure_name == "_rpc_stop":
+            return "stopped"
+        else:
+            raise ValueError("No such procedure name: {}".format(procedure_name))
+
+    def get_version(self):
+        return "1.0"
+
+
+class DummyCallerFactory(ICallerFactory):
+    @classmethod
+    def create_connection(cls, rpc_id, device_id=None):
+        assert device_id is None or device_id == "dummy", "Dummy device must have id dummy"
+        return DummyRemoteProcedureCaller()
+
+    @classmethod
+    def install(cls, so_path, device_id=None):
+        assert device_id is None or device_id == "dummy", "Dummy device must have id dummy"
+
+    @classmethod
+    def choose_device_id(cls):
+        return "dummy"
