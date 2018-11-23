@@ -1,4 +1,4 @@
-import cPickle as pickle
+import cPickle
 import time
 import sys
 from collections import namedtuple
@@ -180,7 +180,7 @@ def main():
             runs['rpc_factory_name'] = rpc_factory_cls.__name__
 
             with open("raw_data_" + start_time_string + ".pickle", "w") as f:
-                pickle.dump((rpc_factory_cls.__name__, runs), f)
+                cPickle.dump((rpc_factory_cls.__name__, runs), f)
                 print_run_summary(runs['rpc_factory_name'], runs['stats'], runs['params'], runs['ret_vals'],
                                   print_all=False)
 
@@ -189,18 +189,26 @@ def test_main():
     import mock
     import __builtin__
 
+    # noinspection PyUnusedLocal
     @mock.patch.object(__builtin__, "open")
-    @mock.patch.object(pickle, "dump")
+    @mock.patch.object(cPickle, "dump")
     @mock.patch.object(__builtin__, "raw_input")
     @mock.patch.object(time, "sleep")
     def call_main(msleep, mraw_input, mdump, mopen):
         msleep.return_value = None
 
-        def dummy_raw_input():
-            print "dummy"
-            yield "dummy"
+        def dummy_raw_input(*values):
+            i = [0]
 
-        mraw_input.side_effect = dummy_raw_input()
+            def inner(prompt):
+                value = values[i[0]]
+                i[0] += 1
+                print prompt, value
+                return value
+
+            return inner
+
+        mraw_input.side_effect = dummy_raw_input("dummy")
 
         main()
 
