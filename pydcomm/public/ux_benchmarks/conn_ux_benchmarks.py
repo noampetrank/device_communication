@@ -6,7 +6,7 @@ from collections import namedtuple
 import numpy as np
 from pybuga.tests.utils.test_helpers import Tee
 from pybuga.infra.utils.user_input import UserInput
-from pydcomm.public.rpcfactories import all_rpc_factories, all_rpc_test_so
+from pydcomm.public.connfactories import all_connection_factories
 
 from pydcomm.public.ux_stats import ApiCallsRecorder
 
@@ -36,7 +36,7 @@ def single_api_call_summary(api_call, params=None, ret=None, ignore_first_manual
     return res
 
 
-def print_run_summary(rpc_factory_name, stats, params, ret_val, print_all=False):
+def print_run_summary(conn_factory_name, stats, params, ret_val, print_all=False):
     import pandas as pd
     pd.set_option('display.max_columns', 500)
     pd.set_option('display.width', 1000)
@@ -67,7 +67,7 @@ def print_run_summary(rpc_factory_name, stats, params, ret_val, print_all=False)
                                                         "is_success": "success_ratio",
                                                         "corrupted_data": "total_corrupted_data"})
 
-    print "Summary for RPC Factory : {}".format(rpc_factory_name)
+    print "Summary for Connection Factory : {}".format(conn_factory_name)
     print "total runtime : ", stats[-1].end_time - stats[0].start_time
     if print_all:
         print all_calls_table
@@ -76,60 +76,115 @@ def print_run_summary(rpc_factory_name, stats, params, ret_val, print_all=False)
 
 
 class Scenario(object):
-    def __init__(self, stats, params, ret_vals, uxrecorder, connection, so_path, rpc_factory):
+    def __init__(self, stats, params, ret_vals, uxrecorder, connection, conn_factory):
         self.stats = stats
+        """@type: list[pydcomm.public.ux_stats.ApiCall]"""
+
         self.params = params
+        """@type: list[dict]"""
+
         self.ret_vals = ret_vals
+        """@type: list"""
+
         self.uxrecorder = uxrecorder
+        """@type: ApiCallsRecorder"""
+
         self.connection = connection
-        self.so_path = so_path
-        self.rpc_factory = rpc_factory
+        """@type: pydcomm.public.iconnection.IConnection"""
+
+        self.conn_factory = conn_factory
+        """@type: pydcomm.public.iconnection.ConnectionFactory"""
 
 
-class RPCDummyAction(object):
+class ConnectionAction(object):
+    @staticmethod
+    def CREATE_CONNECTION(device_id=None, **kwargs):
+        def execute(scenario):
+            """:type scenario: Scenario"""
+
+        return execute
+
+    @staticmethod
+    def PUSH(local_path, path_on_device):
+        def execute(scenario):
+            """:type scenario: Scenario"""
+
+        return execute
+
+    @staticmethod
+    def PUSH_PULL_RANDOM(length):
+        def execute(scenario):
+            """:type scenario: Scenario"""
+
+        return execute
+
+    @staticmethod
+    def PULL(path_on_device, local_path):
+        def execute(scenario):
+            """:type scenario: Scenario"""
+
+        return execute
+
+    @staticmethod
+    def SHELL(command, timeout_ms=None):
+        def execute(scenario):
+            """:type scenario: Scenario"""
+
+        return execute
+
+    @staticmethod
+    def ROOT():
+        def execute(scenario):
+            """:type scenario: Scenario"""
+
+        return execute
+
+    @staticmethod
+    def REMOUNT():
+        def execute(scenario):
+            """:type scenario: Scenario"""
+
+        return execute
+
     @staticmethod
     def INSTALL():
         def execute(scenario):
             """:type scenario: Scenario"""
-            scenario.params.append(())
-            scenario.ret_vals.append(scenario.rpc_factory.install(scenario.so_path))
-            scenario.stats.append(scenario.uxrecorder.api_stats[-1])
-        return execute
-
-    @staticmethod
-    def CALL_DUMMY_SEND(length):
-        random_string = np.random.randint(0, 256, int(length), np.uint8).tostring()
-
-        def execute(scenario):
-            """:type scenario: Scenario"""
-            scenario.params.append(("dummy_send", random_string))
-            scenario.ret_vals.append(scenario.connection.call("dummy_send", random_string))
-            scenario.stats.append(scenario.uxrecorder.api_stats[-1])
 
         return execute
 
     @staticmethod
-    def CREATE_CONNECTION(rpc_id=29999):
+    def UNINSTALL():
         def execute(scenario):
             """:type scenario: Scenario"""
-            scenario.params.append((rpc_id,))
-            scenario.connection = scenario.rpc_factory.create_connection(rpc_id)
-            scenario.ret_vals.append(None)
-            scenario.stats.append(scenario.uxrecorder.api_stats[-1])
+
+        return execute
+
+    @staticmethod
+    def DEVICE_ID():
+        def execute(scenario):
+            """:type scenario: Scenario"""
+
+        return execute
+
+    @staticmethod
+    def DISCONNECT():
+        def execute(scenario):
+            """:type scenario: Scenario"""
+
         return execute
 
 
-def run_scenario(actions, so_path, rpc_factory):  # TBD flag for only parameters lengths?
+def run_scenario(actions, conn_factory):
     """
 
     :param list[(scenario)->None] actions: Action to run.
-    :param str so_path: Path to test so relative to test-files repository.
-    :param pydcomm.public.bugarpc.ICallerFactory rpc_factory: Caller factory to use.
+    :param pydcomm.public.iconnection.ConnectionFactory conn_factory: Caller factory to use.
     :return: Results of run.
     :rtype: dict
     """
     uxrecorder = ApiCallsRecorder()
-    scenario = Scenario([], [], [], uxrecorder, None, so_path, rpc_factory)
+    scenario = Scenario([], [], [], uxrecorder, None, conn_factory)
 
     with uxrecorder:
         try:
@@ -153,15 +208,10 @@ class BetterTee(Tee):
 def get_basic_scenario(rep_num=3, create_connections_num=10, input_lengths=(1, 1000, 1e5, 1e6, 1e7)):
     scenario = []
     for _ in range(rep_num):
-        scenario += [RPCDummyAction.INSTALL()]
         for _ in range(create_connections_num):
-            scenario += [RPCDummyAction.CREATE_CONNECTION()]
-            scenario += [RPCDummyAction.CALL_DUMMY_SEND(l) for l in input_lengths]
+            scenario += [ConnectionAction.CREATE_CONNECTION()]
+            scenario += [ConnectionAction.PUSH_PULL_RANDOM(l) for l in input_lengths]
     return scenario
-
-
-def get_multiple_connection_scenario():
-    return get_basic_scenario(1, create_connections_num=10, input_lengths=[]) + [RPCDummyAction.CALL_DUMMY_SEND(10000)]
 
 
 def get_small_msgs_scenario(rep_num=1):
@@ -181,25 +231,25 @@ def main():
     from pybuga.infra.utils.buga_utils import indent_printing
     start_time_string = time.strftime("%H:%M:%S")
 
-    with BetterTee("run_rpc_{}.log".format(start_time_string)):
+    with BetterTee("run_conn_{}.log".format(start_time_string)):
         with indent_printing.time():
             print "Choose connection factory for benchmark:"
-            factory_name = UserInput.menu(all_rpc_factories.keys(), False)
+            factory_name = UserInput.menu(all_connection_factories.keys(), False)
             if factory_name is None:
                 print "Thanks, goodbye!"
                 return
 
-            rpc_factory_cls = all_rpc_factories[factory_name]
-            """@type: pydcomm.public.bugarpc.ICallerFactory"""
-            rpc_test_so = all_rpc_test_so[factory_name]
+            conn_factory = all_connection_factories[factory_name]
+            """@type: pydcomm.public.iconnection.ConnectionFactory"""
 
             test_scenario = get_basic_scenario()
-            runs = run_scenario(test_scenario, rpc_test_so, rpc_factory_cls)
-            runs['rpc_factory_name'] = rpc_factory_cls.__name__
+
+            runs = run_scenario(test_scenario, conn_factory)
+            runs['conn_factory_name'] = conn_factory.__name__
 
             with open("raw_data_" + start_time_string + ".pickle", "w") as f:
-                cPickle.dump((rpc_factory_cls.__name__, runs), f)
-                print_run_summary(runs['rpc_factory_name'], runs['stats'], runs['params'], runs['ret_vals'],
+                cPickle.dump((conn_factory.__name__, runs), f)
+                print_run_summary(runs['conn_factory_name'], runs['stats'], runs['params'], runs['ret_vals'],
                                   print_all=False)
 
 

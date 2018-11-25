@@ -5,7 +5,7 @@ Using RPC should be as simple as calling a factory and connecting to a remote se
 
 The file is meant to remain unchanged, except for the possible additions of factories at its bottom.
 """
-from pydcomm.utils.userexpstats import metacollectstats
+from pydcomm.public.ux_stats import metacollectstats
 
 
 class IRemoteProcedureCaller(object):

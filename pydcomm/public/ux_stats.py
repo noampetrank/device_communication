@@ -10,7 +10,8 @@ from collections import namedtuple
 from functools import wraps
 from types import FunctionType
 
-ApiCall = namedtuple("ApiCall", "class_name function_name start_time end_time manual_times exception_type exception_msg is_exception")
+ApiCall = namedtuple("ApiCall", "class_name function_name start_time end_time manual_times "
+                                "exception_type exception_msg is_exception")
 
 api_stats = []
 """@type: list[ApiCall]"""

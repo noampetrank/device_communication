@@ -98,7 +98,7 @@ class DummyConnection(IConnection):
 
         return ""
 
-    def serial_number(self):
+    def device_id(self):
         if not self._connected:
             raise ConnectionClosedError
 
@@ -111,15 +111,11 @@ class DummyConnectionFactory(ConnectionFactory):
         return "dummybugadevice01"
 
     @classmethod
-    def connected_devices_serials(cls):
+    def connected_devices(cls):
         return ["dummybugadevice01"]
 
     @classmethod
-    def wireless_connection(cls, **kwargs):
-        return DummyConnection()
-
-    @classmethod
-    def wired_connection(cls, **kwargs):
+    def create_connection(cls, device_id=None, **kwargs):
         return DummyConnection()
 
 

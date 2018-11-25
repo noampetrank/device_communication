@@ -13,7 +13,7 @@ Lastly this file
 
 
 from pydcomm import DcommError
-from pydcomm.utils.userexpstats import metacollectstats
+from pydcomm.public.ux_stats import metacollectstats
 
 
 class ConnectionError(DcommError):
@@ -134,7 +134,7 @@ class IConnection(object):
         """
         raise NotImplementedError
 
-    def serial_number(self):
+    def device_id(self):
         """Return serial number of connected device.
 
         :rtype: str
@@ -145,46 +145,23 @@ class IConnection(object):
         """Closes connection."""
         raise NotImplementedError
 
-    def test_connection(self):
-        """Tests and returns if the connection is still available.
-
-        :rtype: bool
-        """
-        raise NotImplementedError
-
 
 class ConnectionFactory(object):
     """Interface for factories creating connections."""
     __metaclass__ = metacollectstats
 
     @classmethod
-    def wired_connection(cls, device_id=None, **kwargs):
-        """Get wired connection
+    def create_connection(cls, device_id=None, **kwargs):
+        """Create connection
 
         :param str|None device_id: Specific device id to connect to. If none given, must call `choose_device_id()`.
         :param kwargs:
         :rtype: IConnection
         """
-        if device_id is None:
-            return cls.wired_connection(device_id=cls.choose_device_id(), **kwargs)
-
         raise NotImplementedError
 
     @classmethod
-    def wireless_connection(cls, device_id=None, **kwargs):
-        """Get wireless connection
-
-        :param str|None device_id: Specific device id to connect to. If none given, must call `choose_device_id()`.
-        :param kwargs:
-        :rtype: IConnection
-        """
-        if device_id is None:
-            return cls.wireless_connection(device_id=cls.choose_device_id(), **kwargs)
-
-        raise NotImplementedError
-
-    @classmethod
-    def connected_devices_serials(cls):
+    def connected_devices(cls):
         """Returns list of serial numbers of connected devices.
 
         :rtype: list[str]
