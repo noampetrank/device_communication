@@ -8,7 +8,7 @@ The file is meant to remain unchanged, except for the possible additions of fact
 from pydcomm.public.ux_stats import metacollectstats
 
 
-class IRemoteProcedureCaller(object):
+class IRemoteProcedureClient(object):
     """
     This class represents a connection to a remote server that can execute certain procedures.
     Users must write their own "executors", but not their own server, see `bugarpc.h` for more details on the remote
@@ -41,7 +41,7 @@ class IRemoteProcedureCaller(object):
         return self.call("_rpc_get_version", "")
 
 
-class ICallerFactory(object):
+class IRemoteProcedureClientFactory(object):
     """
     Interface for factories creating remote procedure callers with a specific underlying technology.
     Factories must also implement two additional functionalities:
@@ -64,7 +64,7 @@ class ICallerFactory(object):
         :param int rpc_id: Id of caller-executor pair, a whole number between 30,000 - 50,000.
         :param str|None device_id: String representing device id or None. If None then `choose_device_id` is called.
         :return: A RemoteProcedureCaller.
-        :rtype: IRemoteProcedureCaller
+        :rtype: IRemoteProcedureClient
         """
         # if device_id is None:
         #     return cls.create_connection(rpc_id, device_id=cls.choose_device_id())
@@ -72,7 +72,7 @@ class ICallerFactory(object):
         raise NotImplementedError
 
     @classmethod
-    def install(cls, so_path, device_id=None):
+    def install(cls, so_path, rpc_id, device_id=None):
         # if device_id is None:
         #     return cls.install(so_path, device_id=cls.choose_device_id())
         raise NotImplementedError

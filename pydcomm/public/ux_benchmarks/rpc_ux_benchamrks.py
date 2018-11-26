@@ -124,7 +124,7 @@ def run_scenario(actions, so_path, rpc_factory):  # TBD flag for only parameters
 
     :param list[(scenario)->None] actions: Action to run.
     :param str so_path: Path to test so relative to test-files repository.
-    :param pydcomm.public.bugarpc.ICallerFactory rpc_factory: Caller factory to use.
+    :param pydcomm.public.bugarpc.IRemoteProcedureClientFactory rpc_factory: Caller factory to use.
     :return: Results of run.
     :rtype: dict
     """

@@ -6,7 +6,7 @@
 # as its arguments, and returns the same string with each byte increased by 1 modulo 256.
 
 from collections import namedtuple
-from pydcomm.connections.dummy import DummyCallerFactory
+from pydcomm.connections.dummy import DummyRemoteProcedureClientFactory
 
 RpcFactoryEntry = namedtuple("RpcFactoryEntry", "factory_cls test_so")
 
@@ -18,8 +18,7 @@ all_rpc_factories = {}
 #   class MyCallerFactory(ICallerFactory):
 #       ...
 #
-#   all_rpc_factories["mine"] = MyCallerFactory
-#   all_rpc_test_so["mine"] = "minecaller1.so"
+#   all_rpc_factories["mine"] = RpcFactoryEntry(MyCallerFactory, "minecaller1.so")
 #
 
-all_rpc_factories["dummy"] = RpcFactoryEntry(DummyCallerFactory, "dummy.so")
+all_rpc_factories["dummy"] = RpcFactoryEntry(DummyRemoteProcedureClientFactory, "dummy.so")

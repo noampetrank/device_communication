@@ -119,7 +119,7 @@ class DummyConnectionFactory(ConnectionFactory):
         return DummyConnection()
 
 
-class DummyRemoteProcedureCaller(IRemoteProcedureCaller):
+class DummyRemoteProcedureClient(IRemoteProcedureCaller):
     def call(self, procedure_name, params):
         import numpy as np
         if procedure_name == "_rpc_get_version":
@@ -135,7 +135,7 @@ class DummyRemoteProcedureCaller(IRemoteProcedureCaller):
         return "1.0"
 
 
-class DummyCallerFactory(ICallerFactory):
+class DummyRemoteProcedureClientFactory(ICallerFactory):
     @classmethod
     def create_connection(cls, rpc_id, device_id=None):
         assert device_id is None or device_id == "dummy", "Dummy device must have id dummy"

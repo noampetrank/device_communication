@@ -42,6 +42,7 @@ add_executable(cpp
         rpc_bindings/marshallers.h)
 target_include_directories(cpp PRIVATE
         ${CMAKE_CURRENT_BINARY_DIR}
+        ${PROTO_SRC_DIR}
         ../3rdparty/nlohmann/include/
 )
 
