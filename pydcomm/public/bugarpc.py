@@ -46,8 +46,8 @@ class IRemoteProcedureClientFactory(object):
     Interface for factories creating remote procedure callers with a specific underlying technology.
     Factories must also implement two additional functionalities:
         1. `choose_device_id` - a user interface for selecting an available device_id.
-        2. `install` - a function that installs a shared object file, that implements an executor for devices, on
-                        a device, making it ready for connection.
+        2. `install_executor` - a function that installs a shared object file, that implements an executor for devices,
+                        on a device, making it ready for connection.
     """
     __metaclass__ = metacollectstats
 
@@ -72,9 +72,9 @@ class IRemoteProcedureClientFactory(object):
         raise NotImplementedError
 
     @classmethod
-    def install(cls, so_path, rpc_id, device_id=None):
+    def install_executor(cls, so_path, rpc_id, device_id=None):
         # if device_id is None:
-        #     return cls.install(so_path, device_id=cls.choose_device_id())
+        #     return cls.install_executor(so_path, device_id=cls.choose_device_id())
         raise NotImplementedError
 
     @classmethod

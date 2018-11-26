@@ -92,7 +92,7 @@ class RPCDummyAction(object):
         def execute(scenario):
             """:type scenario: Scenario"""
             scenario.params.append(())
-            scenario.ret_vals.append(scenario.rpc_factory.install(scenario.so_path))
+            scenario.ret_vals.append(scenario.rpc_factory.install_executor(scenario.so_path))
             scenario.stats.append(scenario.uxrecorder.api_stats[-1])
         return execute
 

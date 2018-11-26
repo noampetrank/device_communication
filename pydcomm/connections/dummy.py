@@ -139,10 +139,10 @@ class DummyRemoteProcedureClientFactory(ICallerFactory):
     @classmethod
     def create_connection(cls, rpc_id, device_id=None):
         assert device_id is None or device_id == "dummy", "Dummy device must have id dummy"
-        return DummyRemoteProcedureCaller()
+        return DummyRemoteProcedureClient()
 
     @classmethod
-    def install(cls, so_path, device_id=None):
+    def install_executor(cls, so_path, device_id=None):
         assert device_id is None or device_id == "dummy", "Dummy device must have id dummy"
 
     @classmethod
