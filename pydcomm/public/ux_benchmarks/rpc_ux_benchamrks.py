@@ -6,7 +6,7 @@ from collections import namedtuple
 import numpy as np
 from pybuga.tests.utils.test_helpers import Tee
 from pybuga.infra.utils.user_input import UserInput
-from pydcomm.public.rpcfactories import all_rpc_factories, all_rpc_test_so
+from pydcomm.public.rpcfactories import all_rpc_factories
 
 from pydcomm.public.ux_stats import ApiCallsRecorder
 
@@ -189,9 +189,10 @@ def main():
                 print "Thanks, goodbye!"
                 return
 
-            rpc_factory_cls = all_rpc_factories[factory_name]
+            pair = all_rpc_factories[factory_name]
+            rpc_factory_cls = pair[0]
             """@type: pydcomm.public.bugarpc.ICallerFactory"""
-            rpc_test_so = all_rpc_test_so[factory_name]
+            rpc_test_so = pair[1]
 
             test_scenario = get_basic_scenario()
             runs = run_scenario(test_scenario, rpc_test_so, rpc_factory_cls)

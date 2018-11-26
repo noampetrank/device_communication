@@ -18,8 +18,7 @@ class IRemoteProcedureCaller(object):
 
     def call(self, procedure_name, params):
         """
-        Marshalls the params and sends them to the executor side. Then receives params that are returned from the
-        executor and unmarshalls them.
+        Calls procedure on device with the params.
 
         :param str procedure_name: Name of procedure that device side handles.
         :param str params: String, equivalently bytes, to send.
