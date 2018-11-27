@@ -39,11 +39,28 @@ add_executable(cpp
         rpc_impl/buga_grpc_server.cpp
         rpc_impl/buga_grpc_server.h
         rpc_bindings/marshallers.cpp
-        rpc_bindings/marshallers.h)
+        rpc_bindings/marshallers.h
+        )
 target_include_directories(cpp PRIVATE
         ${CMAKE_CURRENT_BINARY_DIR}
         ${PROTO_SRC_DIR}
         ../3rdparty/nlohmann/include/
 )
-
 target_link_libraries(cpp proto)
+
+
+project(rpc_so_loader)
+#add_library(rpc_so_loader SHARED
+#        rpc_so_loader/test_lib.cpp)
+add_executable(rpc_so_loader
+        rpc_so_loader/rpc_so_loader.h
+        rpc_so_loader/rpc_so_loader.cpp
+        rpc_bindings/bugarpc.h)
+target_include_directories(rpc_so_loader PRIVATE
+#        ${CMAKE_CURRENT_BINARY_DIR}
+        ${PROTO_SRC_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ../3rdparty/nlohmann/include/
+)
+target_link_libraries(rpc_so_loader proto)
+

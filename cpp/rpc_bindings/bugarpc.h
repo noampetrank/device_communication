@@ -12,7 +12,15 @@
 #define CPP_BUGARPC_H
 
 #include <string>
+#include <vector>
 #include <memory>
+
+
+/**
+ * Buffer type (e.g. for passing parametes).
+ */
+using Buffer = std::vector<char>;
+
 
 /**
  * Interface to be implemented and passed to RemoteProcedureServer.
@@ -57,7 +65,7 @@ public:
      * @param params The string sent from python.
      * @return String representing return value to be sent back to python.
      */
-    virtual std::string executeProcedure(std::string procedureName, std::string params) = 0;
+    virtual std::string executeProcedure(const std::string &procedureName, const Buffer &params) = 0;
 
     /**
      * @return String representing the version of the executor.
