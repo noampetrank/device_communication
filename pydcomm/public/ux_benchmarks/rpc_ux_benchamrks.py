@@ -88,11 +88,11 @@ class Scenario(object):
 
 class RPCDummyAction(object):
     @staticmethod
-    def INSTALL():
+    def INSTALL(so_loader_rpc_id=29998):
         def execute(scenario):
             """:type scenario: Scenario"""
             scenario.params.append(())
-            scenario.ret_vals.append(scenario.rpc_factory.install_executor(scenario.so_path))
+            scenario.ret_vals.append(scenario.rpc_factory.install_executor(scenario.so_path, so_loader_rpc_id))
             scenario.stats.append(scenario.uxrecorder.api_stats[-1])
         return execute
 
@@ -190,9 +190,9 @@ def main():
                 return
 
             pair = all_rpc_factories[factory_name]
-            rpc_factory_cls = pair[0]
+            rpc_factory_cls = pair.factory_cls
             """@type: pydcomm.public.bugarpc.ICallerFactory"""
-            rpc_test_so = pair[1]
+            rpc_test_so = pair.test_so
 
             test_scenario = get_basic_scenario()
             runs = run_scenario(test_scenario, rpc_test_so, rpc_factory_cls)

@@ -48,17 +48,19 @@ target_link_libraries(rpc_server proto)
 
 
 # Demo that runs RPC server+client on Linux
-add_executable(demo
+project(rpc_demo)
+add_executable(rpc_demo
         demo_main.cpp
         rpc_bindings/bugarpc.h
-        rpc_impl/buga_echo_executor.cpp rpc_impl/buga_echo_executor.h)
-target_include_directories(demo PRIVATE
+        rpc_impl/buga_echo_executor.cpp
+        rpc_impl/buga_echo_executor.h)
+target_include_directories(rpc_demo PRIVATE
         ${CMAKE_CURRENT_BINARY_DIR}
         ${PROTO_SRC_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}
         ../3rdparty/nlohmann/include/
 )
-target_link_libraries(demo proto rpc_server)
+target_link_libraries(rpc_demo proto rpc_server)
 
 
 # RPC loader executable
@@ -91,3 +93,18 @@ target_include_directories(rpc_so_loader PRIVATE
         ../3rdparty/nlohmann/include/
         )
 target_link_libraries(rpc_so_loader proto rpc_server)
+
+
+# RPC benchmark so
+project(grpc_test)
+add_library(grpc_test SHARED
+        rpc_bindings/bugarpc.h
+        rpc_test/benchmark_executor.cpp
+        rpc_test/benchmark_executor.h)
+target_include_directories(grpc_test PRIVATE
+        ${CMAKE_CURRENT_BINARY_DIR}
+        ${PROTO_SRC_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ../3rdparty/nlohmann/include/
+        )
+target_link_libraries(grpc_test proto rpc_server)

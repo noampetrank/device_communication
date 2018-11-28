@@ -2,7 +2,7 @@
 #   Dummy connections
 #
 # This section is for a fixed dummy implementation of connection.
-from pydcomm.public.bugarpc import IRemoteProcedureCaller, ICallerFactory
+from pydcomm.public.bugarpc import IRemoteProcedureClient, IRemoteProcedureClientFactory
 from pydcomm.public.iconnection import IConnection, ConnectionClosedError, ConnectionFactory
 
 
@@ -119,7 +119,7 @@ class DummyConnectionFactory(ConnectionFactory):
         return DummyConnection()
 
 
-class DummyRemoteProcedureClient(IRemoteProcedureCaller):
+class DummyRemoteProcedureClient(IRemoteProcedureClient):
     def call(self, procedure_name, params):
         import numpy as np
         if procedure_name == "_rpc_get_version":
@@ -135,7 +135,7 @@ class DummyRemoteProcedureClient(IRemoteProcedureCaller):
         return "1.0"
 
 
-class DummyRemoteProcedureClientFactory(ICallerFactory):
+class DummyRemoteProcedureClientFactory(IRemoteProcedureClientFactory):
     @classmethod
     def create_connection(cls, rpc_id, device_id=None):
         assert device_id is None or device_id == "dummy", "Dummy device must have id dummy"

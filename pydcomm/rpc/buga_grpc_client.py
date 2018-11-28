@@ -44,7 +44,7 @@ class GRemoteProcedureClientFactory(IRemoteProcedureClientFactory):
     def install_executor(cls, so_path, rpc_id, device_id=None):
         if device_id is None:
             device_id = cls.choose_device_id()
-        raise NotImplementedError
+        pass
 
     @classmethod
     def choose_device_id(cls):
