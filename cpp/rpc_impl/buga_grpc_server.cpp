@@ -68,9 +68,12 @@ Status BugaGRpcServiceImpl::call(ServerContext *context, const GRequest *req, GR
     if (!handleServerRpc(name, params, ret)) {
         try {
             ret = listener.executeProcedure(name, params);
+        } catch (RpcError &ex) {
+            return Status(grpc::UNKNOWN, std::string("RPC error in executeProcedure: ") + ex.what());
         } catch (std::runtime_error &ex) {
-            res->set_buf("");
-            return Status(grpc::UNKNOWN, std::string("Exception in executeProcedure: ") + ex.what());
+            return Status(grpc::UNKNOWN, std::string("Runtime error in executeProcedure: ") + ex.what());
+        } catch (...) {
+            return Status(grpc::UNKNOWN, std::string("Exception in executeProcedure"));
         }
     }
     res->set_buf(ret);
@@ -87,6 +90,7 @@ bool BugaGRpcServiceImpl::handleServerRpc(const std::string &name, const Buffer 
         ret = listener.getVersion();
         return true;
     } else if (name == "_rpc_stop") {
+        // TODO make this work
         parentServer->stop();
         return true;
     }
@@ -101,7 +105,7 @@ bool BugaGRpcServiceImpl::handleServerRpc(const std::string &name, const Buffer 
 void GRemoteProcedureServer::listen(IRemoteProcedureExecutor &listener, int_between_30000_and_50000 rpcId, bool wait) {
     service = std::make_unique<BugaGRpcServiceImpl>(listener, this);
     if (!service)
-        throw RPCServerError("Service object is null");
+        throw RpcError("Service object is null");
 
     ServerBuilder builder;
     // Listen on the given address without any authentication mechanism.
@@ -120,7 +124,7 @@ void GRemoteProcedureServer::listen(IRemoteProcedureExecutor &listener, int_betw
     std::cout << "Server listening on " << server_address << std::endl;
 
     if (!server)
-        throw RPCServerError("Server object is null");
+        throw RpcError("Server object is null");
 
     if (wait) {
         // Wait for the server to shutdown. Note that some other thread must be
@@ -131,13 +135,13 @@ void GRemoteProcedureServer::listen(IRemoteProcedureExecutor &listener, int_betw
 
 void GRemoteProcedureServer::wait() {
     if (!server)
-        throw RPCServerError("Server object is null");
+        throw RpcError("Server object is null");
     server->Wait();
 }
 
 void GRemoteProcedureServer::stop() {
     if (!server)
-        throw RPCServerError("Server object is null");
+        throw RpcError("Server object is null");
     server->Shutdown();
 }
 

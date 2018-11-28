@@ -1,5 +1,5 @@
 import grpc
-from pydcomm.rpc.remote_procedure_call import StandardRemoteProcedureCaller
+from pydcomm.rpc._remote_procedure_call import StandardRemoteProcedureCaller
 from pydcomm.rpc.gen.buga_rpc_pb2_grpc import DeviceRpcStub
 from pydcomm.rpc.gen.buga_rpc_pb2 import GRequest
 

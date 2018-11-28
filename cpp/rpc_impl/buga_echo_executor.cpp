@@ -13,6 +13,6 @@ Buffer BugaEchoExecutor::executeProcedure(const std::string &procedureName, cons
         stack.pop();
         return mo;
     } else {
-        throw RPCServerError("Wrong procedure name " + procedureName);
+        throw RpcError("Wrong procedure name " + procedureName);
     }
 }

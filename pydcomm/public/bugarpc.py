@@ -1,6 +1,6 @@
 """
-This file defines the interface for RemoteProcedureCaller, which is to be implemented against each remote server.
-The file also includes definitions and imports of all factories that create RemoteProcedureCallers.
+This file defines the interface for RemoteProcedureClient, which is to be implemented against each remote server.
+The file also includes definitions and imports of all factories that create RemoteProcedureClients.
 Using RPC should be as simple as calling a factory and connecting to a remote server on the phone.
 
 The file is meant to remain unchanged, except for the possible additions of factories at its bottom.

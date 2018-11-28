@@ -115,8 +115,11 @@ public:
 };
 
 
-struct RPCServerError : public std::runtime_error {
-    explicit RPCServerError(const std::string &msg) : std::runtime_error(msg) {}
+/**
+ * This error can be thrown in the executor and it will be raised as a RpcError on the caller side.
+ */
+struct RpcError : public std::runtime_error {
+    explicit RpcError(const std::string &msg) : std::runtime_error(msg) {}
 };
 
 
