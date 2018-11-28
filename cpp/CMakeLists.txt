@@ -31,24 +31,37 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin/${ARCH}/${CMA
 message(STATUS "Compiling for " ${ARCH})
 
 add_subdirectory(rpc_proto)
-add_executable(cpp
-        demo_main.cpp
-        rpc_bindings/remote_procedure_execution.cpp
-        rpc_impl/buga_rpc_executor.cpp
-        rpc_impl/buga_rpc_executor.h
+message(STATUS "Proto source dir is at " ${PROTO_SRC_DIR})
+
+# RPC server
+add_library(rpc_server SHARED
+        rpc_bindings/bugarpc.h
         rpc_impl/buga_grpc_server.cpp
-        rpc_impl/buga_grpc_server.h
-        rpc_bindings/marshallers.cpp
-        rpc_bindings/marshallers.h
         )
-target_include_directories(cpp PRIVATE
+target_include_directories(rpc_server PRIVATE
         ${CMAKE_CURRENT_BINARY_DIR}
         ${PROTO_SRC_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ../3rdparty/nlohmann/include/
+        )
+target_link_libraries(rpc_server proto)
+
+
+# Demo that runs RPC server+client on Linux
+add_executable(demo
+        demo_main.cpp
+        rpc_bindings/bugarpc.h
+        rpc_impl/buga_echo_executor.cpp rpc_impl/buga_echo_executor.h)
+target_include_directories(demo PRIVATE
+        ${CMAKE_CURRENT_BINARY_DIR}
+        ${PROTO_SRC_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}
         ../3rdparty/nlohmann/include/
 )
-target_link_libraries(cpp proto)
+target_link_libraries(demo proto rpc_server)
 
 
+# RPC loader executable TODO split into lib+exec
 project(rpc_so_loader)
 #add_library(rpc_so_loader SHARED
 #        rpc_so_loader/test_lib.cpp)
@@ -57,10 +70,9 @@ add_executable(rpc_so_loader
         rpc_so_loader/rpc_so_loader.cpp
         rpc_bindings/bugarpc.h)
 target_include_directories(rpc_so_loader PRIVATE
-#        ${CMAKE_CURRENT_BINARY_DIR}
+        ${CMAKE_CURRENT_BINARY_DIR}
         ${PROTO_SRC_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}
         ../3rdparty/nlohmann/include/
 )
-target_link_libraries(rpc_so_loader proto)
-
+target_link_libraries(rpc_so_loader proto rpc_server)

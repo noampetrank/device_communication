@@ -17,7 +17,7 @@ static const std::string PATH_TO_SOS = "sos/";
 class SoLoaderExecutor : IRemoteProcedureExecutor {
 public:
     SoLoaderExecutor();
-    std::string executeProcedure(const std::string &procedureName, const Buffer &params) override;
+    Buffer executeProcedure(const std::string &procedureName, const Buffer &params) override;
     std::string getVersion() override { return "1.0"; }
 
 private:
@@ -57,7 +57,7 @@ SoLoaderExecutor::SoLoaderExecutor() {
     rpcIds = existing_rpc_ids();
 }
 
-std::string SoLoaderExecutor::executeProcedure(const std::string &procedureName, const Buffer &params) {
+Buffer SoLoaderExecutor::executeProcedure(const std::string &procedureName, const Buffer &params) {
     if (procedureName == "install_so") {  // params="rpcId,so_binary"
         auto commaIt = std::find(params.begin(), params.end(), ',');
         if (commaIt != params.end()) {

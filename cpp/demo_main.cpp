@@ -5,29 +5,12 @@
  */
 
 #include <iostream>
+#include "rpc_bindings/bugarpc.h"
+#include "rpc_impl/buga_echo_executor.h"
 
-#include <memory>
-#include <string>
+// region gRPC Client
 
-#include "rpc_impl/buga_grpc_server.h"
-#include "rpc_impl/buga_rpc_executor.h"
-
-void RunServer() {
-    std::string server_address("0.0.0.0:50051");
-    GRemoteProcedureServer server(server_address);
-    BugaRpcExecutor bugaRpcExecutor;
-    server.listen(bugaRpcExecutor);
-}
-
-
-//int main(int argc, char **argv) {
-//    RunServer();
-//    return 0;
-//}
-
-
-// Below this line is code that creates a client as well, and then sends some requests to the server.
-
+// Below this line is code that creates a client, and then sends some requests to the server.
 #include <iostream>
 #include <memory>
 #include <string>
@@ -37,6 +20,7 @@ void RunServer() {
 
 #include "buga_rpc.grpc.pb.h"
 #include "buga_rpc.pb.h"
+
 
 using grpc::Channel;
 using grpc::ClientContext;
@@ -81,7 +65,7 @@ public:
     std::string callBugaRpcEcho() {
         // Data we are sending to the server.
         GRequest request;
-        request.set_name("_rpc_echo");
+        request.set_name("rpc_echo");
         request.set_buf("Buga RPC echo success!!!");
 
         // Container for the data we expect from the server.
@@ -133,26 +117,33 @@ private:
     std::unique_ptr<DeviceRpc::Stub> stub_;
 };
 
+// endregion
 
 
-void RunClient() {
+static void runClient() {
     // Instantiate the client. It requires a channel, out of which the actual RPCs
     // are created. This channel models a connection to an endpoint (in this case,
     // localhost at port 50051). We indicate that the channel isn't authenticated
     // (use of InsecureChannelCredentials()).
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    BugaClient bugaClientt(grpc::CreateChannel(
-            "localhost:50051", grpc::InsecureChannelCredentials()));
-    std::string reply = bugaClientt.callGRpcEcho();
+    BugaClient bugaClient(grpc::CreateChannel(
+            "localhost:33333", grpc::InsecureChannelCredentials()));
+    std::string reply = bugaClient.callGRpcEcho();
     std::cout << "Server replied: " << reply << std::endl;
-    reply = bugaClientt.callBugaRpcEcho();
+    reply = bugaClient.callBugaRpcEcho();
     std::cout << "Server replied: " << reply << std::endl;
-    reply = bugaClientt.getBugaVersion();
+    reply = bugaClient.getBugaVersion();
     std::cout << "Server version: " << reply << std::endl;
 }
 
+static void runServer() {
+    auto server = createBugaGRPCServer();
+    BugaEchoExecutor executor;
+    server->listen(executor, 33333, true);
+}
+
 int main(int argc, char** argv) {
-    std::thread serverThread(RunClient);
-    RunServer();
+    std::thread clientThread(runClient);
+    runServer();
     return 0;
 }

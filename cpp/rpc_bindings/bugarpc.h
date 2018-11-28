@@ -19,8 +19,7 @@
 /**
  * Buffer type (e.g. for passing parametes).
  */
-using Buffer = std::vector<char>;
-
+using Buffer = std::string;
 
 /**
  * Interface to be implemented and passed to RemoteProcedureServer.
@@ -36,7 +35,7 @@ using Buffer = std::vector<char>;
  *
  *  ```
  *  class MyExecutor : public IRemoteProcedureExecutor {
- *      std::string executeProcedure(std::string procedureName, std::string params) {
+ *      Buffer executeProcedure(const std::string &procedureName, const Buffer &params) {
  *          if (procedureName == "stringSize") {
  *              return std::to_string(params.size());
  *          } else {
@@ -62,10 +61,10 @@ public:
      *  Procedure names beginning with "_rpc_" are reserved for server implementers, and therefore must not be used.
      *
      * @param procedureName Name of procedure called, not beginning with "_rpc_".
-     * @param params The string sent from python.
-     * @return String representing return value to be sent back to python.
+     * @param params The Buffer sent from python.
+     * @return Buffer representing return value to be sent back to python.
      */
-    virtual std::string executeProcedure(const std::string &procedureName, const Buffer &params) = 0;
+    virtual Buffer executeProcedure(const std::string &procedureName, const Buffer &params) = 0;
 
     /**
      * @return String representing the version of the executor.
@@ -76,8 +75,10 @@ public:
 };
 
 
-// Alias to make the `rpc_id` requirement a bit more explicit.
-// Doesn't really do anything, developers can use `int` instead in their code.
+/**
+ * Alias to make the `rpc_id` requirement a bit more explicit.
+ * Doesn't really do anything, developers can use `int` instead in their code.
+ */
 using int_between_30000_and_50000 = int;
 
 
@@ -95,8 +96,15 @@ public:
      *
      * @param listener Executor implementation that responds to messages.
      * @param rpc_id Unique identifier for your executor to listen to, must be between 30,000 and 50,000.
+     * @param wait Whether to block waiting or to return immediately. It this is false, you need to call wait() later on.
      */
-    virtual void listen(IRemoteProcedureExecutor &executor, int_between_30000_and_50000 rpc_id) = 0;
+    virtual void listen(IRemoteProcedureExecutor &executor, int_between_30000_and_50000 rpc_id, bool wait) = 0;
+
+    /**
+     * Block waiting in a server loop. This should be used if listen() was called with wait==false.
+     * Could be from a different thread than listen().
+     */
+    virtual void wait() = 0;
 
     /**
      * Stop listening, makes the listen thread return.
@@ -104,6 +112,11 @@ public:
     virtual void stop() = 0;
 
     virtual ~IRemoteProcedureServer() = default;
+};
+
+
+struct RPCServerError : public std::runtime_error {
+    explicit RPCServerError(const std::string &msg) : std::runtime_error(msg) {}
 };
 
 
@@ -115,7 +128,6 @@ public:
  *      1. If python calls the procedure "_rpc_get_version", server must call `getVersion` on the executor
  *          instance and return the result.
  *      2. If python calls the procedure "_rpc_stop", server must call its `stop` method.
- *
  */
 
 /**

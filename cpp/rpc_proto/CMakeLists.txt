@@ -44,3 +44,5 @@ target_include_directories(proto PUBLIC ${PROTO_SRC_DIR})
 target_link_libraries(proto
         ${THIS_LIB}
         )
+
+set(PROTO_SRC_DIR ${PROTO_SRC_DIR} PARENT_SCOPE)
