@@ -14,7 +14,7 @@
 static const std::string PATH_TO_SOS = "sos/";
 
 
-class SoLoaderExecutor : IRemoteProcedureExecutor {
+class SoLoaderExecutor : public IRemoteProcedureExecutor {
 public:
     SoLoaderExecutor();
     Buffer executeProcedure(const std::string &procedureName, const Buffer &params) override;
@@ -62,7 +62,6 @@ Buffer SoLoaderExecutor::executeProcedure(const std::string &procedureName, cons
         auto commaIt = std::find(params.begin(), params.end(), ',');
         if (commaIt != params.end()) {
             std::string sRpcId(params.begin(), commaIt);
-            std::cout << "A " << sRpcId << std::endl;
             int rpcId = std::stoi(sRpcId);
             Buffer soBinary(commaIt + 1, params.end());
             save_to_file(get_so_path(rpcId), soBinary);
@@ -73,19 +72,16 @@ Buffer SoLoaderExecutor::executeProcedure(const std::string &procedureName, cons
         return "OK";
     } else if (procedureName == "run_so") {  // params="rpcId"
         std::string sRpcId(params.begin(), params.end());
-        std::cout << "B " << sRpcId << std::endl;
         int rpcId = std::stoi(sRpcId);
         if (std::find(rpcIds.begin(), rpcIds.end(), rpcId) != rpcIds.end()) {
             void* lib = dlopen(get_so_path(rpcId).c_str(), RTLD_LAZY);
-//            typedef std::unique_ptr<IRemoteProcedureExecutor> (*CreateExecutorFunc)();
-            typedef void (*CreateExecutorFunc)();
+            typedef std::unique_ptr<IRemoteProcedureExecutor> (*CreateExecutorFunc)();
             auto create_executor = (CreateExecutorFunc)dlsym(lib, "create_executor");
-            std::cout << "C "<< get_so_path(rpcId).c_str() << " " << lib << " " << create_executor << std::endl;
             if (create_executor != nullptr) {
-                create_executor();
-//                openLibs.emplace_back([rpcId] {
-//                    createBugaGRPCServer()->listen(create_executor(), rpcId);
-//                });
+                openLibs.emplace_back([create_executor, rpcId] {
+                    std::unique_ptr<IRemoteProcedureExecutor> executor = create_executor();
+                    createBugaGRPCServer()->listen(*executor, rpcId, true);
+                });
             }
         }
         return "OK";
@@ -93,31 +89,18 @@ Buffer SoLoaderExecutor::executeProcedure(const std::string &procedureName, cons
     return "NOT_SUPPORTED";
 }
 
+extern "C" {
 
-//void init() {
-//    createBugaGRPCServer()->listen(SoLoaderExecutor{}, 20000);
-//}
+void init() {
+    SoLoaderExecutor executor;
+    createBugaGRPCServer()->listen(executor, 20000, true);
+}
 
+}
 
+#ifdef SO_LOADER_EXECUTABLE
 int main() {
-    Buffer params_install{'1','2','3','4',','};
-    params_install.reserve(1024*1024);
-    std::ifstream so_fin("/home/buga/device_communication/cpp/lib/linux_x86/Debug/librpc_so_loader.so", std::ios::binary);
-    while (so_fin) {
-        char c;
-        so_fin.read(&c, 1);
-        if (so_fin)
-            params_install.push_back(c);
-    }
-
-    SoLoaderExecutor soLoaderExecutor;
-    std::cout << "Installing\n";
-    soLoaderExecutor.executeProcedure("install_so", params_install);
-
-    std::cout << "Running\n";
-    Buffer params_run{'1','2','3','4'};
-    soLoaderExecutor.executeProcedure("run_so", params_run);
-    std::cout << "Done\n";
-
+    init();
     return 0;
 }
+#endif
