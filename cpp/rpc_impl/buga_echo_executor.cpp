@@ -1,3 +1,4 @@
+#include <iostream>
 #include "buga_echo_executor.h"
 
 Buffer BugaEchoExecutor::executeProcedure(const std::string &procedureName, const Buffer &params) {
@@ -15,12 +16,4 @@ Buffer BugaEchoExecutor::executeProcedure(const std::string &procedureName, cons
     } else {
         throw RpcError("Wrong procedure name " + procedureName);
     }
-}
-
-extern "C" {
-
-std::unique_ptr<IRemoteProcedureExecutor> create_executor() {
-    return std::make_unique<BugaEchoExecutor>();
-}
-
 }

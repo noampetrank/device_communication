@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <grpcpp/grpcpp.h>
+#include <thread>
 #include "buga_rpc.pb.h"
 
 using grpc::Server;
@@ -30,6 +31,7 @@ public:
 private:
     std::unique_ptr<GRpcServiceImpl> service;
     std::unique_ptr<grpc::Server> server;
+    std::thread shutdownThread;
 };
 
 // endregion
@@ -90,7 +92,6 @@ bool BugaGRpcServiceImpl::handleServerRpc(const std::string &name, const Buffer 
         ret = listener.getVersion();
         return true;
     } else if (name == "_rpc_stop") {
-        // TODO make this work
         parentServer->stop();
         return true;
     }
@@ -129,7 +130,7 @@ void GRemoteProcedureServer::listen(IRemoteProcedureExecutor &listener, int_betw
     if (wait) {
         // Wait for the server to shutdown. Note that some other thread must be
         // responsible for shutting down the server for this call to ever return.
-        server->Wait();
+        this->wait();
     }
 }
 
@@ -137,12 +138,18 @@ void GRemoteProcedureServer::wait() {
     if (!server)
         throw RpcError("Server object is null");
     server->Wait();
+    if (shutdownThread.joinable()) {
+        shutdownThread.join();
+    }
 }
 
 void GRemoteProcedureServer::stop() {
     if (!server)
         throw RpcError("Server object is null");
-    server->Shutdown();
+    shutdownThread = std::thread([&] {
+        // The server shouldn't be shutdown from its waiting thread
+        server->Shutdown();
+    });
 }
 
 

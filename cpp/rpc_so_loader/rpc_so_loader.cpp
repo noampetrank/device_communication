@@ -1,6 +1,7 @@
 #include "rpc_so_loader.h"
 #include "rpc_bindings/bugarpc.h"
 #include <vector>
+#include <map>
 #include <thread>
 #include <algorithm>
 #include <dlfcn.h>
@@ -21,11 +22,14 @@ public:
     std::string getVersion() override { return "1.0"; }
 
 private:
-    std::vector<std::thread> openLibs;
-    std::vector<int> rpcIds;
+    struct RpcData {
+        std::thread thrd;
+        void *libHandle = nullptr;
+    };
+    std::map<int, RpcData> openRpcs;
 };
 
-
+/*
 static std::vector<int> existing_rpc_ids() {
     // https://stackoverflow.com/questions/612097/how-can-i-get-the-list-of-files-in-a-directory-using-c-or-c
     std::vector<int> rpcIds;
@@ -41,6 +45,7 @@ static std::vector<int> existing_rpc_ids() {
     closedir(dirp);
     return rpcIds;
 }
+*/
 
 static std::string get_so_path(int rpcId) {
     return PATH_TO_SOS + std::to_string(rpcId) + ".so";
@@ -54,7 +59,6 @@ static void save_to_file(const std::string &path, const Buffer &what) {
 
 SoLoaderExecutor::SoLoaderExecutor() {
     mkdir(PATH_TO_SOS.c_str(), S_IRWXU | S_IRGRP |  S_IXGRP | S_IROTH | S_IXOTH);
-    rpcIds = existing_rpc_ids();
     std::cout << "Starting so loader..." << std::endl;
 }
 
@@ -65,47 +69,65 @@ Buffer SoLoaderExecutor::executeProcedure(const std::string &procedureName, cons
             std::string sRpcId(params.begin(), commaIt);
             std::cout << "Requested to install so for rpcId " + sRpcId << std::endl;
             int rpcId = std::stoi(sRpcId);
+
+            // If there is a running RPC with this rpcId, close it.
+            auto openRpcIt = openRpcs.find(rpcId);
+            if (openRpcIt != openRpcs.end()) {
+                auto& openRpc = openRpcIt->second;
+                if (openRpc.thrd.joinable()) {
+                    openRpc.thrd.detach();  //TODO stop the server?
+                }
+                if (openRpc.libHandle != nullptr) {
+                    dlclose(openRpc.libHandle);
+                    openRpc.libHandle = nullptr;
+                }
+            }
+
             Buffer soBinary(commaIt + 1, params.end());
             save_to_file(get_so_path(rpcId), soBinary);
-            if (std::find(rpcIds.begin(), rpcIds.end(), rpcId) != rpcIds.end()) {
-                rpcIds.push_back(rpcId);
-                std::cout << "Installed so for rpcId " + sRpcId << std::endl;
-            } else {
-                std::cout << "rpcId " + sRpcId + " already installed" << std::endl;
-            }
+            std::cout << "Installed so for rpcId " + sRpcId << std::endl;
+        } else {
+            std::cout << "install_so called with wrong params" << std::endl;
+            return "FAIL";
         }
         return "OK";
     } else if (procedureName == "run_so") {  // params="rpcId"
         std::string sRpcId(params.begin(), params.end());
         std::cout << "Requested to run so for rpcId " + sRpcId << std::endl;
         int rpcId = std::stoi(sRpcId);
-        if (std::find(rpcIds.begin(), rpcIds.end(), rpcId) != rpcIds.end()) {
-            void* lib = dlopen(get_so_path(rpcId).c_str(), RTLD_LAZY);
+        auto& openRpc = openRpcs[rpcId];
+
+        void *lib = openRpc.libHandle = dlopen(get_so_path(rpcId).c_str(), RTLD_LAZY);
+        if (lib != nullptr && dlerror() == NULL) {
             typedef std::unique_ptr<IRemoteProcedureExecutor> (*CreateExecutorFunc)();
-            auto create_executor = (CreateExecutorFunc)dlsym(lib, "create_executor");
-            std::cout << "Loaded so " + sRpcId + ".so from handle " << lib << " and function pointer " << create_executor << std::endl;
-            if (create_executor != nullptr) {
-                openLibs.emplace_back([create_executor, rpcId] {
+            auto create_executor = (CreateExecutorFunc) dlsym(lib, "create_executor");
+            std::cout << "Loaded so " + sRpcId + ".so from handle " << lib << " and function pointer "
+                      << (void*)create_executor << std::endl;
+            if (create_executor != nullptr && dlerror() == NULL) {
+                openRpc.thrd = std::thread([create_executor, rpcId] {
                     std::cout << "Creating executor for rpcId " + std::to_string(rpcId) << std::endl;
                     std::unique_ptr<IRemoteProcedureExecutor> executor = create_executor();
                     std::cout << "Starting server for rpcId " + std::to_string(rpcId) << std::endl;
                     createBugaGRPCServer()->listen(*executor, rpcId, true);
                     std::cout << "Server stopped for rpcId " + std::to_string(rpcId) << std::endl;
                 });
+            } else {
+                std::cout << "Could not load func for rpcId " + sRpcId << " (" << dlerror() << ")" << std::endl;
+                return "FAIL";
             }
+        } else {
+            std::cout << "Could not load so for rpcId " + sRpcId << " (" << dlerror() << ")" << std::endl;
+            return "FAIL";
         }
+
         return "OK";
     }
     return "NOT_SUPPORTED";
 }
 
-extern "C" {
-
 void init() {
     SoLoaderExecutor executor;
     createBugaGRPCServer()->listen(executor, 29998, true);
-}
-
 }
 
 #ifdef SO_LOADER_EXECUTABLE

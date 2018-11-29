@@ -87,12 +87,15 @@ class Scenario(object):
 
 
 class RPCDummyAction(object):
+    RPC_ID = 29999
+
     @staticmethod
-    def INSTALL(so_loader_rpc_id=29998):
+    def INSTALL(rpc_id=None):
+        rpc_id = rpc_id or RPCDummyAction.RPC_ID
         def execute(scenario):
             """:type scenario: Scenario"""
             scenario.params.append(())
-            scenario.ret_vals.append(scenario.rpc_factory.install_executor(scenario.so_path, so_loader_rpc_id))
+            scenario.ret_vals.append(scenario.rpc_factory.install_executor(scenario.so_path, rpc_id))
             scenario.stats.append(scenario.uxrecorder.api_stats[-1])
         return execute
 
@@ -109,7 +112,8 @@ class RPCDummyAction(object):
         return execute
 
     @staticmethod
-    def CREATE_CONNECTION(rpc_id=29999):
+    def CREATE_CONNECTION(rpc_id=None):
+        rpc_id = rpc_id or RPCDummyAction.RPC_ID
         def execute(scenario):
             """:type scenario: Scenario"""
             scenario.params.append((rpc_id,))

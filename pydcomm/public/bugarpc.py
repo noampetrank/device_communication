@@ -80,3 +80,18 @@ class IRemoteProcedureClientFactory(object):
     @classmethod
     def choose_device_id(cls):
         raise NotImplementedError
+
+
+class RpcError(RuntimeError):
+    """
+    This is an exception that is thrown upon errors regarding RPC.
+    """
+    def __init__(self, *args, **kwargs):
+        """
+        :param grpc_exception: the original grpc exception, if this originated from gRPC code.
+        """
+        self.grpc_exception = kwargs.pop('grpc_exception', None)
+        super(RpcError, self).__init__(args, kwargs)
+
+    def __str__(self):
+        return super(RpcError, self).__str__() + "\nOriginal gRPC exception: " + repr(self.grpc_exception)

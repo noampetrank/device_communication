@@ -1,3 +1,4 @@
+#include <iostream>
 #include "benchmark_executor.h"
 
 Buffer BenchmarkExecutor::executeProcedure(const std::string &procedureName, const Buffer &params) {
@@ -6,4 +7,8 @@ Buffer BenchmarkExecutor::executeProcedure(const std::string &procedureName, con
         x = (char)((1 + x) % 256);
     }
     return ret;
+}
+
+std::unique_ptr<IRemoteProcedureExecutor> create_executor() {
+    return std::make_unique<BenchmarkExecutor>();
 }
