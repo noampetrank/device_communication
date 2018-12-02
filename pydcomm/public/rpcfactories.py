@@ -23,4 +23,4 @@ all_rpc_factories = {}
 #
 
 all_rpc_factories["dummy"] = RpcFactoryEntry(DummyRemoteProcedureClientFactory, "dummy.so")
-all_rpc_factories["grpc"] = RpcFactoryEntry(GRemoteProcedureClientFactory, "/home/buga/device_communication/cpp/lib/linux_x86/Debug/libgrpc_test.so")
+all_rpc_factories["grpc"] = RpcFactoryEntry(GRemoteProcedureClientFactory, "/home/buga/device_communication/cpp/lib/linux_x86/Release/libgrpc_test.so")

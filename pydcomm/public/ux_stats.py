@@ -102,10 +102,12 @@ def collectstats(class_name=None):
 
     :param class_name: Name of class
     """
+    from pybuga.infra.utils.buga_utils import argwraps
+
     def inner(func):
         funcname = func.__name__
 
-        @wraps(func)
+        @argwraps(func)
         def newfunc(*args, **kwargs):
             import __builtin__
             orig = __builtin__.raw_input

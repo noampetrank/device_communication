@@ -27,6 +27,11 @@ public:
     void listen(IRemoteProcedureExecutor &listener, int_between_30000_and_50000 rpcId, bool wait) override;
     void wait() override;
     void stop() override;
+    ~GRemoteProcedureServer() override {
+        if (shutdownThread.joinable()) {
+            shutdownThread.join();
+        }
+    }
 
 private:
     std::unique_ptr<GRpcServiceImpl> service;
@@ -144,6 +149,7 @@ void GRemoteProcedureServer::wait() {
 }
 
 void GRemoteProcedureServer::stop() {
+    std::cout << "[GRemoteProcedureServer] stop called" << std::endl;
     if (!server)
         throw RpcError("Server object is null");
     shutdownThread = std::thread([&] {

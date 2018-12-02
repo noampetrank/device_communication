@@ -9,6 +9,6 @@ Buffer BenchmarkExecutor::executeProcedure(const std::string &procedureName, con
     return ret;
 }
 
-std::unique_ptr<IRemoteProcedureExecutor> create_executor() {
+extern "C" std::unique_ptr<IRemoteProcedureExecutor> create_executor() {
     return std::make_unique<BenchmarkExecutor>();
 }

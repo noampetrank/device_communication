@@ -10,7 +10,8 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
-
+#include <mutex>
+#include <condition_variable>
 
 static const std::string PATH_TO_SOS = "sos/";
 
@@ -75,8 +76,9 @@ Buffer SoLoaderExecutor::executeProcedure(const std::string &procedureName, cons
             if (openRpcIt != openRpcs.end()) {
                 auto& openRpc = openRpcIt->second;
                 if (openRpc.thrd.joinable()) {
-                    openRpc.thrd.detach();  //TODO stop the server?
+                    openRpc.thrd.join();  //TODO stop the server?
                 }
+
                 if (openRpc.libHandle != nullptr) {
                     dlclose(openRpc.libHandle);
                     openRpc.libHandle = nullptr;
@@ -104,13 +106,30 @@ Buffer SoLoaderExecutor::executeProcedure(const std::string &procedureName, cons
             std::cout << "Loaded so " + sRpcId + ".so from handle " << lib << " and function pointer "
                       << (void*)create_executor << std::endl;
             if (create_executor != nullptr && dlerror() == NULL) {
-                openRpc.thrd = std::thread([create_executor, rpcId] {
+                std::mutex m;
+                std::condition_variable cv;
+                bool flag = false;
+
+                openRpc.thrd = std::thread([create_executor, rpcId, &m, &cv, &flag] {
                     std::cout << "Creating executor for rpcId " + std::to_string(rpcId) << std::endl;
                     std::unique_ptr<IRemoteProcedureExecutor> executor = create_executor();
                     std::cout << "Starting server for rpcId " + std::to_string(rpcId) << std::endl;
-                    createBugaGRPCServer()->listen(*executor, rpcId, true);
+                    auto server = createBugaGRPCServer();
+                    server->listen(*executor, rpcId, false);
+
+                    {
+                        std::lock_guard<std::mutex> lock(m);
+                        flag = true;
+                    }
+
+                    cv.notify_one();
+                    server->wait();
+
                     std::cout << "Server stopped for rpcId " + std::to_string(rpcId) << std::endl;
                 });
+
+                std::unique_lock<std::mutex> lock(m);
+                cv.wait(lock, [&] { return flag; });
             } else {
                 std::cout << "Could not load func for rpcId " + sRpcId << " (" << dlerror() << ")" << std::endl;
                 return "FAIL";
