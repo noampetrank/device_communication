@@ -30,7 +30,7 @@ protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTO_SRC_DIR} ${PROTOS})
 grpc_generate_cpp(GRPC_SRCS GRPC_HDRS ${PROTO_SRC_DIR} ${PROTOS})
 
 # Building server
-add_library(proto
+add_library(proto SHARED
         ${PROTO_SRCS}
         ${GRPC_SRCS}
         )
@@ -44,3 +44,5 @@ target_include_directories(proto PUBLIC ${PROTO_SRC_DIR})
 target_link_libraries(proto
         ${THIS_LIB}
         )
+
+set(PROTO_SRC_DIR ${PROTO_SRC_DIR} PARENT_SCOPE)
