@@ -44,6 +44,7 @@ def print_run_summary(rpc_factory_name, stats, params, ret_val, print_all=False)
     all_calls_raw = [single_api_call_summary(call, p, ret) for call, p, ret in zip(stats, params, ret_val)]
 
     all_calls_table = pd.DataFrame(all_calls_raw).set_index(['function_name'])
+    all_calls_table.fillna(value=0, inplace=True)
 
     summary_per_function = pd.DataFrame(all_calls_table).assign(total_calls=lambda x: 1)
     summary_per_function = summary_per_function.groupby(['function_name', "send_data_size", "recv_data_size"]).\
@@ -84,18 +85,30 @@ class Scenario(object):
         self.connection = connection
         self.so_path = so_path
         self.rpc_factory = rpc_factory
+        self.context = {}
 
 
 class RPCDummyAction(object):
     RPC_ID = 29999
 
     @staticmethod
+    def CHOOSE_DEVICE_ID():
+        def execute(scenario):
+            scenario.params.append(())
+            scenario.context['device_id'] = device_id = scenario.rpc_factory.choose_device_id()
+            scenario.ret_vals.append(device_id)
+            scenario.stats.append(scenario.uxrecorder.api_stats[-1])
+        return execute
+
+    @staticmethod
     def INSTALL(rpc_id=None):
         rpc_id = rpc_id or RPCDummyAction.RPC_ID
+
         def execute(scenario):
             """:type scenario: Scenario"""
             scenario.params.append(())
-            scenario.ret_vals.append(scenario.rpc_factory.install_executor(scenario.so_path, rpc_id))
+            scenario.ret_vals.append(scenario.rpc_factory.install_executor(scenario.so_path, rpc_id,
+                                                                           scenario.context.get('device_id')))
             scenario.stats.append(scenario.uxrecorder.api_stats[-1])
         return execute
 
@@ -114,10 +127,12 @@ class RPCDummyAction(object):
     @staticmethod
     def CREATE_CONNECTION(rpc_id=None):
         rpc_id = rpc_id or RPCDummyAction.RPC_ID
+
         def execute(scenario):
             """:type scenario: Scenario"""
             scenario.params.append((rpc_id,))
-            scenario.connection = scenario.rpc_factory.create_connection(rpc_id)
+            scenario.connection = scenario.rpc_factory.create_connection(rpc_id,
+                                                                         device_id=scenario.context.get('device_id'))
             scenario.ret_vals.append(None)
             scenario.stats.append(scenario.uxrecorder.api_stats[-1])
         return execute
@@ -155,7 +170,7 @@ class BetterTee(Tee):
 
 
 def get_basic_scenario(rep_num=3, create_connections_num=10, input_lengths=(1, 1000, 1e5, 1e6, 1e7)):
-    scenario = []
+    scenario = [RPCDummyAction.CHOOSE_DEVICE_ID()]
     for _ in range(rep_num):
         scenario += [RPCDummyAction.INSTALL()]
         for _ in range(create_connections_num):

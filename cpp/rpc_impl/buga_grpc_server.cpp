@@ -6,6 +6,9 @@
 #include <thread>
 #include "buga_rpc.pb.h"
 
+#include "utils/rpc_log.h"
+
+
 using grpc::Server;
 using grpc::ServerBuilder;
 using grpc::ServerContext;
@@ -37,6 +40,7 @@ private:
     std::unique_ptr<GRpcServiceImpl> service;
     std::unique_ptr<grpc::Server> server;
     std::thread shutdownThread;
+    int_between_30000_and_50000 rpcId = -1;
 };
 
 // endregion
@@ -109,6 +113,7 @@ bool BugaGRpcServiceImpl::handleServerRpc(const std::string &name, const Buffer 
 // region Server
 
 void GRemoteProcedureServer::listen(IRemoteProcedureExecutor &listener, int_between_30000_and_50000 rpcId, bool wait) {
+    this->rpcId = rpcId;
     service = std::make_unique<BugaGRpcServiceImpl>(listener, this);
     if (!service)
         throw RpcError("Service object is null");
@@ -124,13 +129,13 @@ void GRemoteProcedureServer::listen(IRemoteProcedureExecutor &listener, int_betw
     const int max_message_size = 1024*1024*1024;
     builder.SetMaxReceiveMessageSize(max_message_size);
     builder.SetMaxSendMessageSize(max_message_size);
-    std::cout << "Server max message size is " << max_message_size << " bytes" << std::endl;
+    buga_rpc_log("Server max message size is " + std::to_string(max_message_size) + " bytes");
     // Finally assemble the server.
     server = builder.BuildAndStart();
-    std::cout << "Server listening on " << server_address << std::endl;
+    buga_rpc_log("Server listening on " + server_address);
 
     if (!server)
-        throw RpcError("Server object is null");
+        throw RpcError("Server object is null (1)");
 
     if (wait) {
         // Wait for the server to shutdown. Note that some other thread must be
@@ -141,7 +146,7 @@ void GRemoteProcedureServer::listen(IRemoteProcedureExecutor &listener, int_betw
 
 void GRemoteProcedureServer::wait() {
     if (!server)
-        throw RpcError("Server object is null");
+        throw RpcError("Server object is null (2)");
     server->Wait();
     if (shutdownThread.joinable()) {
         shutdownThread.join();
@@ -149,9 +154,9 @@ void GRemoteProcedureServer::wait() {
 }
 
 void GRemoteProcedureServer::stop() {
-    std::cout << "[GRemoteProcedureServer] stop called" << std::endl;
+    buga_rpc_log("[GRemoteProcedureServer(" + std::to_string(rpcId) + ")] stop called");
     if (!server)
-        throw RpcError("Server object is null");
+        throw RpcError("Server object is null (3)");
     shutdownThread = std::thread([&] {
         // The server shouldn't be shutdown from its waiting thread
         server->Shutdown();
