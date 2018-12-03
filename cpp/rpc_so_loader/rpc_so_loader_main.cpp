@@ -27,13 +27,9 @@ const char* rpc_so_loader_path = "librpc_so_loader.so";
 #define myputs(msg) std::puts(msg)
 #define android_dlopen_ext(path, method, extinfo) dlopen(path, method)
 
-const char* protolib_path = "/home/buga/device_communication/cpp/lib/linux_x86/Release/libproto.so";
-const char* rpc_server_path = "/home/buga/device_communication/cpp/lib/linux_x86/Release/librpc_server.so";
-const char* rpc_so_loader_path = "/home/buga/device_communication/cpp/lib/linux_x86/Release/librpc_so_loader.so";
-
 #endif
 
-void load_and_init() {
+void load_and_init(const char* protolib_path, const char* rpc_server_path, const char* rpc_so_loader_path) {
 //int main() {
     myputs("[RPCSoLoaderMain] load_and_init called");
 
@@ -75,9 +71,15 @@ void load_and_init() {
     init();
 }
 
+#ifdef RPC_SO_LOADER_MAIN_EXECUTABLE
 int main() {
-    load_and_init();
+    const char* protolib_path = "/home/buga/device_communication/cpp/lib/linux_x86/Release/libproto.so";
+    const char* rpc_server_path = "/home/buga/device_communication/cpp/lib/linux_x86/Release/librpc_server.so";
+    const char* rpc_so_loader_path = "/home/buga/device_communication/cpp/lib/linux_x86/Release/librpc_so_loader.so";
+
+    load_and_init(protolib_path, rpc_server_path, rpc_so_loader_path);
     myputs("[RPCSoLoaderMain] enter any key to exit");
     std::getchar();
     return 0;
 }
+#endif

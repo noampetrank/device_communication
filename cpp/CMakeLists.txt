@@ -94,6 +94,7 @@ target_include_directories(rpc_so_loader PRIVATE
         )
 target_link_libraries(rpc_so_loader proto rpc_server)
 
+
 # Daemon RPC main library
 project(rpc_so_loader_main)
 add_library(rpc_so_loader_main SHARED
@@ -101,6 +102,7 @@ add_library(rpc_so_loader_main SHARED
 if(MY_BUILD_ANDROID)
     target_link_libraries(rpc_so_loader_main android)
 endif(MY_BUILD_ANDROID)
+
 
 # Daemon RPC main executable - so not really daemon
 project(rpc_so_loader_main_exec)
@@ -115,6 +117,7 @@ else(MY_BUILD_ANDROID)
     target_link_libraries(rpc_so_loader_main_exec dl)
 endif(MY_BUILD_ANDROID)
 
+
 # Daemon RPC proxy library
 project(rpc_bugatone_proxy)
 add_library(rpc_bugatone_proxy SHARED
@@ -128,6 +131,7 @@ target_include_directories(rpc_bugatone_proxy PRIVATE
         )
 target_link_libraries(rpc_bugatone_proxy proto rpc_server)
 
+
 # Daemon RPC main library
 project(rpc_bugatone_main)
 add_library(rpc_bugatone_main SHARED
@@ -137,6 +141,7 @@ target_compile_definitions(rpc_bugatone_main PRIVATE
 if(MY_BUILD_ANDROID)
     target_link_libraries(rpc_bugatone_main android)
 endif(MY_BUILD_ANDROID)
+
 
 # Daemon RPC main executable - so not really daemon
 project(rpc_bugatone_main_exec)

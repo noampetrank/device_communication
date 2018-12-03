@@ -28,6 +28,11 @@ private:
     struct RpcData {
         std::thread thrd;
         void *libHandle = nullptr;
+        ~RpcData() {
+            if (thrd.joinable()) {
+                thrd.detach(); //TODO stop server and join instead of detach
+            }
+        }
     };
     std::map<int, RpcData> openRpcs;
 };

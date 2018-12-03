@@ -37,6 +37,7 @@ private:
     std::unique_ptr<GRpcServiceImpl> service;
     std::unique_ptr<grpc::Server> server;
     std::thread shutdownThread;
+    int_between_30000_and_50000 rpcId = -1;
 };
 
 // endregion
@@ -109,6 +110,7 @@ bool BugaGRpcServiceImpl::handleServerRpc(const std::string &name, const Buffer 
 // region Server
 
 void GRemoteProcedureServer::listen(IRemoteProcedureExecutor &listener, int_between_30000_and_50000 rpcId, bool wait) {
+    this->rpcId = rpcId;
     service = std::make_unique<BugaGRpcServiceImpl>(listener, this);
     if (!service)
         throw RpcError("Service object is null");
@@ -149,7 +151,7 @@ void GRemoteProcedureServer::wait() {
 }
 
 void GRemoteProcedureServer::stop() {
-    std::cout << "[GRemoteProcedureServer] stop called" << std::endl;
+    std::cout << "[GRemoteProcedureServer(" << rpcId << ")] stop called" << std::endl;
     if (!server)
         throw RpcError("Server object is null");
     shutdownThread = std::thread([&] {
