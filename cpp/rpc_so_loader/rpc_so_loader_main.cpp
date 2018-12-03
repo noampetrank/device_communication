@@ -29,8 +29,13 @@ const char* rpc_so_loader_path = "librpc_so_loader.so";
 
 #endif
 
-void load_and_init(const char* protolib_path, const char* rpc_server_path, const char* rpc_so_loader_path) {
-//int main() {
+void load_and_init(const char* sosDir) {
+    const int MAX_PATH = 4096;
+    char protolib_path[MAX_PATH], rpc_server_path[MAX_PATH], rpc_so_loader_path[MAX_PATH];
+    snprintf(protolib_path, MAX_PATH, "%s/libproto.so", sosDir);
+    snprintf(rpc_server_path, MAX_PATH, "%s/librpc_server.so", sosDir);
+    snprintf(rpc_so_loader_path, MAX_PATH, "%s/librpc_so_loader.so", sosDir);
+
     myputs("[RPCSoLoaderMain] load_and_init called");
 
 #ifdef __ANDROID__
@@ -60,7 +65,7 @@ void load_and_init(const char* protolib_path, const char* rpc_server_path, const
         return;
     }
 
-    auto init = (void (*)()) dlsym(rpc_so_loader, "_Z4initv");
+    auto init = (void (*)(const char *sosDir)) dlsym(rpc_so_loader, "_Z4initPKc");
     if (init == nullptr) {
         myputs("[RPCSoLoaderMain] Failed to load init");
         myputs(dlerror());
@@ -68,16 +73,14 @@ void load_and_init(const char* protolib_path, const char* rpc_server_path, const
     }
 
     myputs("[RPCSoLoaderMain] calling init");
-    init();
+    init(sosDir);
 }
 
 #ifdef RPC_SO_LOADER_MAIN_EXECUTABLE
 int main() {
-    const char* protolib_path = "/home/buga/device_communication/cpp/lib/linux_x86/Release/libproto.so";
-    const char* rpc_server_path = "/home/buga/device_communication/cpp/lib/linux_x86/Release/librpc_server.so";
-    const char* rpc_so_loader_path = "/home/buga/device_communication/cpp/lib/linux_x86/Release/librpc_so_loader.so";
+    const char *sosDir = "/home/buga/device_communication/cpp/lib/linux_x86/Release";
 
-    load_and_init(protolib_path, rpc_server_path, rpc_so_loader_path);
+    load_and_init(sosDir);
     myputs("[RPCSoLoaderMain] enter any key to exit");
     std::getchar();
     return 0;

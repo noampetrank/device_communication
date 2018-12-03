@@ -55,10 +55,24 @@ add_custom_command(TARGET native-lib
         COMMAND echo Building device comm...
         COMMAND make.py android
         COMMAND echo Copying device comm files...
-        COMMAND cp ${DEVICE_COMM_LIBS_DIR}/libproto.so ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET_LIBS_DIR}/
-        COMMAND cp ${DEVICE_COMM_LIBS_DIR}/librpc_server.so ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET_LIBS_DIR}/
-        COMMAND cp ${DEVICE_COMM_LIBS_DIR}/librpc_so_loader.so ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET_LIBS_DIR}/
-        COMMAND cp ${DEVICE_COMM_LIBS_DIR}/librpc_so_loader_main.so ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET_LIBS_DIR}/
+        COMMAND cp ${DEVICE_COMM_LIBS_DIR}/libproto.so ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET_LIBS_DIR}
+        COMMAND cp ${DEVICE_COMM_LIBS_DIR}/librpc_server.so ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET_LIBS_DIR}
+        COMMAND cp ${DEVICE_COMM_LIBS_DIR}/librpc_so_loader.so ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET_LIBS_DIR}
+        COMMAND cp ${DEVICE_COMM_LIBS_DIR}/librpc_so_loader_main.so ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET_LIBS_DIR}
         COMMAND echo Done with device comm.
         WORKING_DIRECTORY ${DEVICE_COMM_PROJECT_DIR}
         COMMENT Building device comm)
+
+add_custom_command(TARGET native-lib
+        PRE_BUILD
+        COMMAND echo Copying NDK stuff...
+        COMMAND cp ${ANDROID_STL_PATH}/libs/arm64-v8a/libc++_shared.so ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET_LIBS_DIR}
+        COMMAND echo Done copying NDK stuff.
+        COMMENT Copying NDK stuff)
+
+
+get_cmake_property(_variableNames VARIABLES)
+list (SORT _variableNames)
+foreach (_variableName ${_variableNames})
+    message(STATUS "${_variableName}=${${_variableName}}")
+endforeach()

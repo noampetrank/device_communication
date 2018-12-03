@@ -22,19 +22,19 @@ Java_com_buga_rpcsoloader_RpcSoLoaderActivity_startRpcSoLoader(
         __android_log_print(ANDROID_LOG_INFO, "RpcBugatone", "Loading load_and_init at path %s", sLibsPath.c_str());
         std::string librpc_so_loader_main = sLibsPath + "/librpc_so_loader_main.so";
         void *lib = android_dlopen_ext(librpc_so_loader_main.c_str(), RTLD_NOW, &extinfo);
-        __android_log_print(ANDROID_LOG_INFO, "RpcBugatone", "dlopened %s @%p", librpc_so_loader_main.c_str(), lib);
+        if (lib == nullptr) {
+            __android_log_print(ANDROID_LOG_INFO, "RpcBugatone", "%s: %s", "Failed to dlopen librpc_so_loader_main: %s", dlerror());
+            return;
+        }
 
-        auto load_and_init = (void (*)(const char* protolib_path, const char* rpc_server_path, const char* rpc_so_loader_path)) dlsym(lib, "_Z13load_and_initPKcS0_S0_");
+        auto load_and_init = (void (*)(const char* sosDir)) dlsym(lib, "_Z13load_and_initPKc");
         if (load_and_init == nullptr) {
-            __android_log_print(ANDROID_LOG_INFO, "RpcBugatone", "%s: %s", "Failed to load load_and_init", dlerror());
+            __android_log_print(ANDROID_LOG_INFO, "RpcBugatone", "%s: %s", "Failed to dlsym load_and_init", dlerror());
             return;
         }
 
         __android_log_print(ANDROID_LOG_INFO, "RpcBugatone", "Calling load_and_init");
-        std::string libproto_path = sLibsPath + "/libproto.so";
-        std::string librpc_server_path = sLibsPath + "/librpc_server.so";
-        std::string librpc_so_loader_path = sLibsPath + "/librpc_so_loader.so";
-        load_and_init(libproto_path.c_str(), librpc_server_path.c_str(), librpc_so_loader_path.c_str());
+        load_and_init(sLibsPath.c_str());
     });
 
     if (isCopy == JNI_TRUE) {

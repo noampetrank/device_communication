@@ -15,12 +15,10 @@
 
 std::unique_ptr<IRemoteProcedureServer> createBugaGRPCServer();
 
-static const std::string PATH_TO_SOS = "sos/";
-
 
 class SoLoaderExecutor : public IRemoteProcedureExecutor {
 public:
-    SoLoaderExecutor();
+    explicit SoLoaderExecutor(const std::string &sosDir);
     Buffer executeProcedure(const std::string &procedureName, const Buffer &params) override;
     std::string getVersion() override { return "1.0"; }
 
@@ -35,6 +33,9 @@ private:
         }
     };
     std::map<int, RpcData> openRpcs;
+    std::string sosDir;
+
+    std::string getSoPath(int rpcId);
 };
 
 /*
@@ -55,8 +56,8 @@ static std::vector<int> existing_rpc_ids() {
 }
 */
 
-static std::string get_so_path(int rpcId) {
-    return PATH_TO_SOS + std::to_string(rpcId) + ".so";
+std::string SoLoaderExecutor::getSoPath(int rpcId) {
+    return sosDir + std::to_string(rpcId) + ".so";
 }
 
 static void save_to_file(const std::string &path, const Buffer &what) {
@@ -65,8 +66,8 @@ static void save_to_file(const std::string &path, const Buffer &what) {
         out << i;
 }
 
-SoLoaderExecutor::SoLoaderExecutor() {
-    mkdir(PATH_TO_SOS.c_str(), S_IRWXU | S_IRGRP |  S_IXGRP | S_IROTH | S_IXOTH);
+SoLoaderExecutor::SoLoaderExecutor(const std::string &sosDir) : sosDir(sosDir) {
+    mkdir(sosDir.c_str(), S_IRWXU | S_IRGRP |  S_IXGRP | S_IROTH | S_IXOTH);
     std::cout << "Starting so loader..." << std::endl;
 }
 
@@ -93,7 +94,7 @@ Buffer SoLoaderExecutor::executeProcedure(const std::string &procedureName, cons
             }
 
             Buffer soBinary(commaIt + 1, params.end());
-            save_to_file(get_so_path(rpcId), soBinary);
+            save_to_file(getSoPath(rpcId), soBinary);
             std::cout << "Installed so for rpcId " + sRpcId << std::endl;
         } else {
             std::cout << "install_so called with wrong params" << std::endl;
@@ -106,7 +107,7 @@ Buffer SoLoaderExecutor::executeProcedure(const std::string &procedureName, cons
         int rpcId = std::stoi(sRpcId);
         auto& openRpc = openRpcs[rpcId];
 
-        void *lib = openRpc.libHandle = dlopen(get_so_path(rpcId).c_str(), RTLD_LAZY);
+        void *lib = openRpc.libHandle = dlopen(getSoPath(rpcId).c_str(), RTLD_LAZY);
         if (lib != nullptr && dlerror() == NULL) {
             auto create_executor = (CreateExecutorFunc) dlsym(lib, "create_executor");
             std::cout << "Loaded so " + sRpcId + ".so from handle " << lib << " and function pointer "
@@ -150,14 +151,14 @@ Buffer SoLoaderExecutor::executeProcedure(const std::string &procedureName, cons
     return "NOT_SUPPORTED";
 }
 
-void init() {
-    SoLoaderExecutor executor;
+void init(const char *sosDir) {
+    SoLoaderExecutor executor(sosDir);
     createBugaGRPCServer()->listen(executor, 29998, true);
 }
 
 #ifdef SO_LOADER_EXECUTABLE
 int main() {
-    init();
+    init("sos/");
     return 0;
 }
 #endif
