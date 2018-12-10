@@ -7,7 +7,7 @@
 
 from collections import namedtuple
 from pydcomm.connections.dummy import DummyRemoteProcedureClientFactory
-from pydcomm.rpc.buga_grpc_client import GRemoteProcedureClientFactory
+from pydcomm.rpc.buga_grpc_client import GRemoteProcedureClientLinuxFactory, GRemoteProcedureClientAndroidFactory
 
 RpcFactoryEntry = namedtuple("RpcFactoryEntry", "factory_cls test_so")
 
@@ -23,4 +23,5 @@ all_rpc_factories = {}
 #
 
 all_rpc_factories["dummy"] = RpcFactoryEntry(DummyRemoteProcedureClientFactory, "dummy.so")
-all_rpc_factories["grpc"] = RpcFactoryEntry(GRemoteProcedureClientFactory, "/home/buga/device_communication/cpp/lib/linux_x86/Release/libgrpc_test.so")
+all_rpc_factories["grpc_linux"] = RpcFactoryEntry(GRemoteProcedureClientLinuxFactory, "/home/buga/device_communication/cpp/lib/linux_x86/Release/libgrpc_test.so")
+all_rpc_factories["grpc_android"] = RpcFactoryEntry(GRemoteProcedureClientAndroidFactory, "/home/buga/device_communication/cpp/lib/arm64/Release/libgrpc_test.so")

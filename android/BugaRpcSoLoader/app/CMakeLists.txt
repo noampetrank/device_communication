@@ -50,8 +50,7 @@ set(DEVICE_COMM_PROJECT_DIR /home/buga/device_communication/cpp)
 set(DEVICE_COMM_LIBS_DIR ${DEVICE_COMM_PROJECT_DIR}/lib/arm64/Release)
 set(TARGET_LIBS_DIR src/main/jniLibs/arm64-v8a/)
 
-add_custom_command(TARGET native-lib
-        PRE_BUILD
+add_custom_target(buga_rpc_libs
         COMMAND echo Building device comm...
         COMMAND make.py android
         COMMAND echo Copying device comm files...
@@ -63,12 +62,13 @@ add_custom_command(TARGET native-lib
         WORKING_DIRECTORY ${DEVICE_COMM_PROJECT_DIR}
         COMMENT Building device comm)
 
-add_custom_command(TARGET native-lib
-        PRE_BUILD
+add_custom_target(ndk_libs
         COMMAND echo Copying NDK stuff...
         COMMAND cp ${ANDROID_STL_PATH}/libs/arm64-v8a/libc++_shared.so ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET_LIBS_DIR}
         COMMAND echo Done copying NDK stuff.
         COMMENT Copying NDK stuff)
+
+add_dependencies(native-lib buga_rpc_libs ndk_libs)
 
 
 get_cmake_property(_variableNames VARIABLES)

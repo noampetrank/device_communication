@@ -1,3 +1,6 @@
+import subprocess
+from abc import ABCMeta
+
 import grpc
 import re
 from pydcomm.public.bugarpc import IRemoteProcedureClient, IRemoteProcedureClientFactory, RpcError
@@ -34,7 +37,8 @@ class GRemoteProcedureClient(IRemoteProcedureClient):
         return response.buf
 
 
-class GRemoteProcedureClientFactory(IRemoteProcedureClientFactory):
+# noinspection PyAbstractClass
+class _GRemoteProcedureClientFactory(IRemoteProcedureClientFactory):
     SO_LOADER_RPC_ID = 29998
 
     @classmethod
@@ -42,19 +46,11 @@ class GRemoteProcedureClientFactory(IRemoteProcedureClientFactory):
         return cls._create_connection(device_id, rpc_id)[0]
 
     @classmethod
-    def install_executor(cls, so_path, rpc_id, device_id=None):
-        with open(so_path, 'rb') as so_file:
-            so_content = so_file.read()
+    def _run_executor(cls, rpc_id, device_id=None, ret_inst="OK"):
         so_loader, device_id = cls._create_connection(device_id)
-        ret_inst = so_loader.call('install_so', '{},{}'.format(rpc_id, so_content))
         ret_run = (ret_inst == 'OK') and so_loader.call('run_so', str(rpc_id))
         if not (ret_inst == ret_run == 'OK'):
             raise RpcError("Error installing so (ret_inst={}, ret_run={})". format(ret_inst, ret_run))
-
-    @classmethod
-    def choose_device_id(cls):
-        return 'localhost'
-        # return raw_input("Enter device IP: ")
 
     @classmethod
     def _create_connection(cls, device_id, rpc_id=None):
@@ -63,3 +59,39 @@ class GRemoteProcedureClientFactory(IRemoteProcedureClientFactory):
         rpc_id = rpc_id or cls.SO_LOADER_RPC_ID
         so_loader_ip_port = "{}:{}".format(device_id, rpc_id)
         return GRemoteProcedureClient(so_loader_ip_port), device_id
+
+
+class GRemoteProcedureClientLinuxFactory(_GRemoteProcedureClientFactory):
+    @classmethod
+    def install_executor(cls, so_path, rpc_id, device_id=None):
+        so_loader, device_id = cls._create_connection(device_id)
+        with open(so_path, 'rb') as so_file:
+            so_content = so_file.read()
+        ret_inst = so_loader.call('install_so', '{},{}'.format(rpc_id, so_content))
+        _GRemoteProcedureClientFactory._run_executor(rpc_id=rpc_id, device_id=device_id, ret_inst=ret_inst)
+
+    @classmethod
+    def choose_device_id(cls):
+        return 'localhost'
+        # return raw_input("Enter device IP: ")
+
+
+class GRemoteProcedureClientAndroidFactory(_GRemoteProcedureClientFactory):
+    @classmethod
+    def install_executor(cls, so_path, rpc_id, device_id=None):
+        so_loader, device_id = cls._create_connection(device_id)
+        # TODO Michael: use DeviceUtils.adb() when the new API is implemented
+        try:
+            parent_dir = "/data/app"
+            child_dir = [x for x in subprocess.check_output("adb shell ls {}".format(parent_dir), shell=True).split('\n') if 'com.buga.rpcsoloader-' in x][0]
+            device_so_path = "{}/{}/lib/arm64/{}.so".format(parent_dir, child_dir, rpc_id)
+        except IndexError:
+            raise RpcError("Error installing so: loader app not found on device {}".format(device_id))
+
+        subprocess.check_output("adb push {} {}".format(so_path, device_so_path), shell=True)
+        _GRemoteProcedureClientFactory._run_executor(rpc_id=rpc_id, device_id=device_id)
+
+    @classmethod
+    def choose_device_id(cls):
+        return '10.0.0.123'
+        # return raw_input("Enter device IP: ")

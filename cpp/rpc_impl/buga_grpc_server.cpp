@@ -6,6 +6,9 @@
 #include <thread>
 #include "buga_rpc.pb.h"
 
+#include "rpc_bindings/rpc_log.h"
+
+
 using grpc::Server;
 using grpc::ServerBuilder;
 using grpc::ServerContext;
@@ -126,10 +129,10 @@ void GRemoteProcedureServer::listen(IRemoteProcedureExecutor &listener, int_betw
     const int max_message_size = 1024*1024*1024;
     builder.SetMaxReceiveMessageSize(max_message_size);
     builder.SetMaxSendMessageSize(max_message_size);
-    std::cout << "Server max message size is " << max_message_size << " bytes" << std::endl;
+    buga_rpc_log("Server max message size is " + std::to_string(max_message_size) + " bytes");
     // Finally assemble the server.
     server = builder.BuildAndStart();
-    std::cout << "Server listening on " << server_address << std::endl;
+    buga_rpc_log("Server listening on " + server_address);
 
     if (!server)
         throw RpcError("Server object is null");
@@ -151,7 +154,7 @@ void GRemoteProcedureServer::wait() {
 }
 
 void GRemoteProcedureServer::stop() {
-    std::cout << "[GRemoteProcedureServer(" << rpcId << ")] stop called" << std::endl;
+    buga_rpc_log("[GRemoteProcedureServer(" + std::to_string(rpcId) + ")] stop called");
     if (!server)
         throw RpcError("Server object is null");
     shutdownThread = std::thread([&] {

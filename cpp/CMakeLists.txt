@@ -99,6 +99,9 @@ target_link_libraries(rpc_so_loader proto rpc_server)
 project(rpc_so_loader_main)
 add_library(rpc_so_loader_main SHARED
         rpc_so_loader/rpc_so_loader_main.cpp)
+target_include_directories(rpc_so_loader_main PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        )
 if(MY_BUILD_ANDROID)
     target_link_libraries(rpc_so_loader_main android)
 endif(MY_BUILD_ANDROID)
@@ -108,6 +111,9 @@ endif(MY_BUILD_ANDROID)
 project(rpc_so_loader_main_exec)
 add_executable(rpc_so_loader_main_exec
         rpc_so_loader/rpc_so_loader_main.cpp)
+target_include_directories(rpc_so_loader_main_exec PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        )
 target_compile_definitions(rpc_so_loader_main_exec PRIVATE
         RPC_SO_LOADER_MAIN_EXECUTABLE=1
         )
@@ -136,6 +142,9 @@ target_link_libraries(rpc_bugatone_proxy proto rpc_server)
 project(rpc_bugatone_main)
 add_library(rpc_bugatone_main SHARED
         rpc_bugatone_proxy/rpc_bugatone_main.cpp)
+target_include_directories(rpc_bugatone_main PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        )
 target_compile_definitions(rpc_bugatone_main PRIVATE
         )
 if(MY_BUILD_ANDROID)
@@ -147,6 +156,9 @@ endif(MY_BUILD_ANDROID)
 project(rpc_bugatone_main_exec)
 add_executable(rpc_bugatone_main_exec
         rpc_bugatone_proxy/rpc_bugatone_main.cpp)
+target_include_directories(rpc_bugatone_main_exec PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        )
 target_compile_definitions(rpc_bugatone_main_exec PRIVATE
         RPC_BUGATONE_MAIN_EXECUTABLE=1
         )

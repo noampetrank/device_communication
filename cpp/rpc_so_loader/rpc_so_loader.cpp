@@ -13,6 +13,18 @@
 #include <mutex>
 #include <condition_variable>
 
+#if defined(__ANDROID__) and not defined(RPC_LOADER_EXECUTABLE)
+#include <android/log.h>
+static void mylog(const std::string &msg) {
+    __android_log_print(ANDROID_LOG_INFO, "RpcBugatone", "%s", msg.c_str());
+}
+#else
+static void mylog(const std::string &msg) {
+    std::puts(msg.c_str());
+}
+#endif
+
+
 std::unique_ptr<IRemoteProcedureServer> createBugaGRPCServer();
 
 
@@ -68,7 +80,10 @@ static void save_to_file(const std::string &path, const Buffer &what) {
 
 SoLoaderExecutor::SoLoaderExecutor(const std::string &sosDir) : sosDir(sosDir) {
     mkdir(sosDir.c_str(), S_IRWXU | S_IRGRP |  S_IXGRP | S_IROTH | S_IXOTH);
-    std::cout << "Starting so loader..." << std::endl;
+    if (this->sosDir.back() != '/') {
+        this->sosDir += '/';
+    }
+    mylog("Starting so loader...");
 }
 
 Buffer SoLoaderExecutor::executeProcedure(const std::string &procedureName, const Buffer &params) {
@@ -76,7 +91,7 @@ Buffer SoLoaderExecutor::executeProcedure(const std::string &procedureName, cons
         auto commaIt = std::find(params.begin(), params.end(), ',');
         if (commaIt != params.end()) {
             std::string sRpcId(params.begin(), commaIt);
-            std::cout << "Requested to install so for rpcId " + sRpcId << std::endl;
+            mylog("Requested to install so for rpcId " + sRpcId);
             int rpcId = std::stoi(sRpcId);
 
             // If there is a running RPC with this rpcId, close it.
@@ -95,32 +110,32 @@ Buffer SoLoaderExecutor::executeProcedure(const std::string &procedureName, cons
 
             Buffer soBinary(commaIt + 1, params.end());
             save_to_file(getSoPath(rpcId), soBinary);
-            std::cout << "Installed so for rpcId " + sRpcId << std::endl;
+            mylog("Installed so for rpcId " + sRpcId);
         } else {
-            std::cout << "install_so called with wrong params" << std::endl;
+            mylog("install_so called with wrong params");
             return "FAIL";
         }
         return "OK";
     } else if (procedureName == "run_so") {  // params="rpcId"
         std::string sRpcId(params.begin(), params.end());
-        std::cout << "Requested to run so for rpcId " + sRpcId << std::endl;
+        mylog("Requested to run so for rpcId " + sRpcId);
         int rpcId = std::stoi(sRpcId);
         auto& openRpc = openRpcs[rpcId];
 
         void *lib = openRpc.libHandle = dlopen(getSoPath(rpcId).c_str(), RTLD_LAZY);
         if (lib != nullptr && dlerror() == NULL) {
             auto create_executor = (CreateExecutorFunc) dlsym(lib, "create_executor");
-            std::cout << "Loaded so " + sRpcId + ".so from handle " << lib << " and function pointer "
-                      << (void*)create_executor << std::endl;
+
+            mylog("Loaded " + sRpcId + ".so");
             if (create_executor != nullptr && dlerror() == NULL) {
                 std::mutex m;
                 std::condition_variable cv;
                 bool flag = false;
 
                 openRpc.thrd = std::thread([create_executor, rpcId, &m, &cv, &flag] {
-                    std::cout << "Creating executor for rpcId " + std::to_string(rpcId) << std::endl;
+                    mylog("Creating executor for rpcId " + std::to_string(rpcId));
                     std::unique_ptr<IRemoteProcedureExecutor> executor = create_executor();
-                    std::cout << "Starting server for rpcId " + std::to_string(rpcId) << std::endl;
+                    mylog("Starting server for rpcId " + std::to_string(rpcId));
                     auto server = createBugaGRPCServer();
                     server->listen(*executor, rpcId, false);
 
@@ -132,17 +147,17 @@ Buffer SoLoaderExecutor::executeProcedure(const std::string &procedureName, cons
                     cv.notify_one();
                     server->wait();
 
-                    std::cout << "Server stopped for rpcId " + std::to_string(rpcId) << std::endl;
+                    mylog("Server stopped for rpcId " + std::to_string(rpcId));
                 });
 
                 std::unique_lock<std::mutex> lock(m);
                 cv.wait(lock, [&] { return flag; });
             } else {
-                std::cout << "Could not load func for rpcId " + sRpcId << " (" << dlerror() << ")" << std::endl;
+                mylog("Could not load func for rpcId " + sRpcId + " (" + dlerror() + ")");
                 return "FAIL";
             }
         } else {
-            std::cout << "Could not load so for rpcId " + sRpcId << " (" << dlerror() << ")" << std::endl;
+            mylog("Couldn't load so for rpcId " + sRpcId + " (" + dlerror() + ")");
             return "FAIL";
         }
 
