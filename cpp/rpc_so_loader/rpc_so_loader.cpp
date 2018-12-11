@@ -36,6 +36,7 @@ public:
 
 private:
     struct RpcData {
+        std::unique_ptr<IRemoteProcedureServer> server = nullptr;
         std::thread thrd;
         void *libHandle = nullptr;
         ~RpcData() {
@@ -48,25 +49,8 @@ private:
     std::string sosDir;
 
     std::string getSoPath(int rpcId);
+    void stopExecutor(RpcData& openRpc);
 };
-
-/*
-static std::vector<int> existing_rpc_ids() {
-    // https://stackoverflow.com/questions/612097/how-can-i-get-the-list-of-files-in-a-directory-using-c-or-c
-    std::vector<int> rpcIds;
-
-    auto dirp = opendir(PATH_TO_SOS.c_str());
-    dirent *dp;
-    while ((dp = readdir(dirp)) != NULL) {
-        size_t namlen = strlen(dp->d_name);
-        if (namlen > 3 && !strcmp(dp->d_name + namlen - 3, ".so")) {
-            rpcIds.push_back(std::stoi(std::string(dp->d_name, namlen - 3)));
-        }
-    }
-    closedir(dirp);
-    return rpcIds;
-}
-*/
 
 std::string SoLoaderExecutor::getSoPath(int rpcId) {
     return sosDir + std::to_string(rpcId) + ".so";
@@ -86,6 +70,23 @@ SoLoaderExecutor::SoLoaderExecutor(const std::string &sosDir) : sosDir(sosDir) {
     mylog("Starting so loader...");
 }
 
+void SoLoaderExecutor::stopExecutor(RpcData& openRpc) {
+    if (openRpc.server) {
+        openRpc.server->stop();
+
+        if (openRpc.thrd.joinable()) {
+            openRpc.thrd.join();
+        }
+
+        mylog("After join");
+
+        if (openRpc.libHandle != nullptr) {
+            dlclose(openRpc.libHandle);
+            openRpc.libHandle = nullptr;
+        }
+    }
+}
+
 Buffer SoLoaderExecutor::executeProcedure(const std::string &procedureName, const Buffer &params) {
     if (procedureName == "install_so") {  // params="rpcId,so_binary"
         auto commaIt = std::find(params.begin(), params.end(), ',');
@@ -98,14 +99,7 @@ Buffer SoLoaderExecutor::executeProcedure(const std::string &procedureName, cons
             auto openRpcIt = openRpcs.find(rpcId);
             if (openRpcIt != openRpcs.end()) {
                 auto& openRpc = openRpcIt->second;
-                if (openRpc.thrd.joinable()) {
-                    openRpc.thrd.join();  //TODO stop the server?
-                }
-
-                if (openRpc.libHandle != nullptr) {
-                    dlclose(openRpc.libHandle);
-                    openRpc.libHandle = nullptr;
-                }
+                stopExecutor(openRpc);
             }
 
             Buffer soBinary(commaIt + 1, params.end());
@@ -122,6 +116,8 @@ Buffer SoLoaderExecutor::executeProcedure(const std::string &procedureName, cons
         int rpcId = std::stoi(sRpcId);
         auto& openRpc = openRpcs[rpcId];
 
+        stopExecutor(openRpc);
+
         void *lib = openRpc.libHandle = dlopen(getSoPath(rpcId).c_str(), RTLD_LAZY);
         if (lib != nullptr && dlerror() == NULL) {
             auto create_executor = (CreateExecutorFunc) dlsym(lib, "create_executor");
@@ -132,11 +128,11 @@ Buffer SoLoaderExecutor::executeProcedure(const std::string &procedureName, cons
                 std::condition_variable cv;
                 bool flag = false;
 
-                openRpc.thrd = std::thread([create_executor, rpcId, &m, &cv, &flag] {
+                openRpc.server = createBugaGRPCServer();
+                openRpc.thrd = std::thread([create_executor, rpcId, &m, &cv, &flag, server=openRpc.server.get()] {
                     mylog("Creating executor for rpcId " + std::to_string(rpcId));
                     std::unique_ptr<IRemoteProcedureExecutor> executor = create_executor();
                     mylog("Starting server for rpcId " + std::to_string(rpcId));
-                    auto server = createBugaGRPCServer();
                     server->listen(*executor, rpcId, false);
 
                     {
@@ -148,6 +144,8 @@ Buffer SoLoaderExecutor::executeProcedure(const std::string &procedureName, cons
                     server->wait();
 
                     mylog("Server stopped for rpcId " + std::to_string(rpcId));
+                    executor = nullptr;
+                    mylog("Called destructor");
                 });
 
                 std::unique_lock<std::mutex> lock(m);
@@ -173,7 +171,7 @@ void init(const char *sosDir) {
 
 #ifdef SO_LOADER_EXECUTABLE
 int main() {
-    init("sos/");
+    init("/home/buga/device_communication/cpp/bin/linux_x86/Release/sos/");
     return 0;
 }
 #endif
