@@ -89,13 +89,24 @@ class Scenario(object):
 class RPCDummyAction(object):
     RPC_ID = 29999
 
-    @staticmethod
-    def INSTALL(rpc_id=None):
+    def __init__(self):
+        self.device_id = None
+
+    def CHOOSE_DEVICE_ID(self):
+        def execute(scenario):
+            scenario.params.append(())
+            self.device_id = scenario.rpc_factory.choose_device_id()
+            scenario.ret_vals.append(self.device_id)
+            scenario.stats.append(scenario.uxrecorder.api_stats[-1])
+        return execute
+
+    def INSTALL(self, rpc_id=None):
         rpc_id = rpc_id or RPCDummyAction.RPC_ID
+
         def execute(scenario):
             """:type scenario: Scenario"""
             scenario.params.append(())
-            scenario.ret_vals.append(scenario.rpc_factory.install_executor(scenario.so_path, rpc_id))
+            scenario.ret_vals.append(scenario.rpc_factory.install_executor(scenario.so_path, rpc_id, device_id=self.device_id))
             scenario.stats.append(scenario.uxrecorder.api_stats[-1])
         return execute
 
@@ -111,13 +122,13 @@ class RPCDummyAction(object):
 
         return execute
 
-    @staticmethod
-    def CREATE_CONNECTION(rpc_id=None):
+    def CREATE_CONNECTION(self, rpc_id=None):
         rpc_id = rpc_id or RPCDummyAction.RPC_ID
+
         def execute(scenario):
             """:type scenario: Scenario"""
             scenario.params.append((rpc_id,))
-            scenario.connection = scenario.rpc_factory.create_connection(rpc_id)
+            scenario.connection = scenario.rpc_factory.create_connection(rpc_id, device_id=self.device_id)
             scenario.ret_vals.append(None)
             scenario.stats.append(scenario.uxrecorder.api_stats[-1])
         return execute
@@ -155,12 +166,13 @@ class BetterTee(Tee):
 
 
 def get_basic_scenario(rep_num=3, create_connections_num=10, input_lengths=(1, 1000, 1e5, 1e6, 1e7)):
-    scenario = []
+    dummy = RPCDummyAction()
+    scenario = [dummy.CHOOSE_DEVICE_ID()]
     for _ in range(rep_num):
-        scenario += [RPCDummyAction.INSTALL()]
+        scenario += [dummy.INSTALL()]
         for _ in range(create_connections_num):
-            scenario += [RPCDummyAction.CREATE_CONNECTION()]
-            scenario += [RPCDummyAction.CALL_DUMMY_SEND(l) for l in input_lengths]
+            scenario += [dummy.CREATE_CONNECTION()]
+            scenario += [dummy.CALL_DUMMY_SEND(l) for l in input_lengths]
     return scenario
 
 
