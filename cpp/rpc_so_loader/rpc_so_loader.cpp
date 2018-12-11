@@ -144,8 +144,6 @@ Buffer SoLoaderExecutor::executeProcedure(const std::string &procedureName, cons
                     server->wait();
 
                     mylog("Server stopped for rpcId " + std::to_string(rpcId));
-                    executor = nullptr;
-                    mylog("Called destructor");
                 });
 
                 std::unique_lock<std::mutex> lock(m);
@@ -160,6 +158,18 @@ Buffer SoLoaderExecutor::executeProcedure(const std::string &procedureName, cons
         }
 
         return "OK";
+    } else if (procedureName == "stop_so") {
+        std::string sRpcId(params.begin(), params.end());
+        mylog("Requested to stop so for rpcId " + sRpcId);
+        int rpcId = std::stoi(sRpcId);
+
+        auto openRpc_it = openRpcs.find(rpcId);
+        if (openRpc_it != std::end(openRpcs)) {
+            stopExecutor(openRpc_it->second);
+            return "OK";
+        } else {
+            return "Not running";
+        }
     }
     return "NOT_SUPPORTED";
 }

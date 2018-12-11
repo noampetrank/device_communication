@@ -80,6 +80,8 @@ class GRemoteProcedureClientAndroidFactory(_GRemoteProcedureClientFactory):
     @classmethod
     def install_executor(cls, so_path, rpc_id, device_id=None):
         so_loader, device_id = cls._create_connection(device_id)
+        so_loader.call("stop_so", str(rpc_id))
+
         # TODO Michael: use DeviceUtils.adb() when the new API is implemented
         # try:
         #     parent_dir = "/data/app"
@@ -91,11 +93,11 @@ class GRemoteProcedureClientAndroidFactory(_GRemoteProcedureClientFactory):
 
         # subprocess.check_output("adb push {} {}".format(so_path, device_so_path), shell=True)
         subprocess.check_output("cp {} {}".format(so_path, device_so_path), shell=True)
-        with open(so_path, 'rb') as so_file:
-            so_content = so_file.read()
-        ret_inst = so_loader.call('install_so', '{},{}'.format(rpc_id, so_content))
-        if ret_inst != "OK":
-            raise RpcError("Error installing .so")
+        # with open(so_path, 'rb') as so_file:
+        #     so_content = so_file.read()
+        # ret_inst = so_loader.call('install_so', '{},{}'.format(rpc_id, so_content))
+        # if ret_inst != "OK":
+        #     raise RpcError("Error installing .so")
         _GRemoteProcedureClientFactory._run_executor(rpc_id=rpc_id, device_id=device_id)
 
     @classmethod
