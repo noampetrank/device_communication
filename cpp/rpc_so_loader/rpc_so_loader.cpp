@@ -69,6 +69,7 @@ void SoLoaderExecutor::stopExecutor(RpcData& openRpc) {
         }
 
         buga_rpc_log("After join");
+        openRpc.server = nullptr;
 
         if (openRpc.libHandle != nullptr) {
             dlclose(openRpc.libHandle);

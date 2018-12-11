@@ -76,7 +76,7 @@ class GRemoteProcedureClientLinuxFactory(_GRemoteProcedureClientFactory):
 
     @classmethod
     def choose_device_id(cls):
-        # TODO remove
+        print("Choosing device_id='localhost'")
         return 'localhost'
 
 
@@ -97,7 +97,3 @@ class GRemoteProcedureClientAndroidFactory(_GRemoteProcedureClientFactory):
         subprocess.check_output("adb push {} {}".format(so_path, device_so_path), shell=True)  # This replaces the call to install_so
         _GRemoteProcedureClientFactory._run_executor(rpc_id=rpc_id, so_loader=so_loader)
 
-    @classmethod
-    def choose_device_id(cls):
-        # TODO remove
-        return '10.0.0.123'
