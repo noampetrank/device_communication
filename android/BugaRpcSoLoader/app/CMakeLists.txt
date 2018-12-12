@@ -54,6 +54,7 @@ add_custom_target(buga_rpc_libs
         COMMAND echo Building device comm...
         COMMAND make.py android
         COMMAND echo Copying device comm files...
+        COMMAND mkdir -p ${DEVICE_COMM_LIBS_DIR}
         COMMAND cp ${DEVICE_COMM_LIBS_DIR}/libproto.so ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET_LIBS_DIR}
         COMMAND cp ${DEVICE_COMM_LIBS_DIR}/librpc_server.so ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET_LIBS_DIR}
         COMMAND cp ${DEVICE_COMM_LIBS_DIR}/librpc_so_loader.so ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET_LIBS_DIR}
@@ -64,6 +65,7 @@ add_custom_target(buga_rpc_libs
 
 add_custom_target(ndk_libs
         COMMAND echo Copying NDK stuff...
+        COMMAND mkdir -p ${DEVICE_COMM_LIBS_DIR}
         COMMAND cp ${ANDROID_STL_PATH}/libs/arm64-v8a/libc++_shared.so ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET_LIBS_DIR}
         COMMAND echo Done copying NDK stuff.
         COMMENT Copying NDK stuff)
