@@ -1,29 +1,40 @@
 import cPickle
+import tempfile
 import time
-import sys
 from collections import namedtuple
 
 import numpy as np
-from pybuga.tests.utils.test_helpers import Tee
 from pybuga.infra.utils.user_input import UserInput
+
 from pydcomm.public.connfactories import all_connection_factories
-
-from pydcomm.public.ux_stats import ApiCallsRecorder
-
+from pydcomm.public.iconnection import IConnection
+from pydcomm.public.ux_benchmarks.rpc_ux_benchamrks import BetterTee
+from pydcomm.public.ux_benchmarks.utils import run_scenario
+import string
 
 ApiAction = namedtuple("ApiAction", "function_name params")
 
 
-def single_api_call_summary(api_call, params=None, ret=None, ignore_first_manual=True):
+def get_random_string(length):
+    return "".join([string.ascii_letters[i] for i in np.random.randint(0, high=len(string.ascii_letters), size=length)])
+
+
+def single_api_call_summary(api_call, params=None, ret=None, additional=None, ignore_first_manual=True):
     res = {
-        "function_name":        api_call.function_name,
-        "call_time":            api_call.end_time - api_call.start_time,
-        "manual_fixes_count":   len(api_call.manual_times),
-        "manual_fixes_time":    sum([end-start for start, end in api_call.manual_times[ignore_first_manual:]]),
-        "is_exception":         api_call.is_exception,
-        "is_automatic":         len(api_call.manual_times) == 0,
-        "corrupted_data":       False
+        "function_name": api_call.function_name,
+        "call_time": api_call.end_time - api_call.start_time,
+        "manual_fixes_count": len(api_call.manual_times),
+        "manual_fixes_time": sum([end - start for start, end in api_call.manual_times[ignore_first_manual:]]),
+        "is_exception": api_call.is_exception,
+        "is_automatic": len(api_call.manual_times) == 0,
+        "corrupted_data": False,
+        "parameters": params
     }
+
+    additional_columns = []
+    if additional:
+        res.update(additional)
+        additional_columns = additional.keys()
 
     if api_call.function_name == "call" and params is not None:
         res['send_data_size'] = len(params[1])
@@ -33,28 +44,25 @@ def single_api_call_summary(api_call, params=None, ret=None, ignore_first_manual
 
     res["is_success"] = not api_call.is_exception and not res["corrupted_data"]
 
-    return res
+    return res, additional_columns
 
 
-def print_run_summary(conn_factory_name, stats, params, ret_val, print_all=False):
+def print_run_summary(conn_factory_name, stats, params, ret_val, additionals, print_all=False):
     import pandas as pd
     pd.set_option('display.max_columns', 500)
     pd.set_option('display.width', 1000)
 
-    all_calls_raw = [single_api_call_summary(call, p, ret) for call, p, ret in zip(stats, params, ret_val)]
+    all_calls_raw = [single_api_call_summary(call, p, ret, add) for call, p, ret, add in
+                     zip(stats, params, ret_val, additionals)]
 
-    all_calls_table = pd.DataFrame(all_calls_raw).set_index(['function_name'])
+    all_calls_raw, additional_columns = zip(*all_calls_raw)
 
+    all_calls_table = pd.DataFrame(list(all_calls_raw)).set_index(['function_name'])
     summary_per_function = pd.DataFrame(all_calls_table).assign(total_calls=lambda x: 1)
-    summary_per_function = summary_per_function.groupby(['function_name', "send_data_size", "recv_data_size"]).\
-        agg({"call_time": np.mean,
-             "total_calls": np.sum,
-             "manual_fixes_count": np.mean,
-             "manual_fixes_time": np.sum,
-             "is_exception": np.sum,
-             "is_automatic": np.mean,
-             "is_success": np.mean,
-             "corrupted_data": np.sum})
+
+    aggregates = get_aggregates(additional_columns)
+    summary_per_function = summary_per_function.groupby(['function_name', "parameters"]). \
+        agg(aggregates)
     # TBD : add avg_automatic_time (avg time call for calls that ended automatically
     # TBD : add max_manual_time, median_manual_time??
     # TBD : filter per test scenario...
@@ -75,60 +83,81 @@ def print_run_summary(conn_factory_name, stats, params, ret_val, print_all=False
     print summary_per_function
 
 
-class Scenario(object):
-    def __init__(self, stats, params, ret_vals, uxrecorder, connection, conn_factory):
-        self.stats = stats
-        """@type: list[pydcomm.public.ux_stats.ApiCall]"""
-
-        self.params = params
-        """@type: list[dict]"""
-
-        self.ret_vals = ret_vals
-        """@type: list"""
-
-        self.uxrecorder = uxrecorder
-        """@type: ApiCallsRecorder"""
-
-        self.connection = connection
-        """@type: pydcomm.public.iconnection.IConnection"""
-
-        self.conn_factory = conn_factory
-        """@type: pydcomm.public.iconnection.ConnectionFactory"""
+def get_aggregates(additional_columns):
+    aggregates = {"call_time": np.mean,
+                  "total_calls": np.sum,
+                  "manual_fixes_count": np.mean,
+                  "manual_fixes_time": np.sum,
+                  "is_exception": np.sum,
+                  "is_automatic": np.mean,
+                  "is_success": np.mean,
+                  "corrupted_data": np.sum}
+    for c in additional_columns:
+        if not additional_columns:
+            continue
+        for b in c:
+            # atm every additional is summed. In the future if anyone needs add something else as well.
+            aggregates[b] = np.sum
+    return aggregates
 
 
 class ConnectionAction(object):
     @staticmethod
-    def CREATE_CONNECTION(device_id=None, **kwargs):
+    def CHOOSE_DEVICE_ID():
         def execute(scenario):
-            """:type scenario: Scenario"""
+            device_id = scenario.context["conn_factory"].choose_device_id()
+            return None, device_id, dict(device_id=device_id), {}
 
         return execute
 
     @staticmethod
-    def PUSH(local_path, path_on_device):
+    def CREATE_CONNECTION(device_id=None, **kwargs):
         def execute(scenario):
             """:type scenario: Scenario"""
+            my_device_id = device_id if device_id is not None else scenario.context.get("device_id")
+            connection = scenario.context["conn_factory"].create_connection(device_id=my_device_id, **kwargs)
+            return (my_device_id,), None, dict(connection=connection), {}
 
         return execute
 
     @staticmethod
     def PUSH_PULL_RANDOM(length):
+        """
+        Create random file of size length, sends it, pulls it back, and then compares the files.
+        :param length:
+        :return:
+        """
+        random_string = get_random_string(length)
+
         def execute(scenario):
             """:type scenario: Scenario"""
+            conn = scenario.context["connection"]
+            remote_file_path = "/data/local/tmp/benchmark_test_file"
+            with tempfile.NamedTemporaryFile() as tmp_push_file:
+                tmp_push_file.file.write(random_string)
+                conn.push(tmp_push_file.name, remote_file_path)
+            with tempfile.NamedTemporaryFile() as tmp_pull_file:
+                conn.pull(remote_file_path, tmp_pull_file.name)
+                with open(tmp_pull_file.name) as pull:
+                    pulled_data = pull.read()
+                    success = pulled_data == random_string
+            return (length,), None, {}, dict(recv_data_size=len(pulled_data), success=success)
 
         return execute
 
     @staticmethod
-    def PULL(path_on_device, local_path):
+    def SHELL_ECHO(length, sleep, timeout_ms=None):
+        if length > 1024 * 1024:
+            raise ValueError("Maximum echo is 1MB")  # Actually may be more, but not much more
+        random_string = get_random_string(length)
+
         def execute(scenario):
             """:type scenario: Scenario"""
-
-        return execute
-
-    @staticmethod
-    def SHELL(command, timeout_ms=None):
-        def execute(scenario):
-            """:type scenario: Scenario"""
+            conn = scenario.context["connection"]  # type: IConnection
+            ret = conn.shell('echo "{}"'.format(random_string), timeout_ms=timeout_ms)
+            success = ret.strip() == random_string.strip()
+            time.sleep(sleep)
+            return (length, sleep), len(ret), {}, dict(success=success)
 
         return execute
 
@@ -136,6 +165,8 @@ class ConnectionAction(object):
     def ROOT():
         def execute(scenario):
             """:type scenario: Scenario"""
+            scenario.context["connection"].root()
+            return (), None, {}, {}
 
         return execute
 
@@ -143,20 +174,16 @@ class ConnectionAction(object):
     def REMOUNT():
         def execute(scenario):
             """:type scenario: Scenario"""
+            scenario.context["connection"].remount()
+            return (), None, {}, {}
 
         return execute
 
     @staticmethod
-    def INSTALL():
+    def INSTALL_UNINSTALL_DUMMYAPK():
         def execute(scenario):
             """:type scenario: Scenario"""
-
-        return execute
-
-    @staticmethod
-    def UNINSTALL():
-        def execute(scenario):
-            """:type scenario: Scenario"""
+            # TODO: later
 
         return execute
 
@@ -164,6 +191,8 @@ class ConnectionAction(object):
     def DEVICE_ID():
         def execute(scenario):
             """:type scenario: Scenario"""
+            device_name = scenario.context["connection"].device_name()
+            return (), device_name, {}, {}
 
         return execute
 
@@ -171,41 +200,13 @@ class ConnectionAction(object):
     def DISCONNECT():
         def execute(scenario):
             """:type scenario: Scenario"""
+            scenario.context["connection"].disconnect()
+            return (), None, {}, {}
 
         return execute
 
 
-def run_scenario(actions, conn_factory):
-    """
-
-    :param list[(scenario)->None] actions: Action to run.
-    :param pydcomm.public.iconnection.ConnectionFactory conn_factory: Caller factory to use.
-    :return: Results of run.
-    :rtype: dict
-    """
-    uxrecorder = ApiCallsRecorder()
-    scenario = Scenario([], [], [], uxrecorder, None, conn_factory)
-
-    with uxrecorder:
-        try:
-            for api_action in actions:
-                api_action(scenario)
-        except KeyboardInterrupt:
-            pass
-    return dict(stats=scenario.stats, params=scenario.params, ret_vals=scenario.ret_vals)
-
-
-# TODO: Extract code from pybuga to someplace else
-class BetterTee(Tee):
-    def __enter__(self):
-        self.old_stdout = sys.stdout
-        sys.stdout = self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        sys.stdout = self.old_stdout
-
-
-def get_basic_scenario(rep_num=3, create_connections_num=10, input_lengths=(1, 1000, 1e5, 1e6, 1e7)):
+def get_push_pull_scenario(rep_num=3, create_connections_num=10, input_lengths=(1, 1000, 1e5, 1e6, 1e7)):
     scenario = []
     for _ in range(rep_num):
         for _ in range(create_connections_num):
@@ -214,12 +215,40 @@ def get_basic_scenario(rep_num=3, create_connections_num=10, input_lengths=(1, 1
     return scenario
 
 
+def get_echo_scenario(rep_num=3, num_connection_check=10, check_interval=0, echo_length=10):
+    scenario = []
+    for _ in range(rep_num):
+        scenario += [ConnectionAction.CREATE_CONNECTION()]
+        for _ in range(num_connection_check):
+            scenario += [ConnectionAction.SHELL_ECHO(echo_length, check_interval)]
+    return scenario
+
+
+def get_old_benchmark_scenario():
+    # This is how the old benchmark ran
+    scenario = []
+    scenario += [ConnectionAction.CHOOSE_DEVICE_ID()]
+    scenario += get_echo_scenario(20, 5, 0)
+    scenario += get_echo_scenario(7, 2, 20)
+    scenario += get_echo_scenario(20, 1, 1)
+    return scenario
+
+
+def get_short_benchmark_scenario():
+    # This is how the old benchmark ran
+    scenario = []
+    scenario += [ConnectionAction.CHOOSE_DEVICE_ID()]
+    scenario += get_echo_scenario(10, 1, 0)
+    scenario += get_echo_scenario(5, 3, 0)
+    return scenario
+
+
 def get_small_msgs_scenario(rep_num=1):
-    return get_basic_scenario(rep_num, create_connections_num=10, input_lengths=[10] * 100)
+    return get_push_pull_scenario(rep_num, create_connections_num=10, input_lengths=[10] * 100)
 
 
-def get_long_connection_scenario(rep_num=1):
-    return get_basic_scenario(rep_num, create_connections_num=1, input_lengths=[1e6] * 1000)
+def get_big_messages_scenario(rep_num=1):
+    return get_push_pull_scenario(rep_num, create_connections_num=1, input_lengths=[1e6] * 1000)
 
 
 def get_scenario_similar_to_recording_script():
@@ -234,7 +263,7 @@ def main():
     with BetterTee("run_conn_{}.log".format(start_time_string)):
         with indent_printing.time():
             print "Choose connection factory for benchmark:"
-            factory_name = UserInput.menu(all_connection_factories.keys(), False)
+            factory_name = UserInput.menu(all_connection_factories.keys(), True)
             if factory_name is None:
                 print "Thanks, goodbye!"
                 return
@@ -242,14 +271,15 @@ def main():
             conn_factory = all_connection_factories[factory_name]
             """@type: pydcomm.public.iconnection.ConnectionFactory"""
 
-            test_scenario = get_basic_scenario()
+            test_scenario = get_short_benchmark_scenario()
 
-            runs = run_scenario(test_scenario, conn_factory)
+            runs = run_scenario(test_scenario, initial_context={'conn_factory': conn_factory})
             runs['conn_factory_name'] = conn_factory.__name__
 
             with open("raw_data_" + start_time_string + ".pickle", "w") as f:
                 cPickle.dump((conn_factory.__name__, runs), f)
                 print_run_summary(runs['conn_factory_name'], runs['stats'], runs['params'], runs['ret_vals'],
+                                  runs['additionals'],
                                   print_all=False)
 
 

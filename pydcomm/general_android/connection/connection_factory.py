@@ -15,12 +15,10 @@ AdbConnection.original_adb = AdbConnection.adb
 AdbConnection.original_disconnect = AdbConnection.disconnect
 
 
-# TODO: Add tests
 class AdbConnectionFactory(object):
-    # TODO: Add helper method for oppo devices.
     @staticmethod
-    def _create_connection(wired=False, ip=None, device=None, decorators=None,
-                           device_selector=MultiDeviceBehavior.CHOOSE_FIRST):
+    def create_connection(wired=False, ip=None, device=None, decorators=None,
+                          device_selector=MultiDeviceBehavior.CHOOSE_FIRST):
         """
         Create a connection to the given ip or device, add the given decorators
         :param wired: Connect wired or wireless
@@ -60,7 +58,7 @@ class AdbConnectionFactory(object):
             raise ValueError("Received invalid device_selector")
 
     @staticmethod
-    def get_oppo_wireless_device(use_manual_fixes=True, device_selector=MultiDeviceBehavior.CHOOSE_FIRST, rooted=True):
+    def get_oppo_wireless_device(use_manual_fixes=True, device_selector=MultiDeviceBehavior.CHOOSE_FIRST, rooted=True, device_id=None):
         decorators = []
 
         if rooted:
@@ -68,18 +66,16 @@ class AdbConnectionFactory(object):
 
         if use_manual_fixes:
             decorators.append(add_adb_recovery_decorator(unreachable_device_fix))
-            # decorators.append(add_init_decorator(network_disconnected_init))
-            # decorators.append(add_adb_recovery_decorator(network_disconnected_adb))
             decorators.append(add_adb_recovery_decorator(get_user_attention_fix))
 
         decorators.append(add_adb_recovery_decorator(adb_connect_fix))
         decorators.append(add_adb_recovery_decorator(restart_adb_server_fix))
         decorators.append(add_adb_recovery_decorator(set_usb_mode_to_mtp_fix))
-        return AdbConnectionFactory._create_connection(wired=False, decorators=decorators,
-                                                       device_selector=device_selector)
+        return AdbConnectionFactory.create_connection(wired=False, decorators=decorators,
+                                                      device_selector=device_selector, device=None)
 
     @staticmethod
-    def get_oppo_wired_device(use_manual_fixes=True, device_selector=MultiDeviceBehavior.CHOOSE_FIRST, rooted=True):
+    def get_oppo_wired_device(use_manual_fixes=True, device_selector=MultiDeviceBehavior.CHOOSE_FIRST, rooted=True, device_id=None):
         decorators = []
 
         if rooted:
@@ -92,5 +88,5 @@ class AdbConnectionFactory(object):
 
         decorators.append(add_adb_recovery_decorator(restart_adb_server_fix))
         decorators.append(add_adb_recovery_decorator(set_usb_mode_to_mtp_fix))
-        return AdbConnectionFactory._create_connection(wired=True, decorators=decorators,
-                                                       device_selector=device_selector)
+        return AdbConnectionFactory.create_connection(wired=True, decorators=decorators,
+                                                      device_selector=device_selector, device=device_id)

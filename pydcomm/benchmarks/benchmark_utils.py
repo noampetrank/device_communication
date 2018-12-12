@@ -1,11 +1,10 @@
 import sys
 import time
-import pandas as pd
-import numpy as np
 import timeit
 
-import timeit
-import time
+import numpy as np
+import pandas as pd
+from pybuga.tests.utils.test_helpers import Tee
 
 # https://stackoverflow.com/a/24812460/365408
 # set timeit to return the value

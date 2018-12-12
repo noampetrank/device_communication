@@ -43,8 +43,9 @@ def forgot_device_fix(connection):
 
 
 def device_turned_off(connection):
-    if get_connected_phones():
-        print("There is a phone connected, is it turned on? Is USB debugging enabled?")
+    phones = get_connected_phones()
+    if phones:
+        print("There is a {} phone connected, is it turned on? Is USB debugging enabled?".format(phones))
     else:
         print("Is the phone turned on?")
     raw_input()

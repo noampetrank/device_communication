@@ -1,4 +1,5 @@
 import re
+import subprocess
 
 from enum import IntEnum
 from pybuga.infra.utils.user_input import UserInput
@@ -17,13 +18,23 @@ def add_choose_first_behavior(connection):
     """
 
     def _get_device_to_connect(self):
-        devices = adb_devices(self)
+        devices = adb_devices()
         if not devices:
             raise EnvironmentError("No devices connected")
         return devices[0][1]
 
     connection._get_device_to_connect = _get_device_to_connect
     return connection
+
+
+def get_device_to_connect_user_choice(*args):
+    devices = adb_devices()
+    while not devices:
+        UserInput.text("No devices connected. Please connect a device and press enter.", lambda x: True)
+        devices = adb_devices()
+    print("Please select a device")
+    choice = UserInput.menu(([(x[1], x[2]) for x in devices]))
+    return choice
 
 
 def add_user_choice_behavior(connection):
@@ -33,20 +44,11 @@ def add_user_choice_behavior(connection):
     :rtype: AdbConnection
     """
 
-    def _get_device_to_connect(self):
-        devices = adb_devices(self)
-        while not devices:
-            UserInput.text("No devices connected. Please connect a device and press enter.", lambda x: True)
-            devices = adb_devices(self)
-        print("Please select a device")
-        choice = UserInput.menu(([(x[1], x[2]) for x in devices]))
-        return choice
-
-    connection._get_device_to_connect = _get_device_to_connect
+    connection._get_device_to_connect = get_device_to_connect_user_choice
     return connection
 
 
-def adb_devices(connection):
+def adb_devices():
     def parse_line(line):
         device_id, status = line.split("\t")
         if "no permissions" in status or "unauthorized" in status:
@@ -57,7 +59,7 @@ def adb_devices(connection):
             connection_type = "wired"
         return connection_type, device_id, status.strip()
 
-    output = connection.adb("devices", timeout=1, specific_device=False, disable_fixers=True)
+    output = subprocess.check_output(["adb", "devices"])
     if not output.startswith("List of devices attached"):
         raise ValueError("Unexpected output from \"adb devices\"")
 

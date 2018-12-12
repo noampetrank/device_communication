@@ -121,6 +121,9 @@ class DummyConnectionFactory(ConnectionFactory):
 
 class DummyRemoteProcedureClient(IRemoteProcedureClient):
     def call(self, procedure_name, params):
+        import random
+        if random.randint(0,1)<1:
+            raise Exception()
         import numpy as np
         if procedure_name == "_rpc_get_version":
             return "1.0"
