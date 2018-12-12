@@ -142,7 +142,7 @@ class DummyRemoteProcedureClientFactory(IRemoteProcedureClientFactory):
         return DummyRemoteProcedureClient()
 
     @classmethod
-    def install_executor(cls, so_path, device_id=None):
+    def install_executor(cls, so_path, rpc_id, device_id=None):
         assert device_id is None or device_id == "dummy", "Dummy device must have id dummy"
 
     @classmethod
