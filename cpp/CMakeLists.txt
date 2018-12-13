@@ -35,13 +35,14 @@ message(STATUS "Proto source dir is at " ${PROTO_SRC_DIR})
 
 # RPC server
 add_library(rpc_server SHARED
-        rpc_bindings/bugarpc.h
+        ../3rdparty/device_communication_common/rpc_bindings/bugarpc.h
         rpc_impl/buga_grpc_server.cpp
         )
 target_include_directories(rpc_server PRIVATE
         ${CMAKE_CURRENT_BINARY_DIR}
         ${PROTO_SRC_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}
+        ../3rdparty/device_communication_common/
         ../3rdparty/nlohmann/include/
         )
 target_link_libraries(rpc_server proto)
@@ -51,13 +52,14 @@ target_link_libraries(rpc_server proto)
 project(rpc_demo)
 add_executable(rpc_demo
         demo_main.cpp
-        rpc_bindings/bugarpc.h
+        ../3rdparty/device_communication_common/rpc_bindings/bugarpc.h
         rpc_impl/buga_echo_executor.cpp
         rpc_impl/buga_echo_executor.h)
 target_include_directories(rpc_demo PRIVATE
         ${CMAKE_CURRENT_BINARY_DIR}
         ${PROTO_SRC_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}
+        ../3rdparty/device_communication_common/
         ../3rdparty/nlohmann/include/
 )
 target_link_libraries(rpc_demo proto rpc_server)
@@ -68,13 +70,14 @@ project(rpc_so_loader_exec)
 add_executable(rpc_so_loader_exec
         rpc_so_loader/rpc_so_loader.h
         rpc_so_loader/rpc_so_loader.cpp
-        rpc_bindings/bugarpc.h)
+        ../3rdparty/device_communication_common/rpc_bindings/bugarpc.h)
 target_compile_definitions(rpc_so_loader_exec PRIVATE
         SO_LOADER_EXECUTABLE=1)
 target_include_directories(rpc_so_loader_exec PRIVATE
         ${CMAKE_CURRENT_BINARY_DIR}
         ${PROTO_SRC_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}
+        ../3rdparty/device_communication_common/
         ../3rdparty/nlohmann/include/
 )
 target_link_libraries(rpc_so_loader_exec proto rpc_server)
@@ -85,11 +88,12 @@ project(rpc_so_loader)
 add_library(rpc_so_loader SHARED
         rpc_so_loader/rpc_so_loader.h
         rpc_so_loader/rpc_so_loader.cpp
-        rpc_bindings/bugarpc.h)
+        ../3rdparty/device_communication_common/rpc_bindings/bugarpc.h)
 target_include_directories(rpc_so_loader PRIVATE
         ${CMAKE_CURRENT_BINARY_DIR}
         ${PROTO_SRC_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}
+        ../3rdparty/device_communication_common/
         ../3rdparty/nlohmann/include/
         )
 target_link_libraries(rpc_so_loader proto rpc_server)
@@ -128,11 +132,12 @@ endif(MY_BUILD_ANDROID)
 project(rpc_bugatone_proxy)
 add_library(rpc_bugatone_proxy SHARED
         rpc_bugatone_proxy/rpc_bugatone_proxy.cpp
-        rpc_bindings/bugarpc.h)
+        ../3rdparty/device_communication_common/rpc_bindings/bugarpc.h)
 target_include_directories(rpc_bugatone_proxy PRIVATE
         ${CMAKE_CURRENT_BINARY_DIR}
         ${PROTO_SRC_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}
+        ../3rdparty/device_communication_common/
         ../3rdparty/nlohmann/include/
         )
 target_link_libraries(rpc_bugatone_proxy proto rpc_server)
@@ -172,13 +177,14 @@ endif(MY_BUILD_ANDROID)
 # RPC benchmark so
 project(grpc_test)
 add_library(grpc_test SHARED
-        rpc_bindings/bugarpc.h
+        ../3rdparty/device_communication_common/rpc_bindings/bugarpc.h
         rpc_test/benchmark_executor.cpp
         rpc_test/benchmark_executor.h)
 target_include_directories(grpc_test PRIVATE
         ${CMAKE_CURRENT_BINARY_DIR}
         ${PROTO_SRC_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}
+        ../3rdparty/device_communication_common/
         ../3rdparty/nlohmann/include/
         )
 target_link_libraries(grpc_test proto rpc_server)
