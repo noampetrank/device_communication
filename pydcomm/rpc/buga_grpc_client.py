@@ -56,6 +56,20 @@ class _GRpcClientFactory(IRemoteProcedureClientFactory):
     def choose_device_id(cls):
         return raw_input("Enter device IP: ")
 
+    @classmethod
+    def _build(cls, cmd, cwd, expected_output_strings, ok_message="Done", exception_message="Build failed", error_message="Build failed, try to build in the terminal to see why."):
+        try:
+            build_output = subprocess.check_output(cmd, cwd=cwd, shell=True)
+            missing_output_string = [x for x in expected_output_strings if x not in build_output]
+            if missing_output_string:
+                print(error_message)
+                print("Missing output strings: {}".format(', '.join(missing_output_string)))
+                raise RpcError(exception_message, details=build_output)
+            print(ok_message)
+        except subprocess.CalledProcessError as ex:
+            print(error_message)
+            raise RpcError(exception_message, original_exception=ex)
+
 
 # region Client factory that uses SO loader
 
@@ -99,15 +113,7 @@ class GRemoteProcedureClientAndroidFactory(_GRpcSoLoaderClientFactory):
                 print("(the following can get stuck, if that happens go to the terminal from which you ran idlespork and run the command fg)")
             sys.stdout.write("Building APK... ")
             sys.stdout.flush()
-            try:
-                build_output = subprocess.check_output("./gradlew assembleDebug", cwd=app_base_path, shell=True)
-                if '\nBUILD SUCCESSFUL in ' not in build_output:
-                    print("Build failed, try to build in the terminal to see why.")
-                    raise RpcError("Build failed", details=build_output)
-                print("Done")
-            except subprocess.CalledProcessError as ex:
-                print("Build failed, try to build in the terminal to see why.")
-                raise RpcError("Build failed", original_exception=ex)
+            cls._build("./gradlew assembleDebug", app_base_path, ('\nBUILD SUCCESSFUL in ',))
 
             # Install APK
             sys.stdout.write("Installing APK... ")
@@ -154,36 +160,78 @@ class GRemoteProcedureClientAndroidFactory(_GRpcSoLoaderClientFactory):
         print("Done")
         cls._run_executor(rpc_id=rpc_id, so_loader=so_loader)
 
-    @classmethod
-    def choose_device_id(cls):
-        print("Choosing device_id='10.0.0.138'")
-        return '10.0.0.138'
 # endregion
 
 
 # region Client factory that replaces libbugatone
 
-class GRpcLibbugatoneClientFactory(_GRpcClientFactory):
-    LIBBUGATONE_RPC_ID = 31000
+class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):
+    # LIBBUGATONE_RPC_ID = 31000
 
     @classmethod
     def install_executor(cls, so_path, rpc_id, device_id=None):
-        client, device_id = cls._create_connection(device_id, cls.SO_LOADER_RPC_ID)
-        # TODO Michael: use DeviceUtils.adb() when the new API is implemented
-        device_lib_path = '/system/lib64'
-        orig_libbugatone_path = os.path.join(device_lib_path, "libbugatone.so")
-        moved_libbugatone_path = os.path.join(device_lib_path, "libbugatone_real.so")
-        subprocess.check_output("adb -s {} shell mv {} {}".format(device_id, orig_libbugatone_path, moved_libbugatone_path), shell=True)
-        subprocess.check_output("adb -s {} push {} {}".format(device_id, so_path, orig_libbugatone_path), shell=True)
+        # Build "sattelite" .so's
+        cpp_path = os.path.join(os.path.dirname(__file__), "../../cpp")
+        assert os.path.isdir(cpp_path)
+        sys.stdout.write("Building 'sattelite' .so's for benchmark... ")
+        sys.stdout.flush()
+        cls._build("./make.py android", cpp_path, (' * Compilation took ',
+                                                   'Built target proto',
+                                                   'Built target rpc_server',
+                                                   'Built target rpc_bugatone_proxy',
+                                                   'Built target rpc_bugatone_main',
+                                                   ))
 
-        # TODO +compile
-        import os
-        sos_dir = os.path.dirname(so_path)
-        subprocess.check_output("adb -s {} push {} {}".format(device_id, os.path.join(sos_dir, ), orig_libbugatone_path), shell=True)
+        # Push .so's
+        local_libs_path = os.path.join(cpp_path, "./lib/arm64/Release/")
+        assert os.path.isdir(local_libs_path)
+        device_lib_path = '/system/lib64'
+
+        local_libbugatone_main_path = os.path.join(local_libs_path, "librpc_bugatone_main.so")
+        device_libbugatone_main_path = os.path.join(device_lib_path, "libbugatone.so")
+        libbugatone_real_path = os.path.join(device_lib_path, "libbugatone_real.so")
+
+        # client, device_id = cls._create_connection(device_id, cls.SO_LOADER_RPC_ID)
+        # TODO Michael: use DeviceUtils.adb() when the new API is implemented
+        for so_name in ('librpc_bugatone_proxy.so', 'librpc_server.so', 'libproto.so'):
+            local_so_path = os.path.join(local_libs_path, so_name)
+            subprocess.check_output("adb -s {} push {} {}".format(device_id, local_so_path, device_lib_path), shell=True)
+
+        subprocess.check_output("adb -s {} push {} {}".format(device_id, local_libbugatone_main_path, device_libbugatone_main_path), shell=True)
+        subprocess.check_output("adb -s {} push {} {}".format(device_id, so_path, libbugatone_real_path), shell=True)
 
         # TODO push silence
         # TODO create_connection should restart smart earphone; play silence (ask Ziv), maybe fake connect earphone (or check if earphone connected)
         # TODO create_conn pushes port to prop, checks headphones, then plays silence
+
+    @classmethod
+    def create_connection(cls, rpc_id, device_id=None):
+        # restart_smart_earphone
+        subprocess.check_output('adb shell input keyevent 86', shell=True)
+        subprocess.check_output('adb shell am force-stop com.oppo.music', shell=True)
+        get_pid_command = ['adb',
+                           'shell',
+                           'ps | grep com.oppo.smartearphone | $XKIT awk "{printf \\$2}"']
+        kill_command = ['adb',
+                        'shell',
+                        'ps | grep com.oppo.smartearphone | $XKIT awk "{printf \$2}" | xargs kill']
+        # prev_pid = subprocess.check_output(get_pid_command)
+        subprocess.check_call(kill_command)
+        # new_pid = subprocess.check_output(get_pid_command)
+        print("restarted smart earphone")
+        time.sleep(.2)
+
+        # Play song
+        subprocess.check_output("adb shell am start -a android.intent.action.VIEW -n com.oppo.music/.dialog.activity.AuditionActivity -d file:///sdcard/Music/Havana.wav", shell=True)
+        time.sleep(.5)
+
+        client, device_id = cls._create_connection(device_id, rpc_id)
+        return client
+
+    @classmethod
+    def choose_device_id(cls):
+        print("Choosing device_id='10.0.0.138'")
+        return '10.0.0.138'
 
 
 #endregion

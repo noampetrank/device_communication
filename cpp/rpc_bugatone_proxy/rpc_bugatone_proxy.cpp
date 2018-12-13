@@ -47,7 +47,7 @@ extern "C" void* _Z17createBugatoneApiv() {
             buga_rpc_log("[RPCBugatoneProxy] gRPC thread started, calling create_executor");
             std::unique_ptr<IRemoteProcedureExecutor> executor = create_executor();
             buga_rpc_log("[RPCBugatoneProxy] calling listen");
-            createBugaGRPCServer()->listen(*executor, 30000, true);
+            createBugaGRPCServer()->listen(*executor, 29999, true);
             buga_rpc_log("[RPCBugatoneProxy] gRPC server listen done, thread returning");
         });
         buga_rpc_log("[RPCBugatoneProxy] detaching gRPC server thread");
