@@ -2,7 +2,7 @@
 #include <cstdio>
 #include <thread>
 #include "rpc_bindings/bugarpc.h"
-#include "rpc_bindings/rpc_log.h"
+#include "utils/rpc_log.h"
 
 std::unique_ptr<IRemoteProcedureServer> createBugaGRPCServer();
 

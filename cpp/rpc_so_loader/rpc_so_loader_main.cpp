@@ -1,6 +1,6 @@
 #include <dlfcn.h>
 #include <cstdio>
-#include "rpc_bindings/rpc_log.h"
+#include "utils/rpc_log.h"
 
 #ifdef __ANDROID__
 #include <android/dlext.h>

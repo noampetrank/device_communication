@@ -1,6 +1,6 @@
 #include "rpc_so_loader.h"
 #include "rpc_bindings/bugarpc.h"
-#include "rpc_bindings/rpc_log.h"
+#include "utils/rpc_log.h"
 #include <vector>
 #include <map>
 #include <thread>

@@ -6,7 +6,7 @@
 #include <thread>
 #include "buga_rpc.pb.h"
 
-#include "rpc_bindings/rpc_log.h"
+#include "utils/rpc_log.h"
 
 
 using grpc::Server;

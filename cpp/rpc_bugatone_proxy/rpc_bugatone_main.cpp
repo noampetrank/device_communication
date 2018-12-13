@@ -1,6 +1,6 @@
 #include <dlfcn.h>
 #include <cstdio>
-#include "rpc_bindings/rpc_log.h"
+#include "utils/rpc_log.h"
 
 #ifdef __ANDROID__
 #include <android/dlext.h>
@@ -57,9 +57,12 @@ extern "C" void* _Z17createBugatoneApiv() {
     return createBugatoneApi();
 }
 
+
+#ifdef RPC_BUGATONE_MAIN_EXECUTABLE
 int main() {
     _Z17createBugatoneApiv();
     buga_rpc_log("[RPCBugatoneMain] enter any key to exit");
     std::getchar();
     return 0;
 }
+#endif
