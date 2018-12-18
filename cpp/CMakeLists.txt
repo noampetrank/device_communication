@@ -153,7 +153,7 @@ target_include_directories(rpc_bugatone_main PRIVATE
 target_compile_definitions(rpc_bugatone_main PRIVATE
         )
 if(MY_BUILD_ANDROID)
-    target_link_libraries(rpc_bugatone_main android)
+    target_link_libraries(rpc_bugatone_main android log)
 endif(MY_BUILD_ANDROID)
 
 

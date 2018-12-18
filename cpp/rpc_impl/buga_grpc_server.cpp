@@ -135,7 +135,7 @@ void GRemoteProcedureServer::listen(IRemoteProcedureExecutor &listener, int_betw
     buga_rpc_log("Server listening on " + server_address);
 
     if (!server)
-        throw RpcError("Server object is null");
+        throw RpcError("Server object is null (1)");
 
     if (wait) {
         // Wait for the server to shutdown. Note that some other thread must be
@@ -146,7 +146,7 @@ void GRemoteProcedureServer::listen(IRemoteProcedureExecutor &listener, int_betw
 
 void GRemoteProcedureServer::wait() {
     if (!server)
-        throw RpcError("Server object is null");
+        throw RpcError("Server object is null (2)");
     server->Wait();
     if (shutdownThread.joinable()) {
         shutdownThread.join();
@@ -156,7 +156,7 @@ void GRemoteProcedureServer::wait() {
 void GRemoteProcedureServer::stop() {
     buga_rpc_log("[GRemoteProcedureServer(" + std::to_string(rpcId) + ")] stop called");
     if (!server)
-        throw RpcError("Server object is null");
+        throw RpcError("Server object is null (3)");
     shutdownThread = std::thread([&] {
         // The server shouldn't be shutdown from its waiting thread
         server->Shutdown();

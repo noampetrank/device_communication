@@ -44,6 +44,7 @@ def print_run_summary(rpc_factory_name, stats, params, ret_val, print_all=False)
     all_calls_raw = [single_api_call_summary(call, p, ret) for call, p, ret in zip(stats, params, ret_val)]
 
     all_calls_table = pd.DataFrame(all_calls_raw).set_index(['function_name'])
+    all_calls_table.fillna(value=0, inplace=True)
 
     summary_per_function = pd.DataFrame(all_calls_table).assign(total_calls=lambda x: 1)
     summary_per_function = summary_per_function.groupby(['function_name', "send_data_size", "recv_data_size"]).\
