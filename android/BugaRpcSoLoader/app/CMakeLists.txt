@@ -50,11 +50,16 @@ set(DEVICE_COMM_PROJECT_DIR /home/buga/device_communication/cpp)
 set(DEVICE_COMM_LIBS_DIR ${DEVICE_COMM_PROJECT_DIR}/lib/arm64/Release)
 set(TARGET_LIBS_DIR src/main/jniLibs/arm64-v8a/)
 
-add_custom_target(buga_rpc_libs
+add_custom_target(rpc_satellite_sos
         COMMAND echo Building device comm...
-        COMMAND make.py android
-        COMMAND echo Copying device comm files...
+        COMMAND ${DEVICE_COMM_PROJECT_DIR}/make.py android
+        COMMAND mkdir -p ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET_LIBS_DIR}
         COMMAND mkdir -p ${DEVICE_COMM_LIBS_DIR}
+        WORKING_DIRECTORY ${DEVICE_COMM_PROJECT_DIR}
+        )
+
+add_custom_target(buga_rpc_libs
+        COMMAND echo Copying device comm files...
         COMMAND cp ${DEVICE_COMM_LIBS_DIR}/libproto.so ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET_LIBS_DIR}
         COMMAND cp ${DEVICE_COMM_LIBS_DIR}/librpc_server.so ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET_LIBS_DIR}
         COMMAND cp ${DEVICE_COMM_LIBS_DIR}/librpc_so_loader.so ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET_LIBS_DIR}
@@ -62,13 +67,16 @@ add_custom_target(buga_rpc_libs
         COMMAND echo Done with device comm.
         WORKING_DIRECTORY ${DEVICE_COMM_PROJECT_DIR}
         COMMENT Building device comm)
+add_dependencies(buga_rpc_libs
+        rpc_satellite_sos)
 
 add_custom_target(ndk_libs
         COMMAND echo Copying NDK stuff...
-        COMMAND mkdir -p ${DEVICE_COMM_LIBS_DIR}
         COMMAND cp ${ANDROID_STL_PATH}/libs/arm64-v8a/libc++_shared.so ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET_LIBS_DIR}
         COMMAND echo Done copying NDK stuff.
         COMMENT Copying NDK stuff)
+add_dependencies(ndk_libs
+        rpc_satellite_sos)
 
 add_dependencies(native-lib buga_rpc_libs ndk_libs)
 
