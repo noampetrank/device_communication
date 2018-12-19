@@ -2,3 +2,9 @@
 	path = 3rdparty/grpc
 	url = ../grpc.git
 	branch = buga_grpc
+
+[submodule "3rdparty/device_communication_common"]
+        path = 3rdparty/device_communication_common
+        url = ../device_communication_common.git
+        branch = master
+

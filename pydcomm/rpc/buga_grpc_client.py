@@ -285,6 +285,7 @@ class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):
             if 'headset' in [x.strip() for x in audio_devices]:
                 break
             raw_input("Please connect earphone and press enter...")
+            print("")
 
     @classmethod
     def create_connection(cls, rpc_id, device_id=None):
