@@ -214,8 +214,8 @@ class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):
         # Set port of rpc_id on device
         subprocess.check_output("adb -s {} shell setprop buga.rpc.libbugatone_executor_port {}".format(device_id, rpc_id), shell=True)
 
-        # Build "sattelite" .so's
-        _print_no_newline("Building 'sattelite' .so's... ")
+        # Build "satellite" .so's
+        _print_no_newline("Building 'satellite' .so's... ")
         cpp_path = os.path.join(os.path.dirname(__file__), "../../cpp")
         assert os.path.isdir(cpp_path)
         _build("./make.py android", cpp_path, (' * Compilation took ',
@@ -227,7 +227,7 @@ class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):
                                                ))
 
         # Push .so's
-        _print_no_newline("Pushing 'sattelite' .so's... ")
+        _print_no_newline("Pushing 'satellite' .so's... ")
         local_libs_path = os.path.join(cpp_path, "./lib/arm64/Release/")
         assert os.path.isdir(local_libs_path)
         device_lib_path = '/system/lib64'

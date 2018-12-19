@@ -41,6 +41,6 @@ Java_com_buga_rpcsoloader_RpcSoLoaderActivity_startRpcSoLoader(
         env->ReleaseStringUTFChars(jLibsPath, libsPath);
     }
 
-    std::string hello = "Hello from C++";
+    std::string hello = "gRPC .so loader is running";
     return env->NewStringUTF(hello.c_str());
 }
