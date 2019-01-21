@@ -11,7 +11,7 @@ std::unique_ptr<IRemoteProcedureServer> createBugaGRPCServer();
 #include <array>
 #include <regex>
 
-const char* libbugatone_path = "libbugatone_real.so";
+#define LIBBUGATONE_LOOKUP_PATHS {"libbugatone_real.so"};
 
 int_between_30000_and_50000 get_requested_port() {
     //https://stackoverflow.com/a/478960/857731
@@ -43,7 +43,10 @@ int_between_30000_and_50000 get_requested_port() {
 #else
 #include <cstdio>
 
-const char* libbugatone_path = "/home/buga/mobileproduct/lib/linux_x86/Release/libbugatone.so";
+//TODO better have only one option here
+#define LIBBUGATONE_LOOKUP_PATHS {"libbugatone.so",\
+    "/home/buga/buga-recordings/lib/linux_x86/Release/libbugatone.so",\
+    "/home/buga/mobileproduct/lib/linux_x86/Release/libbugatone.so"}
 
 int_between_30000_and_50000 get_requested_port() {
     return 29999;
@@ -56,7 +59,15 @@ extern "C" void* _Z17createBugatoneApiv() {
     buga_rpc_log("[RPCBugatoneProxy] outer createBugatoneApi called");
     void* bugatoneApi = nullptr;
 
-    void* myso = dlopen(libbugatone_path, RTLD_LAZY);
+    void* myso = nullptr;
+    const std::vector<const char*> libbugatone_paths = LIBBUGATONE_LOOKUP_PATHS;
+    for (auto libbugatone_path : libbugatone_paths) {
+        myso = dlopen(libbugatone_path, RTLD_LAZY);
+        if (myso != nullptr) {
+            buga_rpc_log(std::string("[RPCBugatoneProxy] *** loaded ") + libbugatone_path);
+            break;
+        }
+    }
     if (myso == nullptr) {
         buga_rpc_log("[RPCBugatoneProxy] failed to load .so");
         buga_rpc_log(dlerror());
