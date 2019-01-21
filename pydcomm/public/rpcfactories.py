@@ -7,7 +7,7 @@
 
 from collections import namedtuple
 from pydcomm.connections.dummy import DummyRemoteProcedureClientFactory
-from pydcomm.rpc.buga_grpc_client import GRemoteProcedureClientFactory
+from pydcomm.rpc.buga_grpc_client import GRpcSoLoaderLinuxClientFactory, GRpcSoLoaderAndroidClientFactory, GRpcLibbugatoneAndroidClientFactory
 
 RpcFactoryEntry = namedtuple("RpcFactoryEntry", "factory_cls test_so")
 
@@ -23,4 +23,10 @@ all_rpc_factories = {}
 #
 
 all_rpc_factories["dummy"] = RpcFactoryEntry(DummyRemoteProcedureClientFactory, "dummy.so")
-all_rpc_factories["grpc"] = RpcFactoryEntry(GRemoteProcedureClientFactory, "/home/buga/device_communication/cpp/lib/linux_x86/Release/libgrpc_test.so")
+
+all_rpc_factories["grpc_soloader_linux"] = RpcFactoryEntry(GRpcSoLoaderLinuxClientFactory, "/home/buga/device_communication/cpp/lib/linux_x86/Release/libgrpc_test.so")
+all_rpc_factories["grpc_soloader_apk_android"] = RpcFactoryEntry(GRpcSoLoaderAndroidClientFactory, "/home/buga/device_communication/cpp/lib/arm64/Release/libgrpc_test.so")
+
+# all_rpc_factories["grpc_libbugatone_linux"] = RpcFactoryEntry(GRpcLibbugatoneLinuxClientFactory, "/home/buga/test-files/device_communication/resources/libbugatone_dummy.so.linux_x86.dummy_buga.c89bf5774a964bfe8f923dd75fe1d5e8a73cff05")
+all_rpc_factories["grpc_libbugatone_android"] = RpcFactoryEntry(GRpcLibbugatoneAndroidClientFactory, "/home/buga/test-files/device_communication/resources/libbugatone_dummy.so.arm64.dummy_buga.c89bf5774a964bfe8f923dd75fe1d5e8a73cff05")
+# all_rpc_factories["grpc_libbugatone_android"] = RpcFactoryEntry(GRpcLibbugatoneAndroidClientFactory, "/home/buga/mobileproduct/lib/arm64/Release/libbugatone_dummy.so")
