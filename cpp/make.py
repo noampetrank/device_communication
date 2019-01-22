@@ -12,7 +12,7 @@ import shutil
 from optparse import OptionParser
 
 from colorama import init
-from pymobileproduct.utils.make.shared import mkdir_p, cd, MakeException, set_env_vars, WARN, TITLE, SUCCESS
+from pymobileproduct.utils.make.shared import mkdir_p, cd, MakeError, set_env_vars, WARN, TITLE, SUCCESS
 from pymobileproduct.utils.make.build import create_standalone_toolchain
 
 POSSIBLE_PLATFORMS = ["all", "linux", "android", "clean"]
@@ -71,7 +71,7 @@ def validate_options(options):
         print("./make.py -b <{}>".format("/".join(POSSIBLE_BUILD_TYPES)))
         success = False
     if not success:
-        raise MakeException("Invalid option")
+        raise MakeError("Invalid option")
 
 
 def build_platforms(options):
@@ -101,7 +101,7 @@ def build_platforms(options):
                     subprocess.check_call("make {} -j{}".format(target, multiprocessing.cpu_count()).split(" "), stderr=subprocess.STDOUT)
                 print(SUCCESS + " * Compilation took {:.2f} seconds".format(time.time() - start_time))
             except subprocess.CalledProcessError:
-                raise MakeException(" * Compilation failed :(")
+                raise MakeError(" * Compilation failed :(")
 
 
 def clean():
