@@ -58,7 +58,7 @@ class AndroidDeviceUtils:
         :raises AndroidDeviceUtilsError
         """
         try:
-            output = self.connection.adb("push {} {}".format(local_path, path_on_device).split())
+            output = self.connection.adb("push {} {}".format(local_path, path_on_device))
         except AdbConnectionError as err:
             if 'Read-only file system' in err.stderr:
                 raise WrongPermissions()
@@ -84,7 +84,7 @@ class AndroidDeviceUtils:
         :raises AndroidDeviceUtilsError
         """
         try:
-            output = self.connection.adb("push {} {}".format(path_on_device, local_path).split())
+            output = self.connection.adb("pull {} {}".format(path_on_device, local_path))
         except AdbConnectionError as err:
             if 'Permission denied' in err.stderr:
                 raise WrongPermissions()

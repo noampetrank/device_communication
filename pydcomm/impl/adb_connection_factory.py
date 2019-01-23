@@ -17,7 +17,8 @@ class WiredAdbConnectionFactory(ConnectionFactory):
         connection_factory = AdbConnectionFactory()
         if not device_id:
             device_id = cls.choose_device_id()
-        return AdbConnection(connection_factory.get_oppo_wired_device(rooted=False, device_id=device_id))
+        return AdbConnection(
+            connection_factory.get_oppo_wired_device(rooted=False, device_id=device_id, use_manual_fixes=False))
 
     @classmethod
     def connected_devices(cls):
@@ -49,4 +50,5 @@ class WirelessAdbConnectionFactory(WiredAdbConnectionFactory):
         connection_factory = AdbConnectionFactory()
         if not device_id:
             device_id = cls.choose_device_id()
-        return AdbConnection(connection_factory.get_oppo_wireless_device(rooted=False, device_id=device_id))
+        return AdbConnection(
+            connection_factory.get_oppo_wireless_device(rooted=False, device_id=device_id, use_manual_fixes=False))

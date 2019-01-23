@@ -22,17 +22,19 @@ def run_scenario(actions, initial_context=None):  # TBD flag for only parameters
     uxrecorder = ApiCallsRecorder()
     scenario = Scenario(context=initial_context)
 
-    with uxrecorder:
-        try:
-            for api_action in tqdm.tqdm(actions):
+    try:
+        for api_action in tqdm.tqdm(actions):
+            uxrecorder = ApiCallsRecorder()
+            with uxrecorder:
                 params, ret, context, additional = api_action(scenario)
 
-                scenario.stats.append(uxrecorder.api_stats[-1])
+            for c in uxrecorder.api_stats:
+                scenario.stats.append(c)
                 scenario.params.append(params)
                 scenario.ret_vals.append(ret)
                 scenario.additionals.append(additional)
-                scenario.context.update(context)
-        except KeyboardInterrupt:
-            pass
+            scenario.context.update(context)
+    except KeyboardInterrupt:
+        pass
     return dict(stats=scenario.stats, params=scenario.params, ret_vals=scenario.ret_vals,
                 additionals=scenario.additionals)

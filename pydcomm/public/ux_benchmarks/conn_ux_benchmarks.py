@@ -1,22 +1,27 @@
 import cPickle
+import string
 import tempfile
 import time
-from collections import namedtuple
 
 import numpy as np
+from pybuga.infra.utils.buga_utils import indent_printing
 from pybuga.infra.utils.user_input import UserInput
-
 from pydcomm.public.connfactories import all_connection_factories
 from pydcomm.public.iconnection import IConnection
 from pydcomm.public.ux_benchmarks.rpc_ux_benchamrks import BetterTee
 from pydcomm.public.ux_benchmarks.utils import run_scenario
-import string
 
-ApiAction = namedtuple("ApiAction", "function_name params")
+_random_files = {}
 
 
 def get_random_string(length):
-    return "".join([string.ascii_letters[i] for i in np.random.randint(0, high=len(string.ascii_letters), size=length)])
+    def _generate():
+        return "".join(
+            [string.ascii_letters[i] for i in np.random.randint(0, high=len(string.ascii_letters), size=length)])
+
+    if length not in _random_files:
+        _random_files[length] = _generate()
+    return _random_files[length]
 
 
 def single_api_call_summary(api_call, params=None, ret=None, additional=None, ignore_first_manual=True):
@@ -27,7 +32,6 @@ def single_api_call_summary(api_call, params=None, ret=None, additional=None, ig
         "manual_fixes_time": sum([end - start for start, end in api_call.manual_times[ignore_first_manual:]]),
         "is_exception": api_call.is_exception,
         "is_automatic": len(api_call.manual_times) == 0,
-        "corrupted_data": False,
         "parameters": params
     }
 
@@ -35,14 +39,6 @@ def single_api_call_summary(api_call, params=None, ret=None, additional=None, ig
     if additional:
         res.update(additional)
         additional_columns = additional.keys()
-
-    if api_call.function_name == "call" and params is not None:
-        res['send_data_size'] = len(params[1])
-        if ret is not None:
-            res['corrupted_data'] = (np.frombuffer(params[1], np.uint8) + 1).tostring() != ret
-            res['recv_data_size'] = len(ret)
-
-    res["is_success"] = not api_call.is_exception and not res["corrupted_data"]
 
     return res, additional_columns
 
@@ -61,8 +57,7 @@ def print_run_summary(conn_factory_name, stats, params, ret_val, additionals, pr
     summary_per_function = pd.DataFrame(all_calls_table).assign(total_calls=lambda x: 1)
 
     aggregates = get_aggregates(additional_columns)
-    summary_per_function = summary_per_function.groupby(['function_name', "parameters"]). \
-        agg(aggregates)
+    summary_per_function = summary_per_function.groupby(['function_name', "parameters"]).agg(aggregates)
     # TBD : add avg_automatic_time (avg time call for calls that ended automatically
     # TBD : add max_manual_time, median_manual_time??
     # TBD : filter per test scenario...
@@ -71,9 +66,7 @@ def print_run_summary(conn_factory_name, stats, params, ret_val, additionals, pr
                                                         "manual_fixes_count": "manual_fixes_avg",
                                                         "manual_fixes_time": "total_manual_time",
                                                         "is_exception": "total_exceptions",
-                                                        "is_automatic": "automatic_success_ratio",
-                                                        "is_success": "success_ratio",
-                                                        "corrupted_data": "total_corrupted_data"})
+                                                        "is_automatic": "automatic_success_ratio"})
 
     print "Summary for Connection Factory : {}".format(conn_factory_name)
     print "total runtime : ", stats[-1].end_time - stats[0].start_time
@@ -89,9 +82,7 @@ def get_aggregates(additional_columns):
                   "manual_fixes_count": np.mean,
                   "manual_fixes_time": np.sum,
                   "is_exception": np.sum,
-                  "is_automatic": np.mean,
-                  "is_success": np.mean,
-                  "corrupted_data": np.sum}
+                  "is_automatic": np.mean}
     for c in additional_columns:
         if not additional_columns:
             continue
@@ -135,13 +126,14 @@ class ConnectionAction(object):
             remote_file_path = "/data/local/tmp/benchmark_test_file"
             with tempfile.NamedTemporaryFile() as tmp_push_file:
                 tmp_push_file.file.write(random_string)
+                tmp_push_file.file.close()
                 conn.push(tmp_push_file.name, remote_file_path)
             with tempfile.NamedTemporaryFile() as tmp_pull_file:
                 conn.pull(remote_file_path, tmp_pull_file.name)
                 with open(tmp_pull_file.name) as pull:
                     pulled_data = pull.read()
                     success = pulled_data == random_string
-            return (length,), None, {}, dict(recv_data_size=len(pulled_data), success=success)
+            return (length,), None, {}, dict(recv_data_size=len(pulled_data), was_file_valid=success)
 
         return execute
 
@@ -208,11 +200,25 @@ class ConnectionAction(object):
 
 def get_push_pull_scenario(rep_num=3, create_connections_num=10, input_lengths=(1, 1000, 1e5, 1e6, 1e7)):
     scenario = []
+    scenario += [ConnectionAction.CHOOSE_DEVICE_ID()]
     for _ in range(rep_num):
         for _ in range(create_connections_num):
             scenario += [ConnectionAction.CREATE_CONNECTION()]
-            scenario += [ConnectionAction.PUSH_PULL_RANDOM(l) for l in input_lengths]
+            scenario += [ConnectionAction.PUSH_PULL_RANDOM(int(l)) for l in input_lengths]
+    scenario += [ConnectionAction.DISCONNECT()]
     return scenario
+
+
+def get_repeating_scenario(rep_num, num_connection_check, check_interval, action, params):
+    scenario = []
+    for i in range(rep_num):
+        scenario += [ConnectionAction.CREATE_CONNECTION()]
+        for j in range(num_connection_check):
+            scenario += [action(*params)]
+            # TODO Add sleep here?
+            # I don't remember why, there was a reason that I didn't add a sleep action. Maybe because I didn't want
+            # it to appear in the table?
+        scenario += [ConnectionAction.DISCONNECT()]
 
 
 def get_echo_scenario(rep_num=3, num_connection_check=10, check_interval=0, echo_length=10):
@@ -231,6 +237,9 @@ def get_old_benchmark_scenario():
     scenario += get_echo_scenario(20, 5, 0)
     scenario += get_echo_scenario(7, 2, 20)
     scenario += get_echo_scenario(20, 1, 1)
+    scenario += get_echo_scenario(20, 5, 0)
+    scenario += get_echo_scenario(7, 2, 20)
+    scenario += get_echo_scenario(20, 1, 1)
     return scenario
 
 
@@ -243,21 +252,11 @@ def get_short_benchmark_scenario():
     return scenario
 
 
-def get_small_msgs_scenario(rep_num=1):
-    return get_push_pull_scenario(rep_num, create_connections_num=10, input_lengths=[10] * 100)
-
-
 def get_big_messages_scenario(rep_num=1):
-    return get_push_pull_scenario(rep_num, create_connections_num=1, input_lengths=[1e6] * 1000)
-
-
-def get_scenario_similar_to_recording_script():
-    pass
-    # TBD
+    return get_push_pull_scenario(rep_num, create_connections_num=1, input_lengths=[1e5] * 3)
 
 
 def main():
-    from pybuga.infra.utils.buga_utils import indent_printing
     start_time_string = time.strftime("%H:%M:%S")
 
     with BetterTee("run_conn_{}.log".format(start_time_string)):
@@ -271,7 +270,7 @@ def main():
             conn_factory = all_connection_factories[factory_name]
             """@type: pydcomm.public.iconnection.ConnectionFactory"""
 
-            test_scenario = get_short_benchmark_scenario()
+            test_scenario = get_big_messages_scenario(1)
 
             runs = run_scenario(test_scenario, initial_context={'conn_factory': conn_factory})
             runs['conn_factory_name'] = conn_factory.__name__
