@@ -1,27 +1,13 @@
 import cPickle
-import string
-import tempfile
 import time
 
 import numpy as np
 from pybuga.infra.utils.buga_utils import indent_printing
 from pybuga.infra.utils.user_input import UserInput
 from pydcomm.public.connfactories import all_connection_factories
-from pydcomm.public.iconnection import IConnection
+from pydcomm.public.ux_benchmarks.connection.scenarios import get_big_messages_scenario
 from pydcomm.public.ux_benchmarks.rpc_ux_benchamrks import BetterTee
 from pydcomm.public.ux_benchmarks.utils import run_scenario
-
-_random_files = {}
-
-
-def get_random_string(length):
-    def _generate():
-        return "".join(
-            [string.ascii_letters[i] for i in np.random.randint(0, high=len(string.ascii_letters), size=length)])
-
-    if length not in _random_files:
-        _random_files[length] = _generate()
-    return _random_files[length]
 
 
 def single_api_call_summary(api_call, params=None, ret=None, additional=None, ignore_first_manual=True):
@@ -90,170 +76,6 @@ def get_aggregates(additional_columns):
             # atm every additional is summed. In the future if anyone needs add something else as well.
             aggregates[b] = np.sum
     return aggregates
-
-
-class ConnectionAction(object):
-    @staticmethod
-    def CHOOSE_DEVICE_ID():
-        def execute(scenario):
-            device_id = scenario.context["conn_factory"].choose_device_id()
-            return None, device_id, dict(device_id=device_id), {}
-
-        return execute
-
-    @staticmethod
-    def CREATE_CONNECTION(device_id=None, **kwargs):
-        def execute(scenario):
-            """:type scenario: Scenario"""
-            my_device_id = device_id if device_id is not None else scenario.context.get("device_id")
-            connection = scenario.context["conn_factory"].create_connection(device_id=my_device_id, **kwargs)
-            return (my_device_id,), None, dict(connection=connection), {}
-
-        return execute
-
-    @staticmethod
-    def PUSH_PULL_RANDOM(length):
-        """
-        Create random file of size length, sends it, pulls it back, and then compares the files.
-        :param length:
-        :return:
-        """
-        random_string = get_random_string(length)
-
-        def execute(scenario):
-            """:type scenario: Scenario"""
-            conn = scenario.context["connection"]
-            remote_file_path = "/data/local/tmp/benchmark_test_file"
-            with tempfile.NamedTemporaryFile() as tmp_push_file:
-                tmp_push_file.file.write(random_string)
-                tmp_push_file.file.close()
-                conn.push(tmp_push_file.name, remote_file_path)
-            with tempfile.NamedTemporaryFile() as tmp_pull_file:
-                conn.pull(remote_file_path, tmp_pull_file.name)
-                with open(tmp_pull_file.name) as pull:
-                    pulled_data = pull.read()
-                    success = pulled_data == random_string
-            return (length,), None, {}, dict(recv_data_size=len(pulled_data), was_file_valid=success)
-
-        return execute
-
-    @staticmethod
-    def SHELL_ECHO(length, sleep, timeout_ms=None):
-        if length > 1024 * 1024:
-            raise ValueError("Maximum echo is 1MB")  # Actually may be more, but not much more
-        random_string = get_random_string(length)
-
-        def execute(scenario):
-            """:type scenario: Scenario"""
-            conn = scenario.context["connection"]  # type: IConnection
-            ret = conn.shell('echo "{}"'.format(random_string), timeout_ms=timeout_ms)
-            success = ret.strip() == random_string.strip()
-            time.sleep(sleep)
-            return (length, sleep), len(ret), {}, dict(success=success)
-
-        return execute
-
-    @staticmethod
-    def ROOT():
-        def execute(scenario):
-            """:type scenario: Scenario"""
-            scenario.context["connection"].root()
-            return (), None, {}, {}
-
-        return execute
-
-    @staticmethod
-    def REMOUNT():
-        def execute(scenario):
-            """:type scenario: Scenario"""
-            scenario.context["connection"].remount()
-            return (), None, {}, {}
-
-        return execute
-
-    @staticmethod
-    def INSTALL_UNINSTALL_DUMMYAPK():
-        def execute(scenario):
-            """:type scenario: Scenario"""
-            # TODO: later
-
-        return execute
-
-    @staticmethod
-    def DEVICE_ID():
-        def execute(scenario):
-            """:type scenario: Scenario"""
-            device_name = scenario.context["connection"].device_name()
-            return (), device_name, {}, {}
-
-        return execute
-
-    @staticmethod
-    def DISCONNECT():
-        def execute(scenario):
-            """:type scenario: Scenario"""
-            scenario.context["connection"].disconnect()
-            return (), None, {}, {}
-
-        return execute
-
-
-def get_push_pull_scenario(rep_num=3, create_connections_num=10, input_lengths=(1, 1000, 1e5, 1e6, 1e7)):
-    scenario = []
-    scenario += [ConnectionAction.CHOOSE_DEVICE_ID()]
-    for _ in range(rep_num):
-        for _ in range(create_connections_num):
-            scenario += [ConnectionAction.CREATE_CONNECTION()]
-            scenario += [ConnectionAction.PUSH_PULL_RANDOM(int(l)) for l in input_lengths]
-    scenario += [ConnectionAction.DISCONNECT()]
-    return scenario
-
-
-def get_repeating_scenario(rep_num, num_connection_check, check_interval, action, params):
-    scenario = []
-    for i in range(rep_num):
-        scenario += [ConnectionAction.CREATE_CONNECTION()]
-        for j in range(num_connection_check):
-            scenario += [action(*params)]
-            # TODO Add sleep here?
-            # I don't remember why, there was a reason that I didn't add a sleep action. Maybe because I didn't want
-            # it to appear in the table?
-        scenario += [ConnectionAction.DISCONNECT()]
-
-
-def get_echo_scenario(rep_num=3, num_connection_check=10, check_interval=0, echo_length=10):
-    scenario = []
-    for _ in range(rep_num):
-        scenario += [ConnectionAction.CREATE_CONNECTION()]
-        for _ in range(num_connection_check):
-            scenario += [ConnectionAction.SHELL_ECHO(echo_length, check_interval)]
-    return scenario
-
-
-def get_old_benchmark_scenario():
-    # This is how the old benchmark ran
-    scenario = []
-    scenario += [ConnectionAction.CHOOSE_DEVICE_ID()]
-    scenario += get_echo_scenario(20, 5, 0)
-    scenario += get_echo_scenario(7, 2, 20)
-    scenario += get_echo_scenario(20, 1, 1)
-    scenario += get_echo_scenario(20, 5, 0)
-    scenario += get_echo_scenario(7, 2, 20)
-    scenario += get_echo_scenario(20, 1, 1)
-    return scenario
-
-
-def get_short_benchmark_scenario():
-    # This is how the old benchmark ran
-    scenario = []
-    scenario += [ConnectionAction.CHOOSE_DEVICE_ID()]
-    scenario += get_echo_scenario(10, 1, 0)
-    scenario += get_echo_scenario(5, 3, 0)
-    return scenario
-
-
-def get_big_messages_scenario(rep_num=1):
-    return get_push_pull_scenario(rep_num, create_connections_num=1, input_lengths=[1e5] * 3)
 
 
 def main():
