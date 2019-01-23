@@ -43,10 +43,7 @@ int_between_30000_and_50000 get_requested_port() {
 #else
 #include <cstdio>
 
-//TODO better have only one option here
-#define LIBBUGATONE_LOOKUP_PATHS {"libbugatone.so",\
-    "/home/buga/buga-recordings/lib/linux_x86/Release/libbugatone.so",\
-    "/home/buga/mobileproduct/lib/linux_x86/Release/libbugatone.so"}
+#define LIBBUGATONE_LOOKUP_PATHS {"libbugatone.so"}
 
 int_between_30000_and_50000 get_requested_port() {
     return 29999;
