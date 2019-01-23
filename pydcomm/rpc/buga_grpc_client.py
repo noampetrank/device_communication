@@ -19,7 +19,6 @@ class GRemoteProcedureClient(IRemoteProcedureClient):
                                                                       ('grpc.max_receive_message_length', self.MAX_MESSAGE_SIZE)])
         self.stub = DeviceRpcStub(self.channel)
         xver = self.get_executor_version()
-        assert xver == '1.0'
 
     def stop(self):
         self.call('_rpc_stop', '')
@@ -188,6 +187,12 @@ class GRpcSoLoaderAndroidClientFactory(_GRpcSoLoaderClientFactory):
 
 
 # region Client factory that replaces libbugatone
+
+class GRpcLibbugatoneLinuxClientFactory(_GRpcClientFactory):
+    @classmethod
+    def install_executor(cls, so_path, rpc_id, device_id=None):
+        pass
+
 
 class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):
     SILENCE_FILENAME = "silence_1h.mp3"
