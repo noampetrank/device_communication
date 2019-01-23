@@ -5,7 +5,7 @@ from nose.tools import assert_raises
 
 import mock
 import subprocess32 as subprocess
-from pydcomm.general_android.connection.wired_adb_connection import AdbConnection, AdbConnectionError, ConnectingError, ConnectionClosedError
+from pydcomm.general_android.connection.wired_adb_connection import InternalAdbConnection, AdbConnectionError, ConnectingError, ConnectionClosedError
 from pydcomm.general_android.connection.wireless_adb_connection import get_device_ip, connect_wireless
 from pydcomm.tests.connection.consts import IFCONFIG_BAD, IFCONFIG_GOOD
 from pydcomm.tests.helpers import TestCasePatcher
@@ -15,10 +15,10 @@ WIRED_MODULE_NAME = "pydcomm.general_android.connection.wired_adb_connection"
 
 class WiredAdbConnectionTests(unittest.TestCase):
     def setUp(self):
-        self.con = AdbConnection(device_id="avocado")
+        self.con = InternalAdbConnection(device_id="avocado")
 
     @mock.patch(WIRED_MODULE_NAME + ".subprocess.Popen")
-    @mock.patch.object(AdbConnection, "test_connection", lambda x: True)
+    @mock.patch.object(InternalAdbConnection, "test_connection", lambda x: True)
     def test_adb__valid_input__adb_called_with_input_and_device_id(self, mock_popen):
         stdout = "WONDERFUL STDOUT!!!"
         mock_popen.return_value.communicate.return_value = stdout, mock.Mock()
@@ -32,7 +32,7 @@ class WiredAdbConnectionTests(unittest.TestCase):
         self.assertEqual(res, stdout)
 
     @mock.patch(WIRED_MODULE_NAME + ".subprocess.Popen")
-    @mock.patch.object(AdbConnection, "test_connection", lambda x: True)
+    @mock.patch.object(InternalAdbConnection, "test_connection", lambda x: True)
     def test_adb__adb_returns_error_code__raises_appropriate_exception(self, mock_popen):
         stderr = "GREAT ERROR!"
         mock_popen.return_value.communicate.return_value = mock.Mock(), stderr
@@ -44,7 +44,7 @@ class WiredAdbConnectionTests(unittest.TestCase):
         self.assertEqual(e.exception.returncode, 4)
         self.assertEqual(e.exception.stderr, stderr)
 
-    @mock.patch.object(AdbConnection, "test_connection", lambda x: False)
+    @mock.patch.object(InternalAdbConnection, "test_connection", lambda x: False)
     def test_adb__test_connection_fails__raises_exception(self):
         with assert_raises(AdbConnectionError) as e:
             self.con.adb("hay")

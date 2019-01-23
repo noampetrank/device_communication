@@ -6,13 +6,13 @@ from pydcomm.general_android.connection.fixers.computer_network_disconnected_fix
 from pydcomm.general_android.connection.fixers.connected_usb_device_fixes import forgot_device_fix, device_turned_off
 from pydcomm.general_android.connection.fixers.get_user_attention_fixer import get_user_attention_fix
 from pydcomm.general_android.connection.fixers.unreachable_device_fixer import unreachable_device_fix
-from pydcomm.general_android.connection.wired_adb_connection import AdbConnection
+from pydcomm.general_android.connection.wired_adb_connection import InternalAdbConnection
 from pydcomm.general_android.connection.wireless_adb_connection import add_connect_wireless, add_disconnect_wireless
 
-# Save AdbConnection functions that can be decorated in order to allow resetting the class
-AdbConnection.original_init = AdbConnection.__init__
-AdbConnection.original_adb = AdbConnection.adb
-AdbConnection.original_disconnect = AdbConnection.disconnect
+# Save InternalAdbConnection functions that can be decorated in order to allow resetting the class
+InternalAdbConnection.original_init = InternalAdbConnection.__init__
+InternalAdbConnection.original_adb = InternalAdbConnection.adb
+InternalAdbConnection.original_disconnect = InternalAdbConnection.disconnect
 
 
 class AdbConnectionFactory(object):
@@ -31,14 +31,14 @@ class AdbConnectionFactory(object):
         """
         decorators = decorators or []
 
-        # Reset AdbConnection decorated functions
-        AdbConnection.__init__ = AdbConnection.original_init
-        AdbConnection.disconnect = AdbConnection.original_disconnect
-        AdbConnection.adb = AdbConnection.original_adb
+        # Reset InternalAdbConnection decorated functions
+        InternalAdbConnection.__init__ = InternalAdbConnection.original_init
+        InternalAdbConnection.disconnect = InternalAdbConnection.original_disconnect
+        InternalAdbConnection.adb = InternalAdbConnection.original_adb
 
         decorators.append(AdbConnectionFactory.get_selection_behavior(device_selector))
 
-        con_cls = AdbConnection
+        con_cls = InternalAdbConnection
         if not wired:
             con_cls = add_connect_wireless(con_cls)
             con_cls = add_disconnect_wireless(con_cls)

@@ -13,8 +13,8 @@ class MultiDeviceBehavior(IntEnum):
 def add_choose_first_behavior(connection):
     """
     Decorates the _get_device_to_connect method with the choose first behavior.
-    :type connection: AdbConnection
-    :rtype: AdbConnection
+    :type connection: InternalAdbConnection
+    :rtype: InternalAdbConnection
     """
 
     def _get_device_to_connect(self):
@@ -40,8 +40,8 @@ def get_device_to_connect_user_choice(*args):
 def add_user_choice_behavior(connection):
     """
     Decorates the _get_device_to_connect method with the user choice behavior.
-    :type connection: AdbConnection
-    :rtype: AdbConnection
+    :type connection: InternalAdbConnection
+    :rtype: InternalAdbConnection
     """
 
     connection._get_device_to_connect = get_device_to_connect_user_choice

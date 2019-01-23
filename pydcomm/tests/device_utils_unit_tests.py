@@ -5,7 +5,7 @@ from textwrap import dedent
 import mock
 import tempfile
 
-from pydcomm.general_android.connection.wired_adb_connection import AdbConnection, AdbConnectionError
+from pydcomm.general_android.connection.wired_adb_connection import InternalAdbConnection, AdbConnectionError
 from pydcomm.general_android.android_device_utils import AndroidDeviceUtils, LocalFileNotFound, RemoteFileNotFound, WrongPermissions, FileAlreadyExists, OperationUnsupported, \
     AndroidDeviceUtilsError
 

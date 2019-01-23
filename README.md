@@ -3,7 +3,7 @@
 This project contains interfaces and implementations to enable communicating with devices (currently Android).
 The main components:
 - Python:
-	- `AdbConnection` allows to communicate with an Android device using ADB and troubleshoots conneciton problems.
+	- `InternalAdbConnection` allows to communicate with an Android device using ADB and troubleshoots conneciton problems.
 	- `AndroidDeviceUtils` allows to run common commands on an Android device.
 	- `FileBridge` allows communicating with a device using files pushed/pulled via ADB.
 	- Benchmarks and tests for the above components

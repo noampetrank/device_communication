@@ -1,6 +1,6 @@
 from pydcomm.general_android.android_device_utils import AndroidDeviceUtils
 from pydcomm.public.iconnection import IConnection
-from pydcomm.general_android.connection.wired_adb_connection import AdbConnection
+from pydcomm.general_android.connection.wired_adb_connection import InternalAdbConnection
 from pybuga.infra.phone.adb_utils import LogCat
 
 
@@ -8,7 +8,7 @@ class AdbConnection(IConnection):
     def __init__(self, adb_connection):
         """
 
-        :type adb_connection: AdbConnection
+        :type adb_connection: InternalAdbConnection
         """
         self.adb_connection = adb_connection
         self.device_utils = AndroidDeviceUtils(self.adb_connection)

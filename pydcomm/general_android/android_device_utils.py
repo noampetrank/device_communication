@@ -41,7 +41,7 @@ class AndroidDeviceUtils:
     """
     def __init__(self, connection):
         """
-        :type connection: AdbConnection
+        :type connection: InternalAdbConnection
         """
         self.connection = connection
 

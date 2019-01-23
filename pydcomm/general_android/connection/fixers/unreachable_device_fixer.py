@@ -4,7 +4,7 @@ import subprocess
 from pydcomm.general_android.connection.common import query_yes_no
 from pydcomm.general_android.connection.wired_adb_connection import ConnectingError
 from pydcomm.general_android.connection.wireless_adb_connection import connect_to_wireless_adb
-from pydcomm.general_android.connection.wired_adb_connection import AdbConnection
+from pydcomm.general_android.connection.wired_adb_connection import InternalAdbConnection
 
 PING_TIMEOUT = 100
 
@@ -14,7 +14,7 @@ def unreachable_device_fix(connection):
     This fixer handles the scenario in which the device network was disconnected after the wireless ADB connection was
     created. In such case, the user is asked to reconnect to the network. In case of a successful reconnection by the
     user, the wireless ADB connection is restored.
-    :type connection: AdbConnection
+    :type connection: InternalAdbConnection
     :param connection: The connection to fix
     """
     ip_address = connection.device_id.split(":")[0]

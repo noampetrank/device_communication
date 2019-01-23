@@ -63,7 +63,7 @@ def connect_wireless(self, device_id=None):
     """
     This is a decorator over WiredAdbConnection, it adds a connection to wireless after the regular connection has been established.
     It is transformed later into a decorator called `add_connect_wireless`.
-    :param self: AdbConnection
+    :param self: InternalAdbConnection
     :param device_id: ignored
     """
     # TODO: maybe append :5555 if needed

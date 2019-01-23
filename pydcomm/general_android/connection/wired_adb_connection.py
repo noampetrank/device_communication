@@ -31,7 +31,7 @@ class ConnectionClosedError(DcommError):
     pass
 
 
-class AdbConnection(object):
+class InternalAdbConnection(object):
     def __init__(self, device_id=None):
         # TODO: test adb version
         self.log = logging.getLogger(__name__)
