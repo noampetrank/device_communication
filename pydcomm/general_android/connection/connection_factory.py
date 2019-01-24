@@ -72,7 +72,7 @@ class AdbConnectionFactory(object):
         decorators.append(add_adb_recovery_decorator(restart_adb_server_fix))
         decorators.append(add_adb_recovery_decorator(set_usb_mode_to_mtp_fix))
         return AdbConnectionFactory.create_connection(wired=False, decorators=decorators,
-                                                      device_selector=device_selector, device=None)
+                                                      device_selector=device_selector, device=device_id)
 
     @staticmethod
     def get_oppo_wired_device(use_manual_fixes=True, device_selector=MultiDeviceBehavior.CHOOSE_FIRST, rooted=True, device_id=None):
