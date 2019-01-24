@@ -19,7 +19,6 @@ def run_scenario(actions, initial_context=None):  # TBD flag for only parameters
     :return: Results of run.
     :rtype: dict
     """
-    uxrecorder = ApiCallsRecorder()
     scenario = Scenario(context=initial_context)
 
     try:

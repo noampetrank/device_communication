@@ -3,6 +3,7 @@ import tempfile
 import time
 
 import numpy as np
+from pydcomm.public.iconnection import IConnection
 
 _random_files = {}
 
@@ -58,12 +59,12 @@ class ConnectionAction(object):
                 with open(tmp_pull_file.name) as pull:
                     pulled_data = pull.read()
                     success = pulled_data == random_string
-            return (length,), None, {}, dict(recv_data_size=len(pulled_data), was_file_valid=success)
+            return (length,), None, {}, dict(recv_data_size=len(pulled_data), success=success)
 
         return execute
 
     @staticmethod
-    def SHELL_ECHO(length, sleep, timeout_ms=None):
+    def SHELL_ECHO(length, sleep=0, timeout_ms=None):
         if length > 1024 * 1024:
             raise ValueError("Maximum echo is 1MB")  # Actually may be more, but not much more
         random_string = get_random_string(length)

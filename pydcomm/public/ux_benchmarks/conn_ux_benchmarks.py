@@ -2,10 +2,11 @@ import cPickle
 import time
 
 import numpy as np
+import pybuga.infra.utils.config as config
 from pybuga.infra.utils.buga_utils import indent_printing
 from pybuga.infra.utils.user_input import UserInput
 from pydcomm.public.connfactories import all_connection_factories
-from pydcomm.public.ux_benchmarks.connection.scenarios import get_big_messages_scenario
+from pydcomm.public.ux_benchmarks.connection.scenarios import get_complete_benchmark
 from pydcomm.public.ux_benchmarks.rpc_ux_benchamrks import BetterTee
 from pydcomm.public.ux_benchmarks.utils import run_scenario
 
@@ -81,7 +82,7 @@ def get_aggregates(additional_columns):
 def main():
     start_time_string = time.strftime("%H:%M:%S")
 
-    with BetterTee("run_conn_{}.log".format(start_time_string)):
+    with BetterTee(config.jointo.tmp_dir_path("run_conn_{}.log".format(start_time_string))):
         with indent_printing.time():
             print "Choose connection factory for benchmark:"
             factory_name = UserInput.menu(all_connection_factories.keys(), True)
@@ -92,12 +93,12 @@ def main():
             conn_factory = all_connection_factories[factory_name]
             """@type: pydcomm.public.iconnection.ConnectionFactory"""
 
-            test_scenario = get_big_messages_scenario(1)
+            test_scenario = get_complete_benchmark()
 
             runs = run_scenario(test_scenario, initial_context={'conn_factory': conn_factory})
             runs['conn_factory_name'] = conn_factory.__name__
 
-            with open("raw_data_" + start_time_string + ".pickle", "w") as f:
+            with open(config.jointo.tmp_dir_path("raw_data_{}.pickle".format(start_time_string)), "w") as f:
                 cPickle.dump((conn_factory.__name__, runs), f)
                 print_run_summary(runs['conn_factory_name'], runs['stats'], runs['params'], runs['ret_vals'],
                                   runs['additionals'],
