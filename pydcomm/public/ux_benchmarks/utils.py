@@ -33,7 +33,8 @@ def run_scenario(actions, initial_context=None):  # TBD flag for only parameters
                 scenario.ret_vals.append(ret)
                 scenario.additionals.append(additional)
             scenario.context.update(context)
-    except KeyboardInterrupt:
-        pass
-    return dict(stats=scenario.stats, params=scenario.params, ret_vals=scenario.ret_vals,
-                additionals=scenario.additionals)
+    finally:
+        return dict(stats=scenario.stats,
+                    params=scenario.params,
+                    ret_vals=scenario.ret_vals,
+                    additionals=scenario.additionals)
