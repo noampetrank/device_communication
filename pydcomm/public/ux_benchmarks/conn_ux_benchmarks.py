@@ -11,7 +11,7 @@ from pydcomm.public.ux_benchmarks.rpc_ux_benchamrks import BetterTee
 from pydcomm.public.ux_benchmarks.utils import run_scenario
 
 
-def single_api_call_summary(api_call, params=None, ret=None, additional=None, ignore_first_manual=True):
+def single_api_call_summary(api_call, params=None, ret=None, additional=None, exception=None, ignore_first_manual=True):
     res = {
         "function_name": api_call.function_name,
         "call_time": api_call.end_time - api_call.start_time,

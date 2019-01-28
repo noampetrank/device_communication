@@ -15,7 +15,7 @@ def run_scenario(actions, initial_context=None):  # TBD flag for only parameters
     """
 
     :param dict initial_context: Dictionary of context
-    :param list[(Scenario)->tuple[tuple[Any], Any, dict]] actions: Action to run.
+    :param list[(Scenario)->ActionResult] actions: Action to run.
     :return: Results of run.
     :rtype: dict
     """
@@ -25,7 +25,7 @@ def run_scenario(actions, initial_context=None):  # TBD flag for only parameters
         for api_action in tqdm.tqdm(actions):
             uxrecorder = ApiCallsRecorder()
             with uxrecorder:
-                params, ret, context, additional = api_action(scenario)
+                params, ret, context, additional, exception = api_action(scenario)
 
             for c in uxrecorder.api_stats:
                 scenario.stats.append(c)

@@ -27,6 +27,9 @@ def get_short_benchmark_scenario():
 
 
 def get_complete_benchmark(repeats=1):
+    """
+    :rtype: list[Scenario -> ActionResult]
+    """
     scenario = []
     scenario += [ConnectionAction.CHOOSE_DEVICE_ID()]
     scenario += [ConnectionAction.CREATE_CONNECTION(), ConnectionAction.ROOT(), ConnectionAction.REMOUNT(),
