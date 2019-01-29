@@ -14,6 +14,7 @@ std::unique_ptr<IRemoteProcedureServer> createBugaGRPCServer();
 #define LIBBUGATONE_LOOKUP_PATHS {"libbugatone_real.so"};
 
 int_between_30000_and_50000 get_requested_port() {
+    return 20000;
     //https://stackoverflow.com/a/478960/857731
     std::array<char, 128> buffer{0};
     std::string result;
@@ -70,17 +71,7 @@ extern "C" void* _Z17createBugatoneApiv() {
         buga_rpc_log(dlerror());
         return bugatoneApi;
     }
-
     buga_rpc_log("[RPCBugatoneProxy] .so loaded");
-
-    auto createBugatoneApi = (void* (*)())dlsym(myso, "_Z17createBugatoneApiv");
-    if (createBugatoneApi == nullptr) {
-        buga_rpc_log("[RPCBugatoneProxy] symbol _Z17createBugatoneApiv not found, returning nullptr as bugatone api");
-        buga_rpc_log(dlerror());
-    } else {
-        buga_rpc_log("[RPCBugatoneProxy] calling loaded createBugatoneApi");
-        bugatoneApi = createBugatoneApi();
-    }
 
     auto create_executor = (CreateExecutorFunc)dlsym(myso, "create_executor");
     if (create_executor != nullptr) {
@@ -97,6 +88,15 @@ extern "C" void* _Z17createBugatoneApiv() {
     } else {
         buga_rpc_log("[RPCBugatoneProxy] symbol create_executor not found");
         buga_rpc_log(dlerror());
+    }
+
+    auto createBugatoneApi = (void* (*)())dlsym(myso, "_Z17createBugatoneApiv");
+    if (createBugatoneApi == nullptr) {
+        buga_rpc_log("[RPCBugatoneProxy] symbol _Z17createBugatoneApiv not found, returning nullptr as bugatone api");
+        buga_rpc_log(dlerror());
+    } else {
+        buga_rpc_log("[RPCBugatoneProxy] calling loaded createBugatoneApi");
+        bugatoneApi = createBugatoneApi();
     }
 
     return bugatoneApi;
