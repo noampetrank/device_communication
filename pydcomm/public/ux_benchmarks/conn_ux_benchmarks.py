@@ -80,7 +80,7 @@ def get_aggregates(additional_columns):
 
 
 def main():
-    start_time_string = time.strftime("%H:%M:%S")
+    start_time_string = time.strftime("%d_%H:%M:%S")
 
     with BetterTee(config.jointo.tmp_dir_path("run_conn_{}.log".format(start_time_string))):
         with indent_printing.time():
