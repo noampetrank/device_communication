@@ -1,6 +1,6 @@
 from pydcomm.general_android.android_device_utils import AndroidDeviceUtils
 from pydcomm.public.iconnection import IConnection
-from pydcomm.general_android.connection.wired_adb_connection import InternalAdbConnection
+from pydcomm.general_android.connection.wired_adb_connection import InternalAdbConnection, AdbConnectionError
 from pybuga.infra.phone.adb_utils import LogCat
 
 
@@ -49,7 +49,7 @@ class AdbConnection(IConnection):
         :return: Output of command.
         :rtype: str
         """
-        return self.adb_connection.adb("shell " + command, timeout=timeout_ms)
+        return self.adb_connection.adb(["shell", command], timeout=timeout_ms)
 
     def streaming_shell(self, command, timeout_ms=None):
         """
@@ -104,11 +104,12 @@ class AdbConnection(IConnection):
         :param int|None timeout_ms: Expected timeout for pushing and installing.
         :return The install output.
         """
-        flag = ""
+        cmd = ["install"]
         if replace_existing:
-            flag = "-r"
+            cmd.append("-r")
         # TODO: grant_permissions
-        return self.adb_connection.adb('install {} "{}"'.format(flag, apk_path), timeout=timeout_ms)
+        cmd.append(apk_path)
+        return self.adb_connection.adb(cmd, timeout=timeout_ms)
 
     def uninstall(self, package_name, keep_data=False, timeout_ms=None):
         """Removes a package from the device.
@@ -118,17 +119,18 @@ class AdbConnection(IConnection):
         :param int|None timeout_ms: Expected timeout for pushing and installing.
         :return The uninstall output.
         """
-        flag = ""
+        cmd = ["uninstall"]
         if keep_data:
-            flag = "-k"
-        return self.adb_connection.adb('uninstall {} "{}"'.format(flag, package_name), timeout=timeout_ms)
+            cmd.append("-k")
+        cmd.append(package_name)
+        return self.adb_connection.adb(cmd, timeout=timeout_ms)
 
     def device_id(self):
         """Return serial number of connected device.
 
         :rtype: str
         """
-        return self.adb_connection.adb("cat /data/local/tmp/devicename")
+        return self.shell("cat /data/local/tmp/devicename")
 
     def disconnect(self):
         """Closes connection."""

@@ -39,6 +39,7 @@ class AndroidDeviceUtils:
     Some methods may have to be overriden for a specific model,
     mainly due to differences in return values of adb commands
     """
+
     def __init__(self, connection):
         """
         :type connection: InternalAdbConnection
@@ -58,7 +59,7 @@ class AndroidDeviceUtils:
         :raises AndroidDeviceUtilsError
         """
         try:
-            output = self.connection.adb("push {} {}".format(local_path, path_on_device))
+            output = self.connection.adb(["push", local_path, path_on_device])
         except AdbConnectionError as err:
             if 'Read-only file system' in err.stderr:
                 raise WrongPermissions()
@@ -84,7 +85,7 @@ class AndroidDeviceUtils:
         :raises AndroidDeviceUtilsError
         """
         try:
-            output = self.connection.adb("pull {} {}".format(path_on_device, local_path))
+            output = self.connection.adb(["pull", path_on_device, local_path])
         except AdbConnectionError as err:
             if 'Permission denied' in err.stderr:
                 raise WrongPermissions()
@@ -235,7 +236,8 @@ class AndroidDeviceUtils:
         links = re.findall('^(\S{10})\s+(\d+)\s+(\S+)\s+(\S+)\s+(\d+)\s+(\S+\s+\S+)\s+(\S+) -> (\S+)$', output, re.M)
         no_perm = re.findall('\/([^\/\n]+): Permission denied', error, re.M)
 
-        def get_dict(permissions=None, n_links=None, owner=None, group=None, size=None, modified=None, name=None, links_to=None):
+        def get_dict(permissions=None, n_links=None, owner=None, group=None, size=None, modified=None, name=None,
+                     links_to=None):
             n_links = int(n_links) if n_links is not None else None
             size = int(size) if size is not None else None
             modified = datetime.datetime.strptime(modified, '%Y-%m-%d %H:%M') if modified is not None else None
@@ -284,7 +286,6 @@ class AndroidDeviceUtils:
                 raise OperationUnsupported()
             raise
 
-
     def get_prop(self, prop_name):
         """
         get a value of device property
@@ -292,7 +293,6 @@ class AndroidDeviceUtils:
         :rtype: str
         """
         return self._shell("getprop", prop_name).rstrip('\n')
-
 
     def set_prop(self, prop_name, value):
         """
@@ -311,7 +311,9 @@ class AndroidDeviceUtils:
 
     def _parse_dumpsys_volume(self):
         dumpsys_output = self._shell('dumpsys', 'audio')
-        fields = re.findall('- STREAM_MUSIC[^-]*Muted: (\w+)[^-]*Min: (\d+)[^-]*Max: (\d+)[^-]*Current: ([^\n]+)[^-]*Devices: ([^\n]+)\n', dumpsys_output)
+        fields = re.findall(
+            '- STREAM_MUSIC[^-]*Muted: (\w+)[^-]*Min: (\d+)[^-]*Max: (\d+)[^-]*Current: ([^\n]+)[^-]*Devices: ([^\n]+)\n',
+            dumpsys_output)
         if not fields:
             raise AndroidDeviceUtilsError("Couldn't parse dumpsys")
         fields = fields[0]

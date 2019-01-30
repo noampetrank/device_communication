@@ -60,43 +60,36 @@ class InternalAdbConnection(object):
     def adb(self, command, timeout=None, specific_device=True, disable_fixers=False):
         """
         Send the given command over adb.
-        :type timeout: float | None
-        :param timeout: ADB call timeout
-        :type disable_fixers: bool
-        :param disable_fixers: Whether to disable connection fixers when running this ADB command
-        :type specific_device: bool
-        :param specific_device: Whether the command is general or specific to the device connected by this connection
-        :type command: str
-        :param command: adb command (without "adb" in the beginning)
-        :rtype: str
-        :return: ADB command output
+        :param float | None timeout: ADB call timeout
+        :param bool disable_fixers: Whether to disable connection fixers when running this ADB command
+        :param bool specific_device: Whether the command is general or specific to the device connected by this connection
+        :param str|list[str] command: adb command (without "adb" in the beginning)
+        :return str: ADB command output
         :raises AdbConnectionError is case of a connection error
         :raises ValueError is case the command start with 'adb'
         :raises TimeoutExpired is case the ADB command was timed out
         """
+        if type(command) is not list:
+            command = command.split()
+
         if specific_device and self.device_id is None:
             raise ConnectionClosedError()
-
         if specific_device and not disable_fixers:
             if not self.test_connection():
                 raise AdbConnectionError("test_connection failed")
-
-        if command.startswith("adb"):
-            raise ValueError("Command should start with 'adb'")
+        if command[0] == "adb":
+            raise ValueError("Command should not start with 'adb'")
 
         if specific_device:
-            return self._run_adb_for_specific_device(command.split(), timeout)
+            return self._run_adb_for_specific_device(command, timeout)
         else:
-            return self._run_adb_command(command.split(), timeout)
+            return self._run_adb_command(command, timeout)
 
     def _run_adb_for_specific_device(self, params, timeout):
         """
-        :type params: list[str]
-        :param params: list of ADB params (split by spaces)
-        :type timeout: float
-        :param timeout: ADB call timeout
-        :rtype: str
-        :return: ADB command output
+        :param list[str] params: list of ADB params (split by spaces)
+        :param float timeout: ADB call timeout
+        :return str: ADB command output
         :raises TimeoutExpired is case the ADB command was timed out
         """
         if self.device_id is None:
@@ -105,12 +98,10 @@ class InternalAdbConnection(object):
 
     def _run_adb_command(self, params, timeout):
         """
-        :type params: list[str]
-        :param params: list of ADB params (split by spaces)
-        :type timeout: float
-        :param timeout: ADB call timeout
-        :rtype: str
-        :return: ADB command output
+        :type params:
+        :param list[str] params: list of ADB params (split by spaces)
+        :param float timeout: ADB call timeout
+        :return str: ADB command output
         :raises TimeoutExpired is case the ADB command was timed out
         :raises AdbConnectionError is case of ADB connection error
         """
@@ -119,7 +110,7 @@ class InternalAdbConnection(object):
         if time_since_last_adb_call < ADB_CALL_MINIMAL_INTERVAL:
             time.sleep(ADB_CALL_MINIMAL_INTERVAL - time_since_last_adb_call)
 
-        # Call ADB
+        print(["adb"] + params)
         p = subprocess.Popen(["adb"] + params, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         try:
             output, error = p.communicate(timeout=timeout)
@@ -127,7 +118,8 @@ class InternalAdbConnection(object):
             self.last_adb_call_time = time.time()
 
         if p.returncode != 0:
-            raise AdbConnectionError("adb returned with non-zero error code", stderr=error, returncode=p.returncode)
+            raise AdbConnectionError("adb returned with non-zero error code",
+                                     stdout=output, stderr=error, returncode=p.returncode)
         return output.strip("\r\n")
 
     def test_connection(self):
