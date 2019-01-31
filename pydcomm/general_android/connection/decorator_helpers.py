@@ -1,16 +1,21 @@
-# TODO: Add timing and logs
 def add_adb_recovery_decorator(fix_function):
     def inner(connection):
         old_adb = connection.adb
 
         def new_adb(self, command, timeout=None, specific_device=True, disable_fixers=False):
-            if not disable_fixers and specific_device:
-                if not self.test_connection():
-                    try:
-                        fix_function(self)
-                    except Exception as e:
-                        self.log.warn("Fix {} failed ".format(fix_function.__name__), exc_info=e)
-            return old_adb(self, command, timeout, specific_device, disable_fixers)
+            old_test_connection = self.test_connection
+            try:
+                if not disable_fixers and specific_device:
+                    if not self.test_connection():
+                        try:
+                            fix_function(self)
+                        except Exception as e:
+                            self.log.warn("Fix {} failed ".format(fix_function.__name__), exc_info=e)
+                    else:
+                        self.test_connection = lambda: True
+                return old_adb(self, command, timeout, specific_device, disable_fixers)
+            finally:
+                self.test_connection = old_test_connection
 
         connection.adb = new_adb
         return connection
