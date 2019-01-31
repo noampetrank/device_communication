@@ -5,7 +5,9 @@ summaries of.
 There is also the class `ApiCallsRecorder` for usage in benchmarks.
 """
 
+import os
 import time
+import json
 from collections import namedtuple
 from functools import wraps
 from types import FunctionType
@@ -45,15 +47,24 @@ class ApiCallsRecorder(object):
         >>> assert api_call.exception_msg == "Bummer"
     """
     @staticmethod
+    def _get_save_file():
+        # TODO: remove pybuga dependency
+        from pybuga.infra.utils.config import get_tmp_dir_path
+
+        return open(os.path.join(get_tmp_dir_path(), "ux_stats.jsons"), "a")
+
+    @staticmethod
     def save_api_call(api_call):
         """
         Saves `api_call`. Currently in a global variable.
 
-        TODO: Save data to disk.
-
         :param ApiCall api_call: Data to save.
         """
         api_stats.append(api_call)
+
+        with ApiCallsRecorder._get_save_file() as f:
+            json.dump(api_call._asdict(), f)
+            f.write("\n")
 
     def __init__(self, suspend_save=False):
         """
@@ -133,7 +144,7 @@ def collectstats(class_name=None):
                     return func(*args, **kwargs)
                 except Exception as e:
                     is_exception = True
-                    exception_type = type(e)
+                    exception_type = type(e).__name__
                     exception_msg = e.message
                     raise
                 finally:
