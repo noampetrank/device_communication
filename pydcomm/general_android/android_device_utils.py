@@ -5,10 +5,12 @@ import logging
 import subprocess
 from pydcomm.general_android.connection.wired_adb_connection import AdbConnectionError
 
+from general_android.connection.wired_adb_connection import DcommError
+
 log = logging.getLogger(__name__)
 
 
-class AndroidDeviceUtilsError(Exception):
+class AndroidDeviceUtilsError(DcommError):
     pass  # General error class for device utils
 
 

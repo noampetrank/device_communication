@@ -7,6 +7,7 @@ TEST_CONNECTION_ATTEMPTS = 5
 ADB_CALL_MINIMAL_INTERVAL = 0.5
 
 
+# todo: move to more general place
 class DcommError(Exception):
     pass
 
