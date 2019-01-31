@@ -32,6 +32,7 @@ def with_catch(action_result_func, parameters):
         try:
             return action_result_func(scenario)
         except Exception as e:
+            print(e)
             return ActionResult(parameters, None, {}, {}, e)
 
     return with_catch
@@ -106,7 +107,6 @@ class ConnectionAction(object):
             conn = scenario.context["connection"]  # type: IConnection
             ret = conn.shell('echo "{}"'.format(random_string), timeout_ms=timeout_ms)
             success = ret.strip() == random_string.strip()
-            time.sleep(sleep)
             return ActionResult(parameters=(length, sleep, timeout_ms), result=len(ret), context={},
                                 additionals=dict(success=success), exception=None)
 

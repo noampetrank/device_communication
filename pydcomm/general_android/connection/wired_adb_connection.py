@@ -4,7 +4,7 @@ import time
 import subprocess32 as subprocess
 
 TEST_CONNECTION_ATTEMPTS = 5
-ADB_CALL_MINIMAL_INTERVAL = 0.5
+ADB_CALL_MINIMAL_INTERVAL = 0.2
 
 
 # todo: move to more general place
