@@ -277,11 +277,12 @@ class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):
 
     @classmethod
     def _play_silence(cls, device_id):
-        time.sleep(.2)
-        subprocess.check_output('adb -s {} shell am force-stop com.oppo.music'.format(device_id), shell=True)
-        time.sleep(.5)
-        subprocess.check_output("adb -s {} shell am start -a android.intent.action.VIEW -n com.oppo.music/.dialog.activity.AuditionActivity -d file://{}/{}".format(device_id, cls.DEVICE_MUSIC_PATH, cls.SILENCE_FILENAME), shell=True)
-        time.sleep(.5)
+        raw_input("Please play silence and press enter")
+        # time.sleep(.2)
+        # subprocess.check_output('adb -s {} shell am force-stop com.oppo.music'.format(device_id), shell=True)
+        # time.sleep(.5)
+        # subprocess.check_output("adb -s {} shell am start -a android.intent.action.VIEW -n com.oppo.music/.dialog.activity.AuditionActivity -d file://{}/{}".format(device_id, cls.DEVICE_MUSIC_PATH, cls.SILENCE_FILENAME), shell=True)
+        # time.sleep(.5)
 
     @classmethod
     def _ensure_headset_connected(cls, device_id):
