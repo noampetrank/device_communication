@@ -1,13 +1,11 @@
 import datetime
 import re
 import numpy as np
-import logging
 import subprocess
 from pydcomm.general_android.connection.wired_adb_connection import AdbConnectionError
 
-from general_android.connection.wired_adb_connection import DcommError
+from pydcomm.general_android.connection.wired_adb_connection import DcommError
 
-log = logging.getLogger(__name__)
 
 
 class AndroidDeviceUtilsError(DcommError):
