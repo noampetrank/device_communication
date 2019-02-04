@@ -1,5 +1,6 @@
 import logging
 import time
+import os
 
 import subprocess32 as subprocess
 
@@ -34,6 +35,8 @@ class ConnectionClosedError(DcommError):
 
 class InternalAdbConnection(object):
     def __init__(self, device_id=None):
+        # Print adb commands only if env variable is set
+        self.debug = os.environ.has_key("BUGA_ADB_DEBUG")
         # TODO: test adb version
         self.log = logging.getLogger(__name__)
 
@@ -111,7 +114,7 @@ class InternalAdbConnection(object):
         if time_since_last_adb_call < ADB_CALL_MINIMAL_INTERVAL:
             time.sleep(ADB_CALL_MINIMAL_INTERVAL - time_since_last_adb_call)
 
-        print(["adb"] + params)
+        if self.debug: print(["adb"] + params)
         p = subprocess.Popen(["adb"] + params, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         try:
             output, error = p.communicate(timeout=timeout)
