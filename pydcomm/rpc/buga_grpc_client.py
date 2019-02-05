@@ -323,6 +323,10 @@ class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):
                 break
             except RpcError as ex:
                 if not recover_with_silence:
+                    print("Create connection failed!")
+                    print("*** Troubleshooting ***")
+                    print("Go to Android settings->App Management->Default App Management->Music and select your player (currently we recommend using 321Player).")
+                    print("Then go the app info, and enable everything (permissions, notifications, running in background).")
                     raise ex
                 cls._play_silence(device_id)
                 cls._stop_playback(device_id)
