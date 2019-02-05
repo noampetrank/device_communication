@@ -21,3 +21,8 @@ Clone using:
 or 
 
 `git clone --recurse-submodules https://github.com/Bugatone/device_communication.git`
+
+
+If you have already cloned, use
+
+`git submodule update --init --recursive`
