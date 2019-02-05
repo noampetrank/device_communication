@@ -258,9 +258,12 @@ class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):
 
         # Push rpc_bugatone_main_exec for debug
         local_bin_path = os.path.join(cpp_path, "./bin/arm64/Release/")
-        assert os.path.isdir(local_bin_path)
-        _push_mv(device_id, os.path.join(local_bin_path, "rpc_bugatone_main_exec"), device_lib_path)
-        subprocess.check_output("adb -s {} shell chmod +x {}/rpc_bugatone_main_exec".format(device_id, device_lib_path), shell=True)
+        rpc_bugatone_main_exec_file = "rpc_bugatone_main_exec"
+        rpc_bugatone_main_exec_local_path = os.path.join(local_bin_path, rpc_bugatone_main_exec_file)
+        rpc_bugatone_main_exec_device_path = os.path.join(device_lib_path, rpc_bugatone_main_exec_file)
+        if os.path.isdir(local_bin_path) and os.path.isfile(rpc_bugatone_main_exec_local_path):
+            _push_mv(device_id, rpc_bugatone_main_exec_local_path, rpc_bugatone_main_exec_device_path)
+            subprocess.check_output("adb -s {} shell chmod +x {}".format(device_id, rpc_bugatone_main_exec_device_path), shell=True)
 
         _push_mv(device_id, local_libbugatone_main_path, device_libbugatone_main_path)
         _push_mv(device_id, so_path, libbugatone_real_path)
