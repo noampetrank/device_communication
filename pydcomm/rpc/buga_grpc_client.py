@@ -291,8 +291,18 @@ class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):
 
     @classmethod
     def _play_silence(cls, device_id):
+        # TODO this is a workaround to directly open 321Player even if it's not the default
+        is_installed = "package:com.chahal.mpc.hd" in subprocess.check_output('adb shell pm list packages', shell=True)
+        media_player_activity = "com.chahal.mpc.hd/org.videolan.vlc.StartActivity" if is_installed else None
+        if not is_installed:
+            print("321Player isn't installed on your device, it's better for everyone that you install it right now!")
+            print("But I'll assume that you know what you're doing and let you continue...")
+
         silence_device_path = os.path.join(cls.DEVICE_MUSIC_PATH, cls.SILENCE_FILENAME)
-        subprocess.check_output('adb shell am start -a android.intent.action.VIEW -d file://{} -t audio/wav --user 0'.format(silence_device_path), shell=True)  # Play
+        subprocess.check_output('adb shell am start -a android.intent.action.VIEW -d file://{} -t audio/wav --user 0{}'.format(
+            silence_device_path,
+            (' -n ' + media_player_activity) if media_player_activity else ''
+        ), shell=True)  # Play
         subprocess.check_output('adb shell input keyevent 89', shell=True)  # Rewind
         time.sleep(.2)
 
@@ -324,9 +334,6 @@ class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):
             except RpcError as ex:
                 if not recover_with_silence:
                     print("Create connection failed!")
-                    print("*** Troubleshooting ***")
-                    print("Go to Android settings->App Management->Default App Management->Music and select your player (currently we recommend using 321Player).")
-                    print("Then go the app info, and enable everything (permissions, notifications, running in background).")
                     raise ex
                 cls._play_silence(device_id)
                 cls._stop_playback(device_id)
