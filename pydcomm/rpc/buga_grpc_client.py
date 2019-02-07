@@ -220,20 +220,30 @@ class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):
         subprocess.check_output("adb -s {} shell setprop buga.rpc.libbugatone_executor_port {}".format(device_id, rpc_id), shell=True)
 
         # Build "satellite" .so's
-        _print_no_newline("Building 'satellite' .so's... ")
+        device_comm_sos = ('librpc_bugatone_proxy.so', 'librpc_server.so', 'libproto.so')
+
+        def _satellite_sos_exist(path):
+            return all(os.path.isfile(os.path.join(path, f)) for f in device_comm_sos)
+
         cpp_path = os.path.join(os.path.dirname(__file__), "../../cpp")
-        assert os.path.isdir(cpp_path)
-        _build("./make.py android", cpp_path, (' * Compilation took ',
-                                               'Built target proto',
-                                               'Built target rpc_server',
-                                               'Built target rpc_bugatone_proxy',
-                                               'Built target rpc_bugatone_main',
-                                               'Built target rpc_bugatone_main_exec',
-                                               ))
+        local_libs_path = os.path.dirname(so_path)  # First look for satellite .so's in the same path as the main .so
+        if not _satellite_sos_exist(local_libs_path):
+            local_libs_path = os.path.join(cpp_path, "./lib/arm64/Release/")  # Then look in device comm
+        if not _satellite_sos_exist(local_libs_path):
+            _print_no_newline("Building 'satellite' .so's... ")  # If it's not there, build device comm
+
+            assert os.path.isdir(cpp_path)
+            _build("./make.py android", cpp_path, (' * Compilation took ',
+                                                   'Built target proto',
+                                                   'Built target rpc_server',
+                                                   'Built target rpc_bugatone_proxy',
+                                                   'Built target rpc_bugatone_main',
+                                                   'Built target rpc_bugatone_main_exec',
+                                                   ))
+            assert _satellite_sos_exist(local_libs_path)  # Couldn't build .so's, can't continue
 
         # Push .so's
-        _print_no_newline("Pushing 'satellite' .so's... ")
-        local_libs_path = os.path.join(cpp_path, "./lib/arm64/Release/")
+        _print_no_newline("Pushing 'satellite' .so's from {}... ".format(local_libs_path))
         assert os.path.isdir(local_libs_path)
         device_lib_path = '/system/lib64'
 
@@ -242,15 +252,18 @@ class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):
         libbugatone_real_path = os.path.join(device_lib_path, "libbugatone_real.so")
 
         subprocess.check_output("adb -s {} remount".format(device_id), shell=True)
-        for so_name in ('librpc_bugatone_proxy.so', 'librpc_server.so', 'libproto.so'):
+        for so_name in device_comm_sos:
             local_so_path = os.path.join(local_libs_path, so_name)
             _push_mv(device_id, local_so_path, device_lib_path)
 
         # Push rpc_bugatone_main_exec for debug
         local_bin_path = os.path.join(cpp_path, "./bin/arm64/Release/")
-        assert os.path.isdir(local_bin_path)
-        _push_mv(device_id, os.path.join(local_bin_path, "rpc_bugatone_main_exec"), device_lib_path)
-        subprocess.check_output("adb -s {} shell chmod +x {}/rpc_bugatone_main_exec".format(device_id, device_lib_path), shell=True)
+        rpc_bugatone_main_exec_file = "rpc_bugatone_main_exec"
+        rpc_bugatone_main_exec_local_path = os.path.join(local_bin_path, rpc_bugatone_main_exec_file)
+        rpc_bugatone_main_exec_device_path = os.path.join(device_lib_path, rpc_bugatone_main_exec_file)
+        if os.path.isdir(local_bin_path) and os.path.isfile(rpc_bugatone_main_exec_local_path):
+            _push_mv(device_id, rpc_bugatone_main_exec_local_path, rpc_bugatone_main_exec_device_path)
+            subprocess.check_output("adb -s {} shell chmod +x {}".format(device_id, rpc_bugatone_main_exec_device_path), shell=True)
 
         _push_mv(device_id, local_libbugatone_main_path, device_libbugatone_main_path)
         _push_mv(device_id, so_path, libbugatone_real_path)
@@ -261,6 +274,7 @@ class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):
 
         _print_no_newline("Playing music (well umm, silence)... ")
         cls._play_silence(device_id)
+        cls._stop_playback(device_id)
         print("OK")
 
     @classmethod
@@ -277,11 +291,27 @@ class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):
 
     @classmethod
     def _play_silence(cls, device_id):
+        # TODO this is a workaround to directly open 321Player even if it's not the default
+        is_installed = "package:com.chahal.mpc.hd" in subprocess.check_output('adb shell pm list packages', shell=True)
+        media_player_activity = "com.chahal.mpc.hd/org.videolan.vlc.StartActivity" if is_installed else None
+        if not is_installed:
+            print("321Player isn't installed on your device, it's better for everyone that you install it right now!")
+            print("But I'll assume that you know what you're doing and let you continue...")
+
+        silence_device_path = os.path.join(cls.DEVICE_MUSIC_PATH, cls.SILENCE_FILENAME)
+        subprocess.check_output('adb shell am start -a android.intent.action.VIEW -d file://{} -t audio/wav --user 0{}'.format(
+            silence_device_path,
+            (' -n ' + media_player_activity) if media_player_activity else ''
+        ), shell=True)  # Play
+        subprocess.check_output('adb shell input keyevent 89', shell=True)  # Rewind
         time.sleep(.2)
-        subprocess.check_output('adb -s {} shell am force-stop com.oppo.music'.format(device_id), shell=True)
-        time.sleep(.5)
-        subprocess.check_output("adb -s {} shell am start -a android.intent.action.VIEW -n com.oppo.music/.dialog.activity.AuditionActivity -d file://{}/{}".format(device_id, cls.DEVICE_MUSIC_PATH, cls.SILENCE_FILENAME), shell=True)
-        time.sleep(.5)
+
+    @classmethod
+    def _stop_playback(cls, device_id):
+        subprocess.check_output('adb shell input keyevent 89', shell=True)  # Rewind
+        time.sleep(.2)
+        subprocess.check_output('adb shell input keyevent 86', shell=True)  # Stop
+        time.sleep(.2)
 
     @classmethod
     def _ensure_headset_connected(cls, device_id):
@@ -303,8 +333,10 @@ class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):
                 break
             except RpcError as ex:
                 if not recover_with_silence:
+                    print("Create connection failed!")
                     raise ex
                 cls._play_silence(device_id)
+                cls._stop_playback(device_id)
         # noinspection PyUnboundLocalVariable
         return client
 
