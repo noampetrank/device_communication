@@ -14,12 +14,12 @@ std::unique_ptr<IRemoteProcedureServer> createBugaGRPCServer();
 #define LIBBUGATONE_LOOKUP_PATHS {"libbugatone_real.so"};
 
 int_between_30000_and_50000 get_requested_port() {
-    return 20000;
     //https://stackoverflow.com/a/478960/857731
     std::array<char, 128> buffer{0};
     std::string result;
     char cmd[4096];
     snprintf(cmd, sizeof(cmd), "getprop buga.rpc.libbugatone_executor_port");
+    buga_rpc_log("Running " + std::string(cmd) + "...");
     std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
     if (!pipe) {
         std::string err = "[RPCBugatoneProxy] Couldn't run getprop - popen() failed!";
@@ -29,6 +29,7 @@ int_between_30000_and_50000 get_requested_port() {
     while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
         result += buffer.data();
     }
+    buga_rpc_log(std::string(cmd) + " returned value of " + result);
     result = std::regex_replace(result, std::regex("\n"), "");
     int_between_30000_and_50000 ret = 0;
     try {
