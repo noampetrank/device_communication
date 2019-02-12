@@ -189,4 +189,4 @@ battery_builds
 profiles_settings.xml
 
 .idea/vcs.xml
-
+**/.idea/encodings.xml

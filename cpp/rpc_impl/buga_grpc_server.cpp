@@ -100,6 +100,9 @@ bool BugaGRpcServiceImpl::handleServerRpc(const std::string &name, const Buffer 
     if (name == "_rpc_get_version") {
         ret = listener.getVersion();
         return true;
+    } else if (name == "_rpc_device_time_usec") {
+        ret = std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+        return true;
     } else if (name == "_rpc_stop") {
         parentServer->stop();
         return true;
