@@ -257,7 +257,7 @@ class AndroidDeviceUtils:
         return '1' in subprocess.check_output('test -e {} && echo 1 || echo 0'.format(path), shell=True)
 
     def _remote_file_exists(self, path):
-        return '1' in self.connection.adb(['shell', '[ -f {} ] && echo 1 || echo 0'.format(path)])
+        return '1' in self.connection.adb(['shell', '[ -f {} ] && echo 1 || echo 0'.format(path)], timeout=1)
 
     def get_time(self):
         """
@@ -307,7 +307,7 @@ class AndroidDeviceUtils:
         """
         reboot the device
         """
-        self.connection.adb("reboot")
+        self.connection.adb("reboot", timeout=5)
 
     def _parse_dumpsys_volume(self):
         dumpsys_output = self._shell('dumpsys', 'audio')

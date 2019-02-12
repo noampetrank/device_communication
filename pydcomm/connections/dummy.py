@@ -57,7 +57,7 @@ class DummyConnection(IConnection):
             return ""
         elif command.startswith("echo "):
             import subprocess32
-            return subprocess32.check_output(command, shell=True).strip()
+            return subprocess32.check_output(command, shell=True, timeout=timeout_ms).strip()
 
         raise TypeError
 
@@ -65,7 +65,7 @@ class DummyConnection(IConnection):
         return ["bah"]
 
     def streaming_shell(self, command, timeout_ms=None):
-        return [self.shell(command)]
+        return [self.shell(command, timeout_ms=timeout_ms)]
 
     def reboot(self):
         if not self._connected:

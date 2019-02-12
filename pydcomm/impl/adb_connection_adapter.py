@@ -87,11 +87,11 @@ class AdbConnection(IConnection):
         :return: Stdout of running command.
         :rtype: str
         """
-        return self.adb_connection.adb("root")
+        return self.adb_connection.adb("root", timeout=1)
 
     def remount(self):
         """Remount / as read-write."""
-        self.adb_connection.adb("remount")
+        self.adb_connection.adb("remount", timeout=1)
 
     def install(self, apk_path, destination_dir='/system/app/',
                 replace_existing=True, grant_permissions=False, timeout_ms=None):

@@ -14,7 +14,7 @@ def get_device_ip(connection):
     get the ip address of the connected device.
     :return: ip. None if device is not connected to wifi
     """
-    ifconfig = connection.adb("shell ifconfig", disable_fixers=True)
+    ifconfig = connection.adb("shell ifconfig", disable_fixers=True, timeout=1)
     ips = re.findall(r"wlan0.*\n.*inet addr:(\d+\.\d+\.\d+\.\d+)", ifconfig)
     if ips:
         return unicode(ips[0])
@@ -31,7 +31,7 @@ def _run_adb_with_exception(connection, command, exception_message):
 
 def disconnect_wireless(connection):
     try:
-        connection.adb("disconnect " + connection.device_id, specific_device=False, disable_fixers=True)
+        connection.adb("disconnect " + connection.device_id, specific_device=False, disable_fixers=True, timeout=1)
     except AdbConnectionError as e:
         if "error: no such device" in e.stderr:
             pass  # Disconnection will fail if a current connection doesn't exist, so we're ok with it.
@@ -47,7 +47,8 @@ def connect_to_wireless_adb(connection, exception_message):
     connected = False
     while not connected and attempts > 0:
         try:
-            output = connection.adb("connect " + connection.device_id, specific_device=False, disable_fixers=True)
+            output = connection.adb("connect " + connection.device_id, specific_device=False, disable_fixers=True,
+                                    timeout=3)
             if "connected to " + connection.device_id in output:
                 connected = True
                 break
@@ -92,7 +93,7 @@ def connect_wireless(self, device_id=None):
 
     # TODO: Possibly need to change to mtp mode
     connect_to_wireless_adb(self, "Can't connect to ip {}".format(self.device_id))
-    print("Device is connected over wifi, disconnect and press enter to continue.")
+    print("Device connected over wifi successfully")
 
 
 add_connect_wireless = add_init_decorator(connect_wireless)
