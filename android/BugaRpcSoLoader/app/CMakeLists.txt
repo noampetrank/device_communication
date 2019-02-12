@@ -72,7 +72,7 @@ add_dependencies(buga_rpc_libs
 
 add_custom_target(ndk_libs
         COMMAND echo Copying NDK stuff...
-        COMMAND cp ${ANDROID_STL_PATH}/libs/arm64-v8a/libc++_shared.so ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET_LIBS_DIR}
+        COMMAND cp /opt/android-ndk-r16b/sources/cxx-stl/llvm-libc++/libs/arm64-v8a/libc++_shared.so ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET_LIBS_DIR}
         COMMAND echo Done copying NDK stuff.
         COMMENT Copying NDK stuff)
 add_dependencies(ndk_libs
