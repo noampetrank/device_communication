@@ -86,7 +86,7 @@ class IConnection(object):
         """
         raise NotImplementedError
 
-    def logcat(self, timeout_ms=None):
+    def logcat(self, timeout_ms=None, dump=True):
         """
         Stream of lines from logcat. Needs to be "stoppable".
         TODO: Define return object; maybe allow more parameters, e.g. -d.

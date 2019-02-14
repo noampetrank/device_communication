@@ -64,18 +64,20 @@ class AdbConnection(IConnection):
         # TODO: implement
         raise NotImplementedError
 
-    def logcat(self, timeout_ms=None):
+    def logcat(self, timeout_ms=None, dump=False):
         """
         Stream of lines from logcat. Needs to be "stoppable".
-        TODO: Define return object; maybe allow more parameters, e.g. -d.
         :param int|None timeout_ms: Maximum time to allow the command to run.
         :return: Stoppable iterator of lines from log.
         """
 
         # TODO: Make sure this is what's actually required
-        cat = LogCat()
-        cat.start()
-        return cat
+        if dump:
+            return self.adb_connection.adb("logcat -d").split("\n")
+        else:
+            cat = LogCat()
+            cat.start()
+            return cat
 
     def reboot(self):
         """Reboot the device"""
