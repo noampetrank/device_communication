@@ -49,7 +49,7 @@ class AdbConnection(IConnection):
         :return: Output of command.
         :rtype: str
         """
-        return self.adb_connection.adb(["shell", command], timeout=timeout_ms)
+        return self.adb_connection.adb(["shell", command], timeout=timeout_ms / 1000)
 
     def streaming_shell(self, command, timeout_ms=None):
         """
@@ -73,7 +73,7 @@ class AdbConnection(IConnection):
 
         # TODO: Make sure this is what's actually required
         if dump:
-            return self.adb_connection.adb("logcat -d").split("\n")
+            return self.adb_connection.adb("logcat -d", timeout=timeout_ms / 1000).split("\n")
         else:
             cat = LogCat()
             cat.start()
@@ -111,7 +111,7 @@ class AdbConnection(IConnection):
             cmd.append("-r")
         # TODO: grant_permissions
         cmd.append(apk_path)
-        return self.adb_connection.adb(cmd, timeout=timeout_ms)
+        return self.adb_connection.adb(cmd, timeout=timeout_ms / 1000)
 
     def uninstall(self, package_name, keep_data=False, timeout_ms=None):
         """Removes a package from the device.
@@ -125,7 +125,7 @@ class AdbConnection(IConnection):
         if keep_data:
             cmd.append("-k")
         cmd.append(package_name)
-        return self.adb_connection.adb(cmd, timeout=timeout_ms)
+        return self.adb_connection.adb(cmd, timeout=timeout_ms / 1000)
 
     def device_id(self):
         """Return serial number of connected device.
