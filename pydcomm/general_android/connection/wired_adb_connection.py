@@ -50,6 +50,10 @@ class InternalAdbConnection(object):
                 raise ConnectingError("No device given and no device choosing strategy used.")
         else:
             self.device_id = device_id
+
+        if self.adb(["shell", "echo hi"], timeout=1).strip() != "hi":
+            raise ConnectingError("Wired connection failed")
+
         self.log.info("Connected to device: \"{}\"".format(self.device_id))
 
     # noinspection PyMethodMayBeStatic

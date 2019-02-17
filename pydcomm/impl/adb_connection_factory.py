@@ -14,12 +14,13 @@ class WiredAdbConnectionFactory(ConnectionFactory):
         :param kwargs:
         :rtype: IConnection
         """
-        connection_factory = AdbConnectionFactory()
         if not device_id:
             device_id = cls.choose_device_id()
         use_manual_fixes = kwargs.get("use_manual_fixes", True)
-        return AdbConnection(
-            connection_factory.get_oppo_wired_device(rooted=False, device_id=device_id, use_manual_fixes=use_manual_fixes))
+        connection = AdbConnection(cls._get_oppo_device(rooted=False, device_id=device_id,
+                                                        use_manual_fixes=use_manual_fixes))
+        if connection.shell("echo hi") == "hi":
+            return connection
 
     @classmethod
     def connected_devices(cls):
@@ -38,19 +39,14 @@ class WiredAdbConnectionFactory(ConnectionFactory):
         """
         return get_device_to_connect_user_choice()
 
+    @classmethod
+    def _get_oppo_device(cls, *args, **kwargs):
+        connection_factory = AdbConnectionFactory()
+        return  connection_factory.get_oppo_wired_device(*args, **kwargs)
+
 
 class WirelessAdbConnectionFactory(WiredAdbConnectionFactory):
     @classmethod
-    def create_connection(cls, device_id=None, **kwargs):
-        """Create connection
-
-        :param str|None device_id: Specific device id to connect to. If none given, must call `choose_device_id()`.
-        :param kwargs:
-        :rtype: IConnection
-        """
+    def _get_oppo_device(cls, *args, **kwargs):
         connection_factory = AdbConnectionFactory()
-        if not device_id:
-            device_id = cls.choose_device_id()
-        use_manual_fixes = kwargs.get("use_manual_fixes", True)
-        return AdbConnection(
-            connection_factory.get_oppo_wireless_device(rooted=False, device_id=device_id, use_manual_fixes=use_manual_fixes))
+        return connection_factory.get_oppo_wireless_device(*args, **kwargs)
