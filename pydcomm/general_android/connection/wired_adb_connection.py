@@ -4,7 +4,8 @@ import os
 
 import subprocess32 as subprocess
 
-TEST_CONNECTION_ATTEMPTS = 5
+TEST_CONNECTION_ATTEMPTS = 3
+TEST_CONNECTION_TIMEOUT = 0.3
 ADB_CALL_MINIMAL_INTERVAL = 0.5
 
 
@@ -131,7 +132,7 @@ class InternalAdbConnection(object):
         while attempts > 0:
             try:
                 attempts -= 1
-                return self._run_adb_for_specific_device(["shell", "echo hi"], timeout=1) == "hi"
+                return self._run_adb_for_specific_device(["shell", "echo hi"], timeout=TEST_CONNECTION_TIMEOUT) == "hi"
             except subprocess.TimeoutExpired:
                 pass
             except AdbConnectionError as e:
