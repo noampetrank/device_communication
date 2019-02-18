@@ -19,7 +19,7 @@ def set_usb_mode_to_mtp_fix(connection):
     connection.adb("shell setprop sys.usb.config \"mtp,adb\"", disable_fixers=True, timeout=1)
 
 
-def manaually_set_usb_mode_to_mtp_fix(connection):
+def manually_set_usb_mode_to_mtp_fix(connection):
     print("Please set USB mode to MTP and press ENTER")
     raw_input()
 

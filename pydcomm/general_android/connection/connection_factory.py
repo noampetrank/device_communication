@@ -1,5 +1,5 @@
 from pydcomm.general_android.connection.connection_fixers import add_rooted_impl, restart_adb_server_fix, \
-    set_usb_mode_to_mtp_fix, manaually_set_usb_mode_to_mtp_fix
+    set_usb_mode_to_mtp_fix, manually_set_usb_mode_to_mtp_fix
 from pydcomm.general_android.connection.decorator_helpers import add_init_decorator, add_adb_recovery_decorator
 from pydcomm.general_android.connection.device_selector import add_choose_first_behavior, add_user_choice_behavior, MultiDeviceBehavior
 from pydcomm.general_android.connection.fixers.adb_connect_fixer import adb_connect_fix
@@ -72,7 +72,7 @@ class AdbConnectionFactory(object):
             # call_a_developer_fix must be the first manual fixer
             decorators.append(add_adb_recovery_decorator(call_a_developer_fix))
             decorators.append(add_adb_recovery_decorator(device_turned_off))
-            decorators.append(add_adb_recovery_decorator(manaually_set_usb_mode_to_mtp_fix))
+            decorators.append(add_adb_recovery_decorator(manually_set_usb_mode_to_mtp_fix))
             decorators.append(add_adb_recovery_decorator(enable_usb_debugging_fix))
             decorators.append(add_adb_recovery_decorator(verify_same_network_fix))
             decorators.append(add_adb_recovery_decorator(unreachable_device_fix))
@@ -96,7 +96,7 @@ class AdbConnectionFactory(object):
             # call_a_developer_fix must be the first manual fixer
             decorators.append(add_adb_recovery_decorator(call_a_developer_fix))
             decorators.append(add_adb_recovery_decorator(device_turned_off))
-            decorators.append(add_adb_recovery_decorator(manaually_set_usb_mode_to_mtp_fix))
+            decorators.append(add_adb_recovery_decorator(manually_set_usb_mode_to_mtp_fix))
             decorators.append(add_adb_recovery_decorator(enable_usb_debugging_fix))
             decorators.append(add_adb_recovery_decorator(forgot_device_fix))
             # get_user_attention_fix must be the last manual fixer.
