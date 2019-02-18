@@ -93,7 +93,7 @@ def main():
             conn_factory = all_connection_factories[factory_name]
             """@type: pydcomm.public.iconnection.ConnectionFactory"""
 
-            test_scenario = get_complete_benchmark()
+            test_scenario = get_complete_benchmark(repeats=100)
 
             runs = run_scenario(test_scenario, initial_context={'conn_factory': conn_factory})
             runs['conn_factory_name'] = conn_factory.__name__
