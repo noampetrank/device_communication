@@ -49,7 +49,7 @@ class AdbConnection(IConnection):
         :return: Output of command.
         :rtype: str
         """
-        return self.adb_connection.adb(["shell", command], timeout=timeout_ms / 1000)
+        return self.adb_connection.adb(["shell", command], timeout=self._get_timeout_seconds(timeout_ms))
 
     def streaming_shell(self, command, timeout_ms=None):
         """
@@ -75,9 +75,9 @@ class AdbConnection(IConnection):
 
         # TODO: Make sure this is what's actually required
         if dump:
-            return self.adb_connection.adb("logcat -d", timeout=timeout_ms / 1000).split("\n")
+            return self.adb_connection.adb("logcat -d", timeout=self._get_timeout_seconds(timeout_ms)).split("\n")
         elif clear:
-            self.adb_connection.adb("logcat -c", timeout=timeout_ms / 1000)
+            self.adb_connection.adb("logcat -c", timeout=self._get_timeout_seconds(timeout_ms))
         else:
             cat = LogCat()
             cat.start()
@@ -115,7 +115,7 @@ class AdbConnection(IConnection):
             cmd.append("-r")
         # TODO: grant_permissions
         cmd.append(apk_path)
-        return self.adb_connection.adb(cmd, timeout=timeout_ms / 1000)
+        return self.adb_connection.adb(cmd, timeout=self._get_timeout_seconds(timeout_ms))
 
     def uninstall(self, package_name, keep_data=False, timeout_ms=None):
         """Removes a package from the device.
@@ -129,7 +129,7 @@ class AdbConnection(IConnection):
         if keep_data:
             cmd.append("-k")
         cmd.append(package_name)
-        return self.adb_connection.adb(cmd, timeout=timeout_ms / 1000)
+        return self.adb_connection.adb(cmd, timeout=self._get_timeout_seconds(timeout_ms))
 
     def device_id(self):
         """Return serial number of connected device.
@@ -141,3 +141,9 @@ class AdbConnection(IConnection):
     def disconnect(self):
         """Closes connection."""
         self.adb_connection.disconnect()
+
+    @staticmethod
+    def _get_timeout_seconds(timeout_ms):
+        if timeout_ms is None:
+            return None
+        return timeout_ms / 1000.
