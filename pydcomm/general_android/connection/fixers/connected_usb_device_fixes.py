@@ -2,6 +2,9 @@ import re
 
 import subprocess32 as subprocess
 
+from pydcomm.general_android.connection.device_selector import adb_devices
+from pydcomm.general_android.connection.fixers.adb_connect_fixer import adb_connect_fix
+
 
 def get_connected_usb_devices():
     out = subprocess.check_output("lsusb")
@@ -43,12 +46,25 @@ def forgot_device_fix(connection):
 
 
 def device_turned_off(connection):
-    phones = get_connected_phones()
-    if phones:
-        print("There is a {} phone connected, is it turned on? Is USB debugging enabled?".format(phones))
+    connected_devices = adb_devices()
+    device_idx = None
+    for idx, device in enumerate(connected_devices):
+        if device[1] == connection.device_id:
+            device_idx = idx
+            break
+
+    if device_idx is None:
+        print("Your phone ({}) is not connected to {}, is it turned on? Is USB debugging enabled?".format(
+            connection.device_id, "PC" if connection.wired else "wireless ADB"))
+    elif connected_devices[device_idx][2] == "no permissions":
+        print("Your phone ({}) is not in MTP mode. Please change to MTP and press ENTER".format(connection.device_id))
     else:
-        print("Is the phone turned on?")
+        # The device is properly connected so there's no reason to wait for user response
+        return
+
     raw_input()
+    if not connection.wired:
+        adb_connect_fix(connection)
 
 
 # List taken from https://android.googlesource.com/platform/system/core/+/android-5.1.1_r38/adb/usb_vendors.c

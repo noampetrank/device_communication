@@ -92,8 +92,12 @@ def connect_wireless(self, device_id=None):
     self.device_id = ip + ":" + str(ADB_TCP_PORT)
 
     # TODO: Possibly need to change to mtp mode
-    connect_to_wireless_adb(self, "Can't connect to ip {}".format(self.device_id))
+    adb_connect(self)
     print("Device connected over wifi successfully")
+
+
+def adb_connect(self):
+    connect_to_wireless_adb(self, "Can't connect to ip {}".format(self.device_id))
 
 
 add_connect_wireless = add_init_decorator(connect_wireless)

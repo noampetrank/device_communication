@@ -2,8 +2,8 @@ import socket
 import subprocess
 
 from pydcomm.general_android.connection.common import query_yes_no
+from pydcomm.general_android.connection.fixers.adb_connect_fixer import adb_connect_fix
 from pydcomm.general_android.connection.wired_adb_connection import ConnectingError
-from pydcomm.general_android.connection.wireless_adb_connection import connect_to_wireless_adb
 from pydcomm.general_android.connection.wired_adb_connection import InternalAdbConnection
 
 PING_TIMEOUT = 100
@@ -42,7 +42,7 @@ def unreachable_device_fix(connection):
     # If here, ping succeeded after the user reconnected the device to the network. Reconnect wireless ADB.
     try:
         print("Reconnecting to wireless ADB...")
-        connect_to_wireless_adb(connection, "Can't connect to ip {}".format(connection.device_id))
+        adb_connect_fix(connection)
         print("Reconnected successfully")
     except ConnectingError:
         print("Reconnection failed")
