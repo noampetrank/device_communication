@@ -1,5 +1,7 @@
 import re
 
+from pybuga.infra.utils.user_input import UserInput
+
 from pydcomm.general_android.connection.fixers.computer_network_disconnected_fixes import \
     get_connected_interfaces_and_addresses, is_ip_in_ips_network
 from pydcomm.general_android.connection.decorator_helpers import add_init_decorator, add_disconnect_decorator
@@ -75,9 +77,13 @@ def connect_wireless(self, device_id=None):
     device_on_same_network = False
     ip = None
     while not device_on_same_network:
-        ip = get_device_ip(self)
-        if not ip:
-            raise ConnectingError("Device is not connected to wifi")
+        ip = None
+        while ip is None:
+            ip = get_device_ip(self)
+            if ip is None:
+                if not UserInput.yes_no(
+                        "Device is not connected to Wi-Fi. Do you want to try again after reconnecting?"):
+                    raise ConnectingError("Device is not connected to wifi")
         interfaces = get_connected_interfaces_and_addresses()
         for iface_name, addresses in interfaces:
             if any([is_ip_in_ips_network(ip, addr["addr"], addr["netmask"]) for addr in addresses]):
