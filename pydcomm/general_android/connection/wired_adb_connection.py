@@ -140,9 +140,7 @@ class InternalAdbConnection(object):
             except subprocess.TimeoutExpired:
                 pass
             except AdbConnectionError as e:
-                # TODO: Change this message
-                self.log.exception("Exception while connecting to wireless ADB:")
-                self.log.exception(e)
+                pass
             except ConnectionClosedError:
                 raise
         return False
