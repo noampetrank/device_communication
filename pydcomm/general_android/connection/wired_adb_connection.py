@@ -44,6 +44,8 @@ class InternalAdbConnection(object):
         # Initially set the last call to be "old" enough to allow the next call
         self.last_adb_call_time = time.time() - ADB_CALL_MINIMAL_INTERVAL
 
+        self.wired = True
+
         if not device_id:
             self.device_id = self._get_device_to_connect()
             if not self.device_id:

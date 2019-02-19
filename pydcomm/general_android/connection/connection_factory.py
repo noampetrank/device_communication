@@ -50,7 +50,6 @@ class AdbConnectionFactory(object):
             con_cls = d(con_cls)
 
         con = con_cls(ip or device)
-        con.wired = wired
         return con
 
     @staticmethod

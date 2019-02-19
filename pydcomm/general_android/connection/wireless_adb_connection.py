@@ -102,7 +102,6 @@ def connect_wireless(self, device_id=None):
 
     # TODO: Possibly need to change to mtp mode
 
-    connected = False
     while True:
         try:
             adb_connect(self)
@@ -111,6 +110,8 @@ def connect_wireless(self, device_id=None):
             pass
         if not UserInput.yes_no("ADB connection failed. Do you want to try again?"):
             raise ConnectingError("Can't connect to ip {}".format(self.device_id))
+
+    self.wired = False
 
     print("Device connected over wifi successfully")
 
