@@ -54,13 +54,16 @@ def device_turned_off(connection):
             break
 
     if device_idx is None:
-        print("Your phone ({}) is not connected to {}, is it turned on? Is USB debugging enabled?".format(
+        print("Your phone ({}) is not connected to {}. Is it turned on? Is USB debugging enabled?".format(
             connection.device_id, "PC" if connection.wired else "wireless ADB"))
     elif connected_devices[device_idx][2] == "no permissions":
         print("Your phone ({}) is not in MTP mode. Please change to MTP and press ENTER".format(connection.device_id))
     else:
-        # The device is properly connected so there's no reason to wait for user response
-        return
+        # There are 2 cases here:
+        # 1. The device status is "offline".
+        # 2. The device status is fine, but because test_connection previously failed we believe it's because the device
+        #    is not connected but ADB hasn't acknowledge it yet.
+        print("Your phone ({}) is offline. Is it turned on? Is USB debugging enabled?".format(connection.device_id))
 
     raw_input()
     if not connection.wired:
