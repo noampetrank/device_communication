@@ -72,10 +72,10 @@ class AdbConnectionFactory(object):
             # call_a_developer_fix must be the first manual fixer
             decorators.append(add_adb_recovery_decorator(call_a_developer_fix))
             decorators.append(add_adb_recovery_decorator(device_turned_off))
-            decorators.append(add_adb_recovery_decorator(manually_set_usb_mode_to_mtp_fix))
             decorators.append(add_adb_recovery_decorator(enable_usb_debugging_fix))
             decorators.append(add_adb_recovery_decorator(verify_same_network_fix))
             decorators.append(add_adb_recovery_decorator(unreachable_device_fix))
+            decorators.append(add_adb_recovery_decorator(manually_set_usb_mode_to_mtp_fix))
             # get_user_attention_fix must be the last manual fixer.
             decorators.append(add_adb_recovery_decorator(get_user_attention_fix))
 
@@ -94,9 +94,9 @@ class AdbConnectionFactory(object):
             # call_a_developer_fix must be the first manual fixer
             decorators.append(add_adb_recovery_decorator(call_a_developer_fix))
             decorators.append(add_adb_recovery_decorator(device_turned_off))
-            decorators.append(add_adb_recovery_decorator(manually_set_usb_mode_to_mtp_fix))
             decorators.append(add_adb_recovery_decorator(enable_usb_debugging_fix))
             decorators.append(add_adb_recovery_decorator(forgot_device_fix))
+            decorators.append(add_adb_recovery_decorator(manually_set_usb_mode_to_mtp_fix))
             # get_user_attention_fix must be the last manual fixer.
             decorators.append(add_adb_recovery_decorator(get_user_attention_fix))
 
