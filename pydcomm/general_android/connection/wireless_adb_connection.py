@@ -1,6 +1,7 @@
 import re
 
 from pybuga.infra.utils.user_input import UserInput
+from subprocess32 import TimeoutExpired
 
 from pydcomm.general_android.connection.fixers.computer_network_disconnected_fixes import \
     get_connected_interfaces_and_addresses, is_ip_in_ips_network
@@ -56,6 +57,8 @@ def connect_to_wireless_adb(connection, exception_message):
                 break
         except AdbConnectionError:
             pass  # We can still retry
+        except TimeoutExpired:
+            pass  # We can still retry
         attempts -= 1
 
     if not connected:
@@ -98,7 +101,17 @@ def connect_wireless(self, device_id=None):
     self.device_id = ip + ":" + str(ADB_TCP_PORT)
 
     # TODO: Possibly need to change to mtp mode
-    adb_connect(self)
+
+    connected = False
+    while True:
+        try:
+            adb_connect(self)
+            break
+        except ConnectingError:
+            pass
+        if not UserInput.yes_no("ADB connection failed. Do you want to try again?"):
+            raise ConnectingError("Can't connect to ip {}".format(self.device_id))
+
     print("Device connected over wifi successfully")
 
 
