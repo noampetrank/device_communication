@@ -3,12 +3,14 @@ import grpc
 import sys
 import os
 import time
+
+from pydcomm.public.ux_benchmarks.common_extra_stats import CommonExtraStats
 from pydcomm.public.bugarpc import IRemoteProcedureClient, IRemoteProcedureClientFactory, RpcError
 from pydcomm.rpc.gen.buga_rpc_pb2_grpc import DeviceRpcStub
 from pydcomm.rpc.gen.buga_rpc_pb2 import GRequest
 
 
-class GRemoteProcedureClient(IRemoteProcedureClient):
+class GRemoteProcedureClient(IRemoteProcedureClient, CommonExtraStats):
     MAX_MESSAGE_SIZE = 1024*1024*1024  # 1Gb
 
     def __init__(self, ip_port):
@@ -37,7 +39,7 @@ class GRemoteProcedureClient(IRemoteProcedureClient):
 # region Client factories common stuff
 
 # noinspection PyAbstractClass
-class _GRpcClientFactory(IRemoteProcedureClientFactory):
+class _GRpcClientFactory(IRemoteProcedureClientFactory, CommonExtraStats):
     @classmethod
     def create_connection(cls, rpc_id, device_id=None):
         return cls._create_connection(device_id, rpc_id)[0]

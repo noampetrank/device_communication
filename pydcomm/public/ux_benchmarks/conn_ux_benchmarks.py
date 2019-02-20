@@ -31,6 +31,14 @@ def single_api_call_summary(api_call, params=None, ret=None, additional=None, ex
 
 
 def print_run_summary(conn_factory_name, stats, params, ret_val, additionals, print_all=False):
+    """
+    :param str conn_factory_name:
+    :param stats:
+    :param list[tuple] params:
+    :param list[Any] ret_val:
+    :param list[dict] additionals:
+    :param bool print_all:
+    """
     import pandas as pd
     pd.set_option('display.max_columns', 500)
     pd.set_option('display.width', 1000)
