@@ -22,7 +22,7 @@ def set_usb_mode_to_mtp_fix(connection):
 
 
 def manually_set_usb_mode_to_mtp_fix(connection):
-    print("Please set USB mode to MTP and press ENTER")
+    print("Please set USB mode to 'Transfer Files' and press ENTER")
     raw_input()
     if not connection.wired:
         adb_connect_fix(connection)

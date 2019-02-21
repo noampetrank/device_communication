@@ -57,7 +57,8 @@ def device_turned_off(connection):
         print("Your phone ({}) is not connected to {}. Is it turned on? Is USB debugging enabled?".format(
             connection.device_id, "PC" if connection.wired else "wireless ADB"))
     elif connected_devices[device_idx][2] == "no permissions":
-        print("Your phone ({}) is not in MTP mode. Please change to MTP and press ENTER".format(connection.device_id))
+        print("Your phone ({}) is not in 'Transfer Files' mode. "
+              "Please change to 'Transfer Files' and press ENTER".format(connection.device_id))
     else:
         # There are 2 cases here:
         # 1. The device status is "offline".
