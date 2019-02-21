@@ -30,7 +30,8 @@ def add_choose_first_behavior(connection):
 def get_device_to_connect_user_choice(*args):
     devices = adb_devices()
     while not devices:
-        UserInput.text("No devices connected. Please connect a device and press enter.", lambda x: True)
+        UserInput.text("Please connect a device with a cable, choose 'Transfer files' USB mode and press ENTER.",
+                       lambda x: True)
         devices = adb_devices()
     print("Please select a device")
     choice = UserInput.menu(([(x[1], x[2]) for x in devices]))
