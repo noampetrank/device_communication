@@ -226,9 +226,9 @@ class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):
             return all(os.path.isfile(os.path.join(path, f)) for f in device_comm_sos)
 
         cpp_path = os.path.join(os.path.dirname(__file__), "../../cpp")
-        local_libs_path = os.path.dirname(so_path)  # First look for satellite .so's in the same path as the main .so
+        local_libs_path = os.path.join(cpp_path, "./release/")  # First try the release dir
         if not _satellite_sos_exist(local_libs_path):
-            local_libs_path = os.path.join(cpp_path, "./lib/arm64/Release/")  # Then look in device comm
+            local_libs_path = os.path.join(cpp_path, "./lib/arm64/Release/")  # Then look in build artifacts
         if not _satellite_sos_exist(local_libs_path):
             _print_no_newline("Building 'satellite' .so's... ")  # If it's not there, build device comm
 
@@ -243,6 +243,7 @@ class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):
             assert _satellite_sos_exist(local_libs_path)  # Couldn't build .so's, can't continue
 
         # Push .so's
+        local_libs_path = os.path.normpath(local_libs_path)
         _print_no_newline("Pushing 'satellite' .so's from {}... ".format(local_libs_path))
         assert os.path.isdir(local_libs_path)
         device_lib_path = '/system/lib64'

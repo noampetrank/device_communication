@@ -49,11 +49,18 @@ def parse_options():
     parser.add_option('-b', '--buildtype',
                       dest="buildtype",
                       default="release")
+    parser.add_option('-X', '--export-release',
+                      dest="export_release",
+                      action="store_true",
+                      default=True)
+
     options, args = parser.parse_args()
     if args:
         options.platform = args[0]
 
-    if options.platform == "all":
+    if options.export_release:
+        options.platform = ["android"]
+    elif options.platform == "all":
         options.platform = ["android", "linux"]
     else:
         options.platform = [options.platform]
@@ -115,6 +122,32 @@ def clean():
                 shutil.rmtree(f)
 
 
+def export_release(options):
+    """
+    export a release version, including configuration and calibrations files,
+    to a a 'release' folder
+    :type options: Values
+    :return:
+    """
+    next_version_path = "release/"
+    print(TITLE + "Exporting version to {}".format(next_version_path))
+
+    build_platforms(options)
+
+    print('cleaning previous release and saving to: ' + next_version_path)
+    shutil.rmtree(next_version_path)
+    os.mkdir(next_version_path)
+    shutil.copy("lib/arm64/Release/libproto.so", next_version_path)
+    shutil.copy("lib/arm64/Release/librpc_server.so", next_version_path)
+    shutil.copy("lib/arm64/Release/librpc_bugatone_proxy.so", next_version_path)
+    shutil.copy("lib/arm64/Release/librpc_bugatone_main.so", next_version_path)
+
+    from colorama import Fore
+    print(Fore.LIGHTMAGENTA_EX + "Staging release files in git (don't forget to commit!)")
+    subprocess.check_output("git add {}".format(next_version_path), shell=True)
+    subprocess.check_output("git add -f {}*.so".format(next_version_path), shell=True)
+
+
 def main():
     options = parse_options()
     validate_options(options)
@@ -122,7 +155,11 @@ def main():
         clean()
         return
     create_standalone_toolchain(options.platform)
-    build_platforms(options)
+
+    if options.export_release:
+        export_release(options)
+    else:
+        build_platforms(options)
 
 
 if __name__ == "__main__":
