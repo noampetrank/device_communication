@@ -67,8 +67,7 @@ def device_turned_off(connection):
         print("Your phone ({}) is offline. Is it turned on? Is USB debugging enabled?".format(connection.device_id))
 
     raw_input()
-    if not connection.wired:
-        adb_connect_fix(connection)
+    adb_connect_fix(connection)
 
 
 # List taken from https://android.googlesource.com/platform/system/core/+/android-5.1.1_r38/adb/usb_vendors.c

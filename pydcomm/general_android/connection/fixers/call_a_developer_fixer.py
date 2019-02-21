@@ -12,6 +12,5 @@ def call_a_developer_fix(connection):
     while not connection_fixed:
         if not UserInput.yes_no("Do you want to try again? [y/n]"):
             break
-        if not connection.wired:
-            adb_connect_fix(connection)
+        adb_connect_fix(connection)
         connection_fixed = connection.test_connection()

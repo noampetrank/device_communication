@@ -17,15 +17,13 @@ def restart_adb_server_fix(connection):
 
 def set_usb_mode_to_mtp_fix(connection):
     connection.adb("shell setprop sys.usb.config \"mtp,adb\"", disable_fixers=True, timeout=1)
-    if not connection.wired:
-        adb_connect_fix(connection)
+    adb_connect_fix(connection)
 
 
 def manually_set_usb_mode_to_mtp_fix(connection):
     print("Please set USB mode to 'Transfer Files' and press ENTER")
     raw_input()
-    if not connection.wired:
-        adb_connect_fix(connection)
+    adb_connect_fix(connection)
 
 # endregion Auto fixes
 
