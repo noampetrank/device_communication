@@ -37,7 +37,7 @@ class WiredAdbConnectionFactory(ConnectionFactory):
         :return: String representing device id, that can be passed to `wired_connection` and to `wireless_conenction`.
         :type: str
         """
-        return get_device_to_connect_user_choice()
+        return get_device_to_connect_user_choice(filter_wireless_devices=True)
 
     @classmethod
     def _get_oppo_device(cls, *args, **kwargs):
@@ -50,3 +50,12 @@ class WirelessAdbConnectionFactory(WiredAdbConnectionFactory):
     def _get_oppo_device(cls, *args, **kwargs):
         connection_factory = AdbConnectionFactory()
         return connection_factory.get_oppo_wireless_device(*args, **kwargs)
+
+    @classmethod
+    def choose_device_id(cls):
+        """
+        This opens a user interface for choosing possible device for this factory.
+        :return: String representing device id, that can be passed to `wired_connection` and to `wireless_conenction`.
+        :type: str
+        """
+        return get_device_to_connect_user_choice(filter_wireless_devices=False)

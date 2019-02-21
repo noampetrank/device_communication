@@ -35,7 +35,7 @@ class ConnectionClosedError(DcommError):
 
 
 class InternalAdbConnection(object):
-    def __init__(self, device_id=None):
+    def __init__(self, device_id=None, filter_wireless_devices=False):
         # Print adb commands only if env variable is set
         self.debug = os.environ.has_key("BUGA_ADB_DEBUG")
         # TODO: test adb version
@@ -47,7 +47,7 @@ class InternalAdbConnection(object):
         self.wired = True
 
         if not device_id:
-            self.device_id = self._get_device_to_connect()
+            self.device_id = self._get_device_to_connect(filter_wireless_devices)
             if not self.device_id:
                 raise ConnectingError("No device given and no device choosing strategy used.")
         else:
@@ -59,7 +59,7 @@ class InternalAdbConnection(object):
         self.log.info("Connected to device: \"{}\"".format(self.device_id))
 
     # noinspection PyMethodMayBeStatic
-    def _get_device_to_connect(self):
+    def _get_device_to_connect(self, filter_wireless_devices=False):
         return ""
 
     def disconnect(self):

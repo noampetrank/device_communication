@@ -27,7 +27,7 @@ def add_init_decorator(function, run_before=False):
     def adder(connection):
         original_init = connection.__init__
 
-        def new_init(self, device_id=None):
+        def new_init(self, device_id=None, filter_wireless_devices=False):
             def run():
                 try:
                     function(self, device_id)
@@ -37,7 +37,7 @@ def add_init_decorator(function, run_before=False):
 
             if run_before:
                 run()
-            original_init(self, device_id)
+            original_init(self, device_id, filter_wireless_devices)
             if not run_before:
                 run()
 

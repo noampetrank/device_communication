@@ -49,7 +49,7 @@ class AdbConnectionFactory(object):
         for d in decorators:
             con_cls = d(con_cls)
 
-        con = con_cls(ip or device)
+        con = con_cls(ip or device, filter_wireless_devices=wired)
         return con
 
     @staticmethod
