@@ -8,6 +8,7 @@ import os
 import time
 import json
 from collections import namedtuple
+from contextlib import contextmanager
 from functools import wraps
 from types import FunctionType
 
@@ -33,7 +34,7 @@ class ApiCallsRecorder(object):
         ...     def __extra_stats__(self):
         ...         return {'x': 8}
         >>>
-        >>> recorder = ApiCallsRecorder()
+        >>> recorder = ApiCallsRecorder(suspend_save=True)
         >>> with recorder:
         ...     try: foo().bar()
         ...     except: pass
@@ -46,7 +47,7 @@ class ApiCallsRecorder(object):
         >>> assert api_call.is_exception
         >>> assert api_call.exception_type == 'NotImplementedError'
         >>> assert api_call.exception_msg == "Bummer"
-        >>> assert api_call.extra_stats == {'x':8}
+        >>> assert api_call.extra_stats == {'x': 8}
     """
     @staticmethod
     def _get_save_file():
@@ -77,7 +78,7 @@ class ApiCallsRecorder(object):
         api_stats.append(api_call)
 
         with ApiCallsRecorder._get_save_file() as f:
-            json.dump(api_call._asdict(), f)
+            f.write(json.dumps(api_call._asdict()).replace("\n", "\\\\nn"))
             f.write("\n")
 
     def __init__(self, suspend_save=False):
@@ -85,7 +86,7 @@ class ApiCallsRecorder(object):
         :param bool suspend_save: Whether or not to also call original `save_api_call` that (not yet) saves to disk.
         """
         self.suspend_save = suspend_save
-        self.api_stats = []
+        self.api_stats = []  # type: list[ApiCall]
         self._orig_save_api_call = None
 
     def __enter__(self):
@@ -159,16 +160,19 @@ def collectstats(class_name=None, collect_extra=False):
                 fake_raw_input._UserExperienceStats_fake = _fake_sentinel
                 __builtin__.raw_input = fake_raw_input
 
-                extra_stats = None
+                extra_data = None
                 if collect_extra and len(args) > 0:
                     extra_stats = getattr(args[0], "__extra_stats__", None)
-                extra_data = None
+                    if extra_stats is not None:
+                        try:
+                            extra_data = extra_stats()
+                        except Exception as e:
+                            extra_data = "{}({})".format(e.__class__.__name__, repr(str(e)))
+
                 ret = None
 
                 try:
                     ret = func(*args, **kwargs)
-                    if extra_stats is not None:
-                        extra_data = extra_stats()
                     return ret
                 except Exception as e:
                     is_exception = True
@@ -186,6 +190,7 @@ def collectstats(class_name=None, collect_extra=False):
                 return func(*args, **kwargs)
 
         return newfunc
+
     return inner
 
 
@@ -296,6 +301,69 @@ def decorateallfuncs(wrapper):
 metacollectstats = decorateallfuncs(collectstats)
 
 
+def test_collectstats():
+    """
+    Some extra tests for `collectstats`.
+    """
+    # Test for getting extra data even if call raised an exception.
+    class RaiseException(object):
+        @staticmethod
+        def __extra_stats__():
+            return {"hello", "world!"}
+
+        @collectstats(collect_extra=True)
+        def doit(self):
+            raise NotImplementedError("And never will be!")
+
+    recorder = ApiCallsRecorder(suspend_save=True)
+    with recorder:
+        try:
+            RaiseException().doit()
+            assert True, "Call to RaiseException().doit() should have raised an exception"
+        except NotImplementedError:
+            pass
+
+    assert recorder.api_stats[0].extra_stats == {"hello", "world!"}
+
+    # Test for objects with `__getattr__`.
+    class IHazGetAttr(object):
+        def __getattr__(self, item):
+            return self
+
+        @collectstats(collect_extra=True)
+        def bar(self):
+            return self.__name__
+
+    recorder = ApiCallsRecorder(suspend_save=True)
+    with recorder:
+        IHazGetAttr().bar()
+
+    assert recorder.api_stats[0].extra_stats == "TypeError(\"'IHazGetAttr' object is not callable\")"
+
+    # Test that there are no new lines in the json dumps of saved ApiCalls. Newlines will mess up reading the file.
+    class LotsOfNewLines(object):
+        def __extra_stats__(self):
+            return "\nHello,\nWorld\n!\n"
+
+        @collectstats("\nClass\nName\n", collect_extra=True)
+        def bar(self, a, b):
+            return "\nYes\nHello\n" + a + b
+
+    import StringIO
+    import mock
+
+    stringio = StringIO.StringIO()  # ContextStringIO()
+
+    with mock.patch.object(ApiCallsRecorder, "_get_save_file",
+                           new=staticmethod(contextmanager(lambda: (yield stringio)))):
+        LotsOfNewLines().bar("\nA\n", b="\nB\n")
+
+    # TODO: separate writing logic to a different class so that we don't test implementation details here.
+    assert all('\n' not in buf for buf in stringio.buflist[:-1])
+    assert '\n' not in stringio.buflist[-1][:-1]
+    assert stringio.buflist[-1][-1] == '\n'
+
+
 def test_metacollectstats():
     """
     Tests `metacollectstats`!
@@ -346,7 +414,7 @@ def test_metacollectstats():
         mraw_input.return_value = name
         cls_().bar()
 
-    recorder = ApiCallsRecorder()
+    recorder = ApiCallsRecorder(suspend_save=True)
     with recorder:
         try:
             call_bar(foo, "World")
