@@ -63,16 +63,35 @@ class ApiCallsRecorder(object):
 
         :param ApiCall api_call: Data to save.
         """
-        def arg_to_str(x):
+        def arg_to_dict(x):
             max_len = 200
-            sx = repr(x)
-            if len(sx) > max_len:
-                sx = sx[:max_len] + "..."
-            return sx
+            ret = {
+                "repr": None,
+                "is_truncated": None,
+                "len": None,
+                "type": None,
+            }
 
-        s_args = map(arg_to_str, api_call.args)
-        s_kwargs = {k: arg_to_str(v) for k, v in api_call.kwargs.items()}
-        s_ret = arg_to_str(api_call.ret)
+            try:
+                ret["repr"] = repr(x)
+                ret["is_truncated"] = len(ret["repr"]) > max_len
+                if ret["is_truncated"]:
+                    ret["repr"] = ret["repr"][:max_len] + "..."
+            except: pass
+
+            try:
+                ret["len"] = len(x)
+            except: pass
+
+            try:
+                ret["type"] = type(x).__name__
+            except: pass
+
+            return ret
+
+        s_args = map(arg_to_dict, api_call.args)
+        s_kwargs = {k: arg_to_dict(v) for k, v in api_call.kwargs.items()}
+        s_ret = arg_to_dict(api_call.ret)
         api_call = api_call._replace(args=s_args, kwargs=s_kwargs, ret=s_ret)
 
         api_stats.append(api_call)
