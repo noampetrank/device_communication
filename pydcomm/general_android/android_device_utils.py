@@ -307,7 +307,7 @@ class AndroidDeviceUtils:
         """
         reboot the device
         """
-        self.connection.adb("reboot", timeout=5)
+        self.connection.adb("reboot", timeout=30)
 
     def _parse_dumpsys_volume(self):
         dumpsys_output = self._shell('dumpsys', 'audio')
