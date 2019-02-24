@@ -1,14 +1,13 @@
 import json
 import numpy as np
+import pandas as pd
 
 
-def print_ux_stats_summary(ux_stats_data, verbose=False):
+def ux_stats_json_to_pandas(ux_stats_data):
     """
     :param str ux_stats_data:
-    :param bool verbose:
     :return:
     """
-    import pandas as pd
     from collections import OrderedDict
 
     ux_stats_jsons = map(json.loads, ux_stats_data.splitlines())
@@ -31,13 +30,15 @@ def print_ux_stats_summary(ux_stats_data, verbose=False):
             ("manual_actions_time", sum([end - start for start, end in api_call.get('manual_times', [])])),
             ("is_exception", api_call.get('is_exception', None)),
             ("is_automatic", len(api_call.get('manual_times', None)) == 0),
+            ("args", api_call.get('args', None)),
+            ("kwargs", api_call.get('kwargs', None)),
+            ("ret", api_call.get('ret', None)),
         ])
 
         return res
 
     ux_stats_rows = map(single_api_call_summary, ux_stats_jsons)
 
-    idx = "class_name function_name hostname pc_ip pc_wifi device_id device_wifi".split()
     all_calls_table = pd.DataFrame(data=ux_stats_rows).fillna(value={
         "class_name": "N/A",
         "function_name": "N/A",
@@ -51,7 +52,23 @@ def print_ux_stats_summary(ux_stats_data, verbose=False):
         "manual_actions_time": 0,
         "is_exception": False,
         "is_automatic": False,
-    }).set_index(idx).astype({
+        "args": "",
+        "kwargs": "",
+        "ret": "",
+    })
+
+    return all_calls_table
+
+
+def get_ux_stats_summary(all_calls_table, verbose=False):
+    """
+    :param ps.DataFrame all_calls_table:
+    :param bool verbose:
+    :return:
+    """
+    idx = "class_name function_name hostname pc_ip pc_wifi device_id device_wifi".split()
+
+    all_calls_table = all_calls_table.set_index(idx).astype({
         "call_time": np.float64,
         "manual_actions_count": np.int32,
         "manual_actions_time": np.float64,
@@ -62,7 +79,7 @@ def print_ux_stats_summary(ux_stats_data, verbose=False):
     gb = all_calls_table.astype({
         "is_exception": np.float64,
         "is_automatic": np.float64,
-    }).groupby(idx)
+    }).groupby(all_calls_table.index.names)
 
     summary = gb.agg({
         "call_time": np.mean,
@@ -89,7 +106,7 @@ def print_ux_stats_summary(ux_stats_data, verbose=False):
     return all_calls_table, summary
 
 
-def main(which):
+def main_test(which):
     from mock import patch
 
     @patch('pydcomm.public.ux_stats.ApiCallsRecorder._get_save_file')
@@ -142,10 +159,31 @@ def main(which):
 
         with open(alt_json_file) as f:
             ux_stats_data = f.read()
-        print_ux_stats_summary(ux_stats_data, True)
+        all_calls_table = ux_stats_json_to_pandas(ux_stats_data)
+        get_ux_stats_summary(all_calls_table, True)
 
     inner()
 
 
+def main(json_files):
+    import os
+    if isinstance(json_files, str):
+        if os.path.isdir(json_files):
+            json_files = os.listdir(json_files)
+        else:
+            json_files = [json_files]
+
+    ux_stats_data = ""
+    for json_file in json_files:
+        with open(json_file) as f:
+            ux_stats_data += f.read()
+
+    all_calls_table = ux_stats_json_to_pandas(ux_stats_data)
+    get_ux_stats_summary(all_calls_table, True)
+
+
 if __name__ == '__main__':
-    main(which=1)
+    main_test(which=1)
+
+    # import sys
+    # main(sys.argv[1]) #TODO
