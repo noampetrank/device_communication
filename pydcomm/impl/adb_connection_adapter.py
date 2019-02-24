@@ -42,7 +42,8 @@ class AdbConnection(IConnection):
         self.device_utils.push(local_path, path_on_device)
 
     def shell(self, command, timeout_ms=None):
-        """Run command on the device, returning the output.
+        """
+        Run command on the device, returning the output.
 
         :param str command: Shell command to run.
         :param int|None timeout_ms: Maximum time to allow the command to run.
@@ -79,8 +80,8 @@ class AdbConnection(IConnection):
         elif clear:
             self.adb_connection.adb("logcat -c", timeout=self._get_timeout_seconds(timeout_ms))
         else:
-            cat = LogCat()
-            cat.start()
+            cat = LogCat(device_id=self.adb_connection.device_id)
+            # cat.start()
             return cat
 
     def reboot(self):
