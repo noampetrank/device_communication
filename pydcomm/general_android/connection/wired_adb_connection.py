@@ -24,6 +24,11 @@ class AdbConnectionError(DcommError):
         self.stderr = stderr
         self.returncode = returncode
 
+    def __str__(self):
+        return super(AdbConnectionError, self).__str__() + "\nstdout:\n```\n{}\n```\nstderr:\n```\n{}\n```".format(
+            self.stdout,
+            self.stderr)
+
 
 class ConnectingError(DcommError):
     """Error that happens during the connection process"""
