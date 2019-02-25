@@ -1,15 +1,21 @@
 import json
 import numpy as np
 import pandas as pd
+from collections import OrderedDict
 
 
-def ux_stats_json_to_pandas(ux_stats_data):
+def _setup_pandas():
+    pd.set_option('display.max_columns', 500)
+    pd.set_option('display.width', 1000)
+    pd.set_option('display.max_colwidth', 100)
+
+
+def ux_stats_json_to_pandas(ux_stats_data, verbose=False):
     """
     :param str ux_stats_data:
+    :param bool verbose:
     :return:
     """
-    from collections import OrderedDict
-
     ux_stats_jsons = map(json.loads, ux_stats_data.splitlines())
 
     def single_api_call_summary(api_call):
@@ -57,6 +63,10 @@ def ux_stats_json_to_pandas(ux_stats_data):
         "ret": "",
     })
 
+    if verbose:
+        _setup_pandas()
+        print all_calls_table
+
     return all_calls_table
 
 
@@ -98,12 +108,52 @@ def get_ux_stats_summary(all_calls_table, verbose=False):
     })
 
     if verbose:
-        pd.set_option('display.max_columns', 500)
-        pd.set_option('display.width', 1000)
-        print all_calls_table
+        _setup_pandas()
         print summary
 
-    return all_calls_table, summary
+    return summary
+
+
+def get_rpc_audio_interface_stats_summary(all_calls_table, verbose=False):
+    """
+    :param ps.DataFrame all_calls_table:
+    :param bool verbose:
+    :return:
+    """
+    def _is_format_supported(x):
+        return 'args' in x and isinstance(x['args'], list) and all(isinstance(a, dict) for a in x['args'])
+
+    call_calls = all_calls_table[(all_calls_table['class_name'] == 'GRemoteProcedureClient') & (all_calls_table['function_name'] == 'call')]
+    call_calls = call_calls[call_calls.apply(_is_format_supported, axis=1)]
+
+    call_calls['proc_name'] = call_calls.apply(lambda x: eval(x['args'][1]['repr']), axis=1)
+
+    setup_record_and_play_calls = (call_calls[call_calls['proc_name'] == 'setup_record_and_play']
+                                   .assign(data_len=lambda df: [((row['args'][2]['len'] if len(row['args']) > 2 else None) or
+                                                                 row['kwargs'].get('params', {'len': None})['len']) for _, row in df.iterrows()]))
+
+    get_recorded_data_calls = (call_calls[call_calls['proc_name'] == 'get_recorded_data']
+                               .assign(data_len=lambda df: [ret['len'] for ret in df.ret]))
+
+    get_recorded_data_calls = get_recorded_data_calls.assign(data_len=lambda df: [ret['len'] for ret in df.ret])
+
+    data_calls = pd.concat([setup_record_and_play_calls, get_recorded_data_calls], axis=0, sort=True)
+
+    data_calls['MBps'] = data_calls.apply(lambda x: x['data_len'] / x['call_time'] / 2 ** 20, axis=1)
+
+    bins = np.concatenate([[-float('inf')], np.arange(120) * 48000 * 12, [float('inf')]])
+    data_calls['data_len_bin'] = pd.cut(data_calls['data_len'], bins).rename({'data_len': 'bin'})
+    summary = data_calls.groupby(['class_name', 'proc_name', 'data_len_bin']).agg(OrderedDict([
+        ('call_time', np.mean),
+        ('MBps', np.mean),
+    ]))
+
+    if verbose:
+        _setup_pandas()
+        print summary
+        summary.to_clipboard()
+
+    return summary
 
 
 def main_test(which):
@@ -159,31 +209,46 @@ def main_test(which):
 
         with open(alt_json_file) as f:
             ux_stats_data = f.read()
-        all_calls_table = ux_stats_json_to_pandas(ux_stats_data)
-        get_ux_stats_summary(all_calls_table, True)
+        all_calls_table = ux_stats_json_to_pandas(ux_stats_data, verbose=True)
+        get_ux_stats_summary(all_calls_table, verbose=True)
 
     inner()
 
 
-def main(json_files):
+def main(json_files='/home/buga/tmp_dir/ux_stats.jsons'):
+    """
+    Run and print all summaries in this files on the given files/directories.
+    :param str|list[str] json_files: One or list of us_stats.json files or folders containing such files.
+    :return
+    """
     import os
     if isinstance(json_files, str):
-        if os.path.isdir(json_files):
-            json_files = os.listdir(json_files)
+        json_files = [json_files]
+
+    _json_files = []
+    for json_file in json_files:
+        if os.path.isdir(json_file):
+            _json_files += [os.path.join(json_file, x) for x in os.listdir(json_file)]
         else:
-            json_files = [json_files]
+            _json_files += [json_file]
+    json_files = _json_files
 
     ux_stats_data = ""
     for json_file in json_files:
         with open(json_file) as f:
             ux_stats_data += f.read()
 
-    all_calls_table = ux_stats_json_to_pandas(ux_stats_data)
-    get_ux_stats_summary(all_calls_table, True)
+    all_calls_table = ux_stats_json_to_pandas(ux_stats_data, verbose=True)
+    get_ux_stats_summary(all_calls_table, verbose=True)
+    get_rpc_audio_interface_stats_summary(all_calls_table, verbose=True)
+    pass
 
 
 if __name__ == '__main__':
-    main_test(which=1)
+    # main_test(which=1)
 
-    # import sys
-    # main(sys.argv[1]) #TODO
+    import sys
+    if len(sys.argv) > 1:
+        main(sys.argv[1:])
+    else:
+        main()

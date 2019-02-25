@@ -18,7 +18,7 @@ def _get_pc_ip():
 
 def _get_pc_wifi():
     try:
-        return subprocess.check_output("iwgetid -r".split())
+        return subprocess.check_output("iwgetid -r".split()).strip()
     except:
         return None
 
