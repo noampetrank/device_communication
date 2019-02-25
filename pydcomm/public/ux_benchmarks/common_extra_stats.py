@@ -23,6 +23,17 @@ def _get_pc_wifi():
         return None
 
 
+def get_device_wifi_network_name(device_id):
+    # This can take ~100ms
+    import re
+    try:
+        # TODO how to do ADB without subprocess?
+        netstats = subprocess.check_output('adb -s {} shell dumpsys netstats'.format(device_id), shell=True)
+        return re.findall(r'iface=wlan.*networkId="([^"]+)"', netstats)[0]
+    except:
+        return None
+
+
 class CommonExtraStats(object):
     def __init__(self):
         pass  # PyCharm happiness
