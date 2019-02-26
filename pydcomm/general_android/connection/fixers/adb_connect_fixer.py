@@ -1,6 +1,6 @@
 from __future__ import print_function
 
-from pydcomm.general_android.connection.wired_adb_connection import ConnectingError
+from pydcomm.public.iconnection import ConnectingError
 from pydcomm.general_android.connection.wireless_adb_connection import adb_connect
 
 

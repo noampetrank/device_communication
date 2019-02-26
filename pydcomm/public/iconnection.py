@@ -16,14 +16,29 @@ from pydcomm import DcommError
 from pydcomm.public.ux_stats import metacollectstats
 
 
-class ConnectionError(DcommError):
-    """Error that happens during the connection process"""
-    pass
-
-
 class ConnectionClosedError(DcommError):
     pass
 
+
+class CommandFailedError(DcommError):
+    """ Error that happens when running adb() """
+
+    # General error class for ADB connection
+    def __init__(self, message=None, stderr=None, stdout=None, returncode=None):
+        super(CommandFailedError, self).__init__(message)
+        self.stdout = stdout
+        self.stderr = stderr
+        self.returncode = returncode
+
+    def __str__(self):
+        return super(CommandFailedError, self).__str__() + "\nstdout:\n```\n{}\n```\nstderr:\n```\n{}\n```".format(
+            self.stdout,
+            self.stderr)
+
+
+class ConnectingError(DcommError):
+    """Error that happens during the connection process"""
+    pass
 
 class IConnection(object):
     """Interface for connections.

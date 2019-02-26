@@ -6,7 +6,7 @@ from subprocess32 import TimeoutExpired
 from pydcomm.general_android.connection.fixers.computer_network_disconnected_fixes import \
     get_connected_interfaces_and_addresses, is_ip_in_ips_network
 from pydcomm.general_android.connection.decorator_helpers import add_init_decorator, add_disconnect_decorator
-from pydcomm.general_android.connection.wired_adb_connection import ConnectingError, AdbConnectionError
+from pydcomm.public.iconnection import CommandFailedError, ConnectingError
 
 ADB_TCP_PORT = 5555
 CONNECTION_ATTEMPTS = 10
@@ -28,14 +28,14 @@ def get_device_ip(connection):
 def _run_adb_with_exception(connection, command, exception_message):
     try:
         connection.adb(command)
-    except AdbConnectionError:
+    except CommandFailedError:
         raise ConnectingError(exception_message)
 
 
 def disconnect_wireless(connection):
     try:
         connection.adb("disconnect " + connection.device_id, specific_device=False, disable_fixers=True, timeout=1)
-    except AdbConnectionError as e:
+    except CommandFailedError as e:
         if "error: no such device" in e.stderr:
             pass  # Disconnection will fail if a current connection doesn't exist, so we're ok with it.
         else:
@@ -55,7 +55,7 @@ def connect_to_wireless_adb(connection, exception_message):
             if "connected to " + connection.device_id in output:
                 connected = True
                 break
-        except AdbConnectionError:
+        except CommandFailedError:
             pass  # We can still retry
         except TimeoutExpired:
             pass  # We can still retry

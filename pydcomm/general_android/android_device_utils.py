@@ -2,10 +2,9 @@ import datetime
 import re
 import numpy as np
 import subprocess
-from pydcomm.general_android.connection.wired_adb_connection import AdbConnectionError
 
-from pydcomm.general_android.connection.wired_adb_connection import DcommError
-
+from pydcomm import DcommError
+from pydcomm.public.iconnection import CommandFailedError
 
 
 class AndroidDeviceUtilsError(DcommError):
@@ -60,7 +59,7 @@ class AndroidDeviceUtils:
         """
         try:
             output = self.connection.adb(["push", local_path, path_on_device])
-        except AdbConnectionError as err:
+        except CommandFailedError as err:
             if 'Read-only file system' in err.stderr:
                 raise WrongPermissions()
             if 'No such file or directory' in err.stderr:
@@ -86,7 +85,7 @@ class AndroidDeviceUtils:
         """
         try:
             output = self.connection.adb(["pull", path_on_device, local_path])
-        except AdbConnectionError as err:
+        except CommandFailedError as err:
             if 'Permission denied' in err.stderr:
                 raise WrongPermissions()
             if 'No such file or directory' in err.stderr:
@@ -150,7 +149,7 @@ class AndroidDeviceUtils:
         """
         try:
             output = self._shell("mkdir", path_on_device)
-        except AdbConnectionError as err:
+        except CommandFailedError as err:
             if 'No such file or directory' in err.stderr:
                 raise RemoteFileNotFound()
             if 'File exists' in err.stderr:
@@ -170,7 +169,7 @@ class AndroidDeviceUtils:
         """
         try:
             output = self._shell("rm", "-rf", path_on_device)
-        except AdbConnectionError as err:
+        except CommandFailedError as err:
             if 'Read-only file system' in err.stderr or 'No such file or directory' in err.stderr:
                 # Trying to remove a read-only file resulted in 'No such file or directory', so not sure how to distinguish these two.
                 raise WrongPermissions()
@@ -186,7 +185,7 @@ class AndroidDeviceUtils:
         """
         try:
             output = self._shell("touch", path_on_device)
-        except AdbConnectionError as err:
+        except CommandFailedError as err:
             if 'No such file or directory' in err.stderr:
                 raise RemoteFileNotFound()
             if 'Read-only file system' in err.stderr:
@@ -204,7 +203,7 @@ class AndroidDeviceUtils:
         """
         try:
             output = self._shell("rm", "-f", path_on_device)
-        except AdbConnectionError as err:
+        except CommandFailedError as err:
             if 'Read-only file system' in err.stderr or 'No such file or directory' in err.stderr:
                 # Trying to remove a read-only file resulted in 'No such file or directory', so not sure how to distinguish these two.
                 raise WrongPermissions()
@@ -224,7 +223,7 @@ class AndroidDeviceUtils:
         try:
             output = self._shell("ls", "-lat", path_on_device)
             error = ''
-        except AdbConnectionError as err:
+        except CommandFailedError as err:
             # Make sure that all errors are just permission errors
             if any(['Permission denied' not in x for x in err.stderr.splitlines() if x.strip()]):
                 if 'No such file or directory' in err.stderr:
@@ -281,7 +280,7 @@ class AndroidDeviceUtils:
         """
         try:
             return self._shell("cat", "/data/local/tmp/devicename")
-        except AdbConnectionError as err:
+        except CommandFailedError as err:
             if 'No such file or directory' in err.stderr:
                 raise OperationUnsupported()
             raise

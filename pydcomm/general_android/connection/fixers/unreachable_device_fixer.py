@@ -3,7 +3,7 @@ import subprocess
 
 from pydcomm.general_android.connection.common import query_yes_no
 from pydcomm.general_android.connection.fixers.adb_connect_fixer import adb_connect_fix
-from pydcomm.general_android.connection.wired_adb_connection import ConnectingError
+from pydcomm.public.iconnection import ConnectingError
 from pydcomm.general_android.connection.wired_adb_connection import InternalAdbConnection
 
 PING_TIMEOUT = 100

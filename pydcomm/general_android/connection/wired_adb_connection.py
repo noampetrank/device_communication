@@ -4,39 +4,11 @@ import os
 
 import subprocess32 as subprocess
 
+from pydcomm.public.iconnection import ConnectionClosedError, CommandFailedError, ConnectingError
+
 TEST_CONNECTION_ATTEMPTS = 3
 TEST_CONNECTION_TIMEOUT = 0.3
 ADB_CALL_MINIMAL_INTERVAL = 0.5
-
-
-# todo: move to more general place
-class DcommError(Exception):
-    pass
-
-
-class AdbConnectionError(DcommError):
-    """ Error that happens when running adb() """
-
-    # General error class for ADB connection
-    def __init__(self, message=None, stderr=None, stdout=None, returncode=None):
-        super(AdbConnectionError, self).__init__(message)
-        self.stdout = stdout
-        self.stderr = stderr
-        self.returncode = returncode
-
-    def __str__(self):
-        return super(AdbConnectionError, self).__str__() + "\nstdout:\n```\n{}\n```\nstderr:\n```\n{}\n```".format(
-            self.stdout,
-            self.stderr)
-
-
-class ConnectingError(DcommError):
-    """Error that happens during the connection process"""
-    pass
-
-
-class ConnectionClosedError(DcommError):
-    pass
 
 
 class InternalAdbConnection(object):
@@ -92,7 +64,7 @@ class InternalAdbConnection(object):
             raise ConnectionClosedError()
         if specific_device and not disable_fixers:
             if not self.test_connection():
-                raise AdbConnectionError("test_connection failed")
+                raise CommandFailedError("test_connection failed")
         if command[0] == "adb":
             raise ValueError("Command should not start with 'adb'")
 
@@ -134,7 +106,7 @@ class InternalAdbConnection(object):
             self.last_adb_call_time = time.time()
 
         if p.returncode != 0:
-            raise AdbConnectionError("adb returned with non-zero error code",
+            raise CommandFailedError("adb returned with non-zero error code",
                                      stdout=output, stderr=error, returncode=p.returncode)
         return output.strip("\r\n")
 
@@ -146,7 +118,7 @@ class InternalAdbConnection(object):
                 return self._run_adb_for_specific_device(["shell", "echo hi"], timeout=TEST_CONNECTION_TIMEOUT) == "hi"
             except subprocess.TimeoutExpired:
                 pass
-            except AdbConnectionError as e:
+            except CommandFailedError as e:
                 pass
             except ConnectionClosedError:
                 raise

@@ -5,8 +5,9 @@ from nose.tools import assert_raises
 
 import mock
 import subprocess32 as subprocess
-from pydcomm.general_android.connection.wired_adb_connection import InternalAdbConnection, AdbConnectionError, ConnectingError, ConnectionClosedError
+from pydcomm.general_android.connection.wired_adb_connection import InternalAdbConnection
 from pydcomm.general_android.connection.wireless_adb_connection import get_device_ip, connect_wireless
+from pydcomm.public.iconnection import ConnectionClosedError, CommandFailedError, ConnectingError
 from pydcomm.tests.connection.consts import IFCONFIG_BAD, IFCONFIG_GOOD
 from pydcomm.tests.helpers import TestCasePatcher
 
@@ -46,7 +47,7 @@ class WiredAdbConnectionTests(unittest.TestCase):
         mock_popen.return_value.communicate.return_value = mock.Mock(), stderr
         mock_popen.return_value.returncode = 4
 
-        with assert_raises(AdbConnectionError) as e:
+        with assert_raises(CommandFailedError) as e:
             self.con.adb("hayush")
 
         self.assertEqual(e.exception.returncode, 4)
@@ -54,7 +55,7 @@ class WiredAdbConnectionTests(unittest.TestCase):
 
     @mock.patch.object(InternalAdbConnection, "test_connection", lambda x: False)
     def test_adb__test_connection_fails__raises_exception(self):
-        with assert_raises(AdbConnectionError) as e:
+        with assert_raises(CommandFailedError) as e:
             self.con.adb("hay")
         self.assertIn("test_connection", e.exception.message)
 
@@ -139,7 +140,7 @@ class WirelessAdbConnectionTests(unittest.TestCase):
     def raise_connection_error_if_command_equals(command):
         def side_effect(*args, **kwargs):
             if args[0] == command:
-                raise AdbConnectionError(command)
+                raise CommandFailedError(command)
 
             return None
 

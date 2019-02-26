@@ -1,13 +1,14 @@
 import datetime
+import tempfile
 import unittest
 from textwrap import dedent
 
 import mock
-import tempfile
 
-from pydcomm.general_android.connection.wired_adb_connection import InternalAdbConnection, AdbConnectionError
-from pydcomm.general_android.android_device_utils import AndroidDeviceUtils, LocalFileNotFound, RemoteFileNotFound, WrongPermissions, FileAlreadyExists, OperationUnsupported, \
+from pydcomm.general_android.android_device_utils import AndroidDeviceUtils, LocalFileNotFound, RemoteFileNotFound, \
+    WrongPermissions, FileAlreadyExists, OperationUnsupported, \
     AndroidDeviceUtilsError
+from pydcomm.public.iconnection import CommandFailedError
 
 
 class UnitTestDeviceUtils(unittest.TestCase):
@@ -35,19 +36,19 @@ class UnitTestDeviceUtils(unittest.TestCase):
             self.device_utils.push(tmp_file.name, '/sdcard/')
 
     def test_push_from_non_existent(self):
-        err = AdbConnectionError()
+        err = CommandFailedError()
         err.stderr = "adb: error: cannot stat '/home/buga/tmp_dir/tmp_file.tm': No such file or directory\n"
         self.conn.adb.side_effect = err
         self.assertRaises(LocalFileNotFound, self.device_utils.push, '/home/buga/tmp_dir/tmp_file.tm', '/sdcard/')
 
     def test_push_to_non_existent(self):
-        err = AdbConnectionError()
+        err = CommandFailedError()
         err.stderr = "[100%] /sdcard23/\nadb: error: failed to copy '/home/buga/tmp_dir/tmp_file.tmp' to '/sdcard23/': remote couldn't create file: Is a directory\n/home/buga/tmp_dir/tmp_file.tmp: 0 files pushed. 0.0 MB/s (44 bytes in 0.003s)\n"
         self.conn.adb.side_effect = err
         self.assertRaises(RemoteFileNotFound, self.device_utils.push, '/home/buga/tmp_dir/tmp_file.tmp', '/sdcard23/')
 
     def test_push_no_permissions(self):
-        err = AdbConnectionError()
+        err = CommandFailedError()
         err.stderr = "[100%] /tmp_file.tmp\nadb: error: failed to copy '/home/buga/tmp_dir/tmp_file.tmp' to '/tmp_file.tmp': remote couldn't create file: Read-only file system\n/home/buga/tmp_dir/tmp_file.tmp: 0 files pushed. 0.0 MB/s (44 bytes in 0.005s)\n"
         self.conn.adb.side_effect = err
         self.assertRaises(WrongPermissions, self.device_utils.push, '/home/buga/tmp_dir/tmp_file.tmp', '/')
@@ -62,19 +63,19 @@ class UnitTestDeviceUtils(unittest.TestCase):
 
 
     def test_pull_from_non_existent(self):
-        err = AdbConnectionError()
+        err = CommandFailedError()
         err.stderr = "adb: error: failed to stat remote object '/sdcard/tmp_file.tm': No such file or directory\n"
         self.conn.adb.side_effect = err
         self.assertRaises(RemoteFileNotFound, self.device_utils.pull, '/sdcard/tmp_file.tm', '/home/buga/tmp_dir/')
 
     def test_pull_to_non_existent(self):
-        err = AdbConnectionError()
+        err = CommandFailedError()
         err.stderr = "adb: error: cannot create '/home/buga/tmp_dir2/': Is a directory\n"
         self.conn.adb.side_effect = err
         self.assertRaises(LocalFileNotFound, self.device_utils.pull, '/sdcard/tmp_file.tmp', '/home/buga/tmp_dir2/')
 
     def test_pull_no_permissions(self):
-        err = AdbConnectionError()
+        err = CommandFailedError()
         err.stderr = "adb: error: cannot create '/home/buga/tmp_dir/no_perm/tmp_file.tmp': Permission denied\n"
         self.conn.adb.side_effect = err
         self.assertRaises(WrongPermissions, self.device_utils.pull, '/sdcard/tmp_file.tmp', '/home/buga/tmp_dir/no_perm')
@@ -104,19 +105,19 @@ class UnitTestDeviceUtils(unittest.TestCase):
         self.device_utils.mkdir('/sdcard/tmp_dir')
 
     def test_mkdir_already_exists(self):
-        err = AdbConnectionError()
+        err = CommandFailedError()
         err.stderr = "mkdir: '/sdcard/tmp_dir/': File exists\n"
         self.conn.adb.side_effect = err
         self.assertRaises(FileAlreadyExists, self.device_utils.mkdir, '/sdcard/tmp_dir')
 
     def test_mkdir_in_non_existent(self):
-        err = AdbConnectionError()
+        err = CommandFailedError()
         err.stderr = "mkdir: '/sdcard/tmp_dir/sub/dir': No such file or directory\n"
         self.conn.adb.side_effect = err
         self.assertRaises(RemoteFileNotFound, self.device_utils.mkdir, '/sdcard/tmp_dir/sub/dir')
 
     def test_mkdir_no_permissions(self):
-        err = AdbConnectionError()
+        err = CommandFailedError()
         err.stderr = "mkdir: '/system/tmp_dir': Read-only file system\n"
         self.conn.adb.side_effect = err
         self.assertRaises(WrongPermissions, self.device_utils.mkdir, '/system/tmp_dir')
@@ -130,7 +131,7 @@ class UnitTestDeviceUtils(unittest.TestCase):
         self.device_utils.rmdir('/sdcard/tmp_dir')
 
     def test_rmdir_no_permissions(self):
-        err = AdbConnectionError()
+        err = CommandFailedError()
         err.stderr = 'rm: /system/tmp_dir: No such file or directory\n'
         self.conn.adb.side_effect = err
         self.assertRaises(WrongPermissions, self.device_utils.rmdir, '/system/tmp_dir')
@@ -144,13 +145,13 @@ class UnitTestDeviceUtils(unittest.TestCase):
         self.device_utils.touch_file('/sdcard/tmp_file2')
 
     def test_touch_file_in_non_existent(self):
-        err = AdbConnectionError()
+        err = CommandFailedError()
         err.stderr = "touch: '/sdcard/notexist/tmp_file2': No such file or directory\n"
         self.conn.adb.side_effect = err
         self.assertRaises(RemoteFileNotFound, self.device_utils.touch_file, '/sdcard/notexist/tmp_file2')
 
     def test_touch_file_no_permissions(self):
-        err = AdbConnectionError()
+        err = CommandFailedError()
         err.stderr = "touch: '/system/tmp_file': Read-only file system\n"
         self.conn.adb.side_effect = err
         self.assertRaises(WrongPermissions, self.device_utils.touch_file, '/system/tmp_file')
@@ -164,7 +165,7 @@ class UnitTestDeviceUtils(unittest.TestCase):
         self.device_utils.remove('/sdcard/tmp_file.tmp')
 
     def test_remove_no_permissions(self):
-        err = AdbConnectionError()
+        err = CommandFailedError()
         err.stderr = 'rm: /system/tmp_file: No such file or directory\n'
         self.conn.adb.side_effect = err
         self.assertRaises(WrongPermissions, self.device_utils.remove, '/system/tmp_file')
@@ -202,7 +203,7 @@ class UnitTestDeviceUtils(unittest.TestCase):
         self.assertEqual(len([x for x in ls if x['links_to']]), 5)
         self.assertEqual(len(ls), 14)
 
-        err = AdbConnectionError()
+        err = CommandFailedError()
         err.stdout = stdout
         err.stderr = stderr
         self.conn.adb.side_effect = err
@@ -215,7 +216,7 @@ class UnitTestDeviceUtils(unittest.TestCase):
         self.assertIn(dict(permissions=None, n_links=None, owner=None, group=None, size=None, modified=None, name='PktRspTest', links_to=None), ls)
 
     def test_ls_doesnt_exist(self):
-        err = AdbConnectionError()
+        err = CommandFailedError()
         err.stderr = 'ls: /abc: No such file or directory\n'
         self.conn.adb.side_effect = err
         self.assertRaises(RemoteFileNotFound, self.device_utils.ls, '/abc')
@@ -260,7 +261,7 @@ class UnitTestDeviceUtils(unittest.TestCase):
         self.assertEqual(dne, dna)
 
     def test_get_device_name_unsupported(self):
-        err = AdbConnectionError()
+        err = CommandFailedError()
         err.stderr = 'rm: /data/local/tmp/devicename: No such file or directory\n'
         self.conn.adb.side_effect = err
         self.assertRaises(OperationUnsupported, self.device_utils.get_device_name)

@@ -1,6 +1,6 @@
 from pydcomm.general_android.android_device_utils import AndroidDeviceUtils
-from pydcomm.public.iconnection import IConnection
-from pydcomm.general_android.connection.wired_adb_connection import InternalAdbConnection, AdbConnectionError
+from pydcomm.public.iconnection import IConnection, CommandFailedError
+from pydcomm.general_android.connection.wired_adb_connection import InternalAdbConnection
 from pybuga.infra.phone.adb_utils import LogCat
 
 
