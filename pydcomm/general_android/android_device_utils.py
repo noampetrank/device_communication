@@ -136,10 +136,10 @@ class AndroidDeviceUtils:
 
     def _shell(self, *args):
         """
-        :type args: list(str)
+        :type args: tuple(str)
         """
         # log.info("_shell params:", *args)
-        return self.connection.adb("shell", *args)
+        return self.connection.adb(["shell"] + list(args))
 
     def mkdir(self, path_on_device):
         """
