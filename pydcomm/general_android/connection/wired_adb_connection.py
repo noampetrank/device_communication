@@ -5,6 +5,7 @@ import os
 import subprocess32 as subprocess
 
 from pydcomm.public.iconnection import ConnectionClosedError, CommandFailedError, ConnectingError
+from pydcomm.general_android.connection.adb_monitor_wrapping_echo_hi import AdbMonitorWrappingEchoHi
 
 TEST_CONNECTION_ATTEMPTS = 3
 TEST_CONNECTION_TIMEOUT = 0.3
@@ -62,9 +63,6 @@ class InternalAdbConnection(object):
 
         if specific_device and self.device_id is None:
             raise ConnectionClosedError()
-        if specific_device and not disable_fixers:
-            if not self.test_connection():
-                raise CommandFailedError("test_connection failed")
         if command[0] == "adb":
             raise ValueError("Command should not start with 'adb'")
 
@@ -98,16 +96,21 @@ class InternalAdbConnection(object):
         if time_since_last_adb_call < ADB_CALL_MINIMAL_INTERVAL:
             time.sleep(ADB_CALL_MINIMAL_INTERVAL - time_since_last_adb_call)
 
-        if self.debug: print(["adb"] + params)
-        p = subprocess.Popen(["adb"] + params, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        try:
-            output, error = p.communicate(timeout=timeout)
-        finally:
-            self.last_adb_call_time = time.time()
+        if self.debug:
+            print(["adb"] + params)
 
-        if p.returncode != 0:
-            raise CommandFailedError("adb returned with non-zero error code",
-                                     stdout=output, stderr=error, returncode=p.returncode)
+        with AdbMonitorWrappingEchoHi(self) as monitor:
+            p = subprocess.Popen(["adb"] + params, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            try:
+                output, error = p.communicate(timeout=timeout)
+            finally:
+                self.last_adb_call_time = time.time()
+
+            if p.returncode != 0:
+                if monitor.is_connection_error():
+                    raise ConnectionClosedError()
+                raise CommandFailedError("adb returned with non-zero error code",
+                                         stdout=output, stderr=error, returncode=p.returncode)
         return output.strip("\r\n")
 
     def test_connection(self):
