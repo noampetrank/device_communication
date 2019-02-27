@@ -6,13 +6,13 @@ from unittest import TestCase
 # All tests are done with subprocess.check_output/Popen mocked to assert the output
 from mock import mock
 
-from pydcomm.general_android.connection.connection_factory import AdbConnectionFactory
+from pydcomm.general_android.connection.internal_connection_factory import InternalAdbConnectionFactory
 from pydcomm.general_android.connection.device_selector import MultiDeviceBehavior
 
 
 class ConnectionFactoryUnitTests(TestCase):
     def setUp(self):
-        # self.cf = AdbConnectionFactory()
+        # self.cf = InternalAdbConnectionFactory()
         self.cf = mock.Mock()
 
     def rooted_connection__connect__root_will_be_executed(self):

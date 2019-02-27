@@ -1,3 +1,4 @@
+from __future__ import print_function
 import logging
 import time
 import os
@@ -5,7 +6,7 @@ import os
 import subprocess32 as subprocess
 
 from pydcomm.public.iconnection import ConnectionClosedError, CommandFailedError, ConnectingError
-from pydcomm.general_android.connection.adb_monitor_wrapping_echo_hi import AdbMonitorWrappingEchoHi
+from pydcomm.general_android.connection.adb_monitor_wrapping_echo_hi import AdbMonitorWrappingEchoHi, EmptyMonitor
 
 TEST_CONNECTION_ATTEMPTS = 3
 TEST_CONNECTION_TIMEOUT = 0.3
@@ -67,20 +68,12 @@ class InternalAdbConnection(object):
             raise ValueError("Command should not start with 'adb'")
 
         if specific_device:
-            return self._run_adb_for_specific_device(command, timeout)
-        else:
+            if self.device_id is None:
+                raise ConnectionClosedError()
+            command = ["-s", self.device_id] + command
+        monitor = EmptyMonitor if disable_fixers or not specific_device else AdbMonitorWrappingEchoHi
+        with monitor(self):
             return self._run_adb_command(command, timeout)
-
-    def _run_adb_for_specific_device(self, params, timeout):
-        """
-        :param list[str] params: list of ADB params (split by spaces)
-        :param float timeout: ADB call timeout
-        :return str: ADB command output
-        :raises TimeoutExpired is case the ADB command was timed out
-        """
-        if self.device_id is None:
-            raise ConnectionClosedError()
-        return self._run_adb_command(["-s", self.device_id] + params, timeout=timeout)
 
     def _run_adb_command(self, params, timeout):
         """
@@ -97,20 +90,18 @@ class InternalAdbConnection(object):
             time.sleep(ADB_CALL_MINIMAL_INTERVAL - time_since_last_adb_call)
 
         if self.debug:
+            print(time.time(), end=" - ")
             print(["adb"] + params)
 
-        with AdbMonitorWrappingEchoHi(self) as monitor:
-            p = subprocess.Popen(["adb"] + params, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            try:
-                output, error = p.communicate(timeout=timeout)
-            finally:
-                self.last_adb_call_time = time.time()
+        p = subprocess.Popen(["adb"] + params, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        try:
+            output, error = p.communicate(timeout=timeout)
+        finally:
+            self.last_adb_call_time = time.time()
 
-            if p.returncode != 0:
-                if monitor.is_connection_error():
-                    raise ConnectionClosedError()
-                raise CommandFailedError("adb returned with non-zero error code",
-                                         stdout=output, stderr=error, returncode=p.returncode)
+        if p.returncode != 0:
+            raise CommandFailedError("adb returned with non-zero error code",
+                                     stdout=output, stderr=error, returncode=p.returncode)
         return output.strip("\r\n")
 
     def test_connection(self):
@@ -118,7 +109,7 @@ class InternalAdbConnection(object):
         while attempts > 0:
             try:
                 attempts -= 1
-                return self._run_adb_for_specific_device(["shell", "echo hi"], timeout=TEST_CONNECTION_TIMEOUT) == "hi"
+                return self._run_adb_command(["-s", self.device_id, "shell", "echo hi"], timeout=TEST_CONNECTION_TIMEOUT) == "hi"
             except subprocess.TimeoutExpired:
                 pass
             except CommandFailedError as e:

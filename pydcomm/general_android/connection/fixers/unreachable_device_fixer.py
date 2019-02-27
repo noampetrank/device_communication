@@ -4,7 +4,7 @@ import subprocess
 from pydcomm.general_android.connection.common import query_yes_no
 from pydcomm.general_android.connection.fixers.adb_connect_fixer import adb_connect_fix
 from pydcomm.public.iconnection import ConnectingError
-from pydcomm.general_android.connection.wired_adb_connection import InternalAdbConnection
+from pydcomm.general_android.connection.internal_adb_connection import InternalAdbConnection
 
 PING_TIMEOUT = 100
 
@@ -57,4 +57,4 @@ def _is_valid_ip_address(address):
 
 
 def _is_ping_successful(ip_address, timeout):
-    return not subprocess.call(["fping", "-t", str(timeout), ip_address])
+    return subprocess.call(["ping", "-c", "1", ip_address], stdout=subprocess.PIPE) == 0

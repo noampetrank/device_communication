@@ -1,6 +1,6 @@
 from pydcomm.general_android.android_device_utils import AndroidDeviceUtils
 from pydcomm.public.iconnection import IConnection, CommandFailedError
-from pydcomm.general_android.connection.wired_adb_connection import InternalAdbConnection
+from pydcomm.general_android.connection.internal_adb_connection import InternalAdbConnection
 from pybuga.infra.phone.adb_utils import LogCat
 
 
@@ -146,5 +146,5 @@ class AdbConnection(IConnection):
     @staticmethod
     def _get_timeout_seconds(timeout_ms):
         if timeout_ms is None:
-            return None
+            return 30
         return timeout_ms / 1000.

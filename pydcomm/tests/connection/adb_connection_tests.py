@@ -5,7 +5,7 @@ from nose.tools import assert_raises
 
 import mock
 import subprocess32 as subprocess
-from pydcomm.general_android.connection.wired_adb_connection import InternalAdbConnection
+from pydcomm.general_android.connection.internal_adb_connection import InternalAdbConnection
 from pydcomm.general_android.connection.wireless_adb_connection import get_device_ip, connect_wireless
 from pydcomm.public.iconnection import ConnectionClosedError, CommandFailedError, ConnectingError
 from pydcomm.tests.connection.consts import IFCONFIG_BAD, IFCONFIG_GOOD

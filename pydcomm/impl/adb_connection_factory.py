@@ -1,4 +1,4 @@
-from pydcomm.general_android.connection.connection_factory import AdbConnectionFactory
+from pydcomm.general_android.connection.internal_connection_factory import InternalAdbConnectionFactory
 from pydcomm.general_android.connection.device_selector import adb_devices, get_device_to_connect_user_choice
 from pydcomm.impl.adb_connection_adapter import AdbConnection
 
@@ -17,7 +17,7 @@ class WiredAdbConnectionFactory(ConnectionFactory):
         if not device_id:
             device_id = cls.choose_device_id()
         use_manual_fixes = kwargs.get("use_manual_fixes", True)
-        connection = AdbConnection(cls._get_oppo_device(rooted=False, device_id=device_id,
+        connection = AdbConnection(cls._get_oppo_device(device_id=device_id,
                                                         use_manual_fixes=use_manual_fixes))
         if connection.shell("echo hi") == "hi":
             return connection
@@ -41,14 +41,14 @@ class WiredAdbConnectionFactory(ConnectionFactory):
 
     @classmethod
     def _get_oppo_device(cls, *args, **kwargs):
-        connection_factory = AdbConnectionFactory()
+        connection_factory = InternalAdbConnectionFactory()
         return  connection_factory.get_oppo_wired_device(*args, **kwargs)
 
 
 class WirelessAdbConnectionFactory(WiredAdbConnectionFactory):
     @classmethod
     def _get_oppo_device(cls, *args, **kwargs):
-        connection_factory = AdbConnectionFactory()
+        connection_factory = InternalAdbConnectionFactory()
         return connection_factory.get_oppo_wireless_device(*args, **kwargs)
 
     @classmethod

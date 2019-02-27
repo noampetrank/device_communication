@@ -1,4 +1,5 @@
 import re
+from traceback import print_exc
 
 from pybuga.infra.utils.user_input import UserInput
 from subprocess32 import TimeoutExpired
@@ -27,8 +28,9 @@ def get_device_ip(connection):
 
 def _run_adb_with_exception(connection, command, exception_message):
     try:
-        connection.adb(command)
+        connection.adb(command, disable_fixers=True)
     except CommandFailedError:
+        print_exc()
         raise ConnectingError(exception_message)
 
 
