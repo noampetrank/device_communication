@@ -4,30 +4,27 @@ from pydcomm.general_android.connection.internal_adb_connection import Connectio
 
 class AdbMonitorWrappingEchoHi(IAdbMonitor):
     def __init__(self, connection):
+        """
+        :param InternalAdbConnection connection:
+        """
         self.connection = connection
 
     def __enter__(self):
-        if not self._test_connection():
+        if not self.connection.test_connection():
             raise ConnectionClosedError()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if not self._test_connection():
+        if not self.connection.test_connection():
             raise ConnectionClosedError()
 
     def is_connection_error(self):
-        return not self._test_connection()
-
-    def _test_connection(self):
-        try:
-            return self.connection._run_adb_command(["-s", self.connection.device_id, "shell", "echo hi"],
-                                                    timeout=1).strip() == "hi"
-        except:
-            return False
+        return not self.connection.test_connection()
 
 
-class EmptyMonitor(IAdbMonitor):
+class NullMonitor(IAdbMonitor):
     def __init__(self, _):
         pass
+
     def __enter__(self):
         pass
 

@@ -6,7 +6,7 @@ import os
 import subprocess32 as subprocess
 
 from pydcomm.public.iconnection import ConnectionClosedError, CommandFailedError, ConnectingError
-from pydcomm.general_android.connection.adb_monitor_wrapping_echo_hi import AdbMonitorWrappingEchoHi, EmptyMonitor
+from pydcomm.general_android.connection.adb_monitor_wrapping_echo_hi import AdbMonitorWrappingEchoHi, NullMonitor
 
 TEST_CONNECTION_ATTEMPTS = 3
 TEST_CONNECTION_TIMEOUT = 0.3
@@ -71,7 +71,10 @@ class InternalAdbConnection(object):
             if self.device_id is None:
                 raise ConnectionClosedError()
             command = ["-s", self.device_id] + command
-        monitor = EmptyMonitor if disable_fixers or not specific_device else AdbMonitorWrappingEchoHi
+        if disable_fixers or not specific_device:
+            monitor = NullMonitor
+        else:
+            monitor = AdbMonitorWrappingEchoHi
         with monitor(self):
             return self._run_adb_command(command, timeout)
 

@@ -5,31 +5,6 @@ from python.infra.utils.user_input import UserInput
 from pydcomm.public.iconnection import ConnectionClosedError
 
 
-# def add_adb_recovery_decorator(fix_function):
-#     def inner(connection):
-#         old_adb = connection.adb
-#
-#         def new_adb(self, command, timeout=None, specific_device=True, disable_fixers=False):
-#             old_test_connection = self.test_connection
-#             try:
-#                 if not disable_fixers and specific_device:
-#                     if not self.test_connection():
-#                         try:
-#                             fix_function(self)
-#                         except Exception as e:
-#                             self.log.warn("Fix {} failed ".format(fix_function.__name__), exc_info=e)
-#                     else:
-#                         self.test_connection = lambda: True
-#                 return old_adb(self, command, timeout, specific_device, disable_fixers)
-#             finally:
-#                 self.test_connection = old_test_connection
-#
-#         connection.adb = new_adb
-#         return connection
-#
-#     return inner
-
-
 def add_fixers(connection_cls, method, fixers):
     """
     :param type connection_cls:
@@ -37,8 +12,10 @@ def add_fixers(connection_cls, method, fixers):
     :param list[InternalAdbConnection -> None]:
     :return:
     """
+
     class TempClass(connection_cls):
         pass
+
     old_method = getattr(connection_cls, method)
 
     def run_with_fixers(*args, **kwargs):
@@ -46,18 +23,18 @@ def add_fixers(connection_cls, method, fixers):
             try:
                 return old_method(*args, **kwargs)
             except ConnectionClosedError:
-                if kwargs.get("disable_fixers",False):
+                if kwargs.get("disable_fixers", False):
                     raise
                 try:
                     fix(args[0])
                 except Exception:
                     print_exc()
-                    # raise
+                    raise
         print("please call a developer.")
         while True:
+            if not UserInput.yes_no("Do you want to try again? [y/n]"):
+                raise ConnectionClosedError()
             try:
-                if not UserInput.yes_no("Do you want to try again? [y/n]"):
-                    break
                 return old_method(*args, **kwargs)
             except ConnectionClosedError:
                 pass
@@ -70,6 +47,9 @@ def add_fixers(connection_cls, method, fixers):
 def add_init_decorator(function, run_before=False):
     def adder(connection):
         original_init = connection.__init__
+
+        class TempClass(connection):
+            pass
 
         def new_init(self, device_id=None, filter_wireless_devices=False):
             def run():
@@ -85,8 +65,9 @@ def add_init_decorator(function, run_before=False):
             if not run_before:
                 run()
 
-        connection.__init__ = new_init
-        return connection
+        TempClass.__init__ = new_init
+        TempClass.__name__ = connection.__name__
+        return TempClass
 
     return adder
 
@@ -94,6 +75,9 @@ def add_init_decorator(function, run_before=False):
 def add_disconnect_decorator(function, run_before=False):
     def adder(connection):
         original_disconnect = connection.disconnect
+
+        class TempClass(connection):
+            pass
 
         def new_disconnect(self):
             def run():
@@ -108,7 +92,8 @@ def add_disconnect_decorator(function, run_before=False):
             if not run_before:
                 run()
 
-        connection.disconnect = new_disconnect
-        return connection
+        TempClass.disconnect = new_disconnect
+        TempClass.__name__ = connection.__name__
+        return TempClass
 
     return adder

@@ -1,5 +1,4 @@
-import netifaces as netifaces
-
+from pydcomm.public.iconnection import CommandFailedError
 from pydcomm.general_android.connection.fixers.adb_connect_fixer import adb_connect_fix
 
 
@@ -11,8 +10,11 @@ def restart_adb_server_fix(connection):
 
 
 def set_usb_mode_to_mtp_fix(connection):
-    connection.adb("shell setprop sys.usb.config \"mtp,adb\"", disable_fixers=True, timeout=2)
-    adb_connect_fix(connection)
+    try:
+        connection.adb("shell setprop sys.usb.config \"mtp,adb\"", disable_fixers=True, timeout=2)
+        adb_connect_fix(connection)
+    except CommandFailedError:
+        print("Mtp fix failed.")
 
 
 def manually_set_usb_mode_to_mtp_fix(connection):

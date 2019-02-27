@@ -3,7 +3,6 @@ from pydcomm.general_android.connection.connection_fixers import restart_adb_ser
 from pydcomm.general_android.connection.decorator_helpers import add_fixers
 from pydcomm.general_android.connection.device_selector import MultiDeviceBehavior
 from pydcomm.general_android.connection.fixers.adb_connect_fixer import adb_connect_fix
-from pydcomm.general_android.connection.fixers.call_a_developer_fixer import call_a_developer_fix
 from pydcomm.general_android.connection.fixers.connected_usb_device_fixes import forgot_device_fix, device_turned_off
 from pydcomm.general_android.connection.fixers.enable_usb_debugging_fixer import enable_usb_debugging_fix
 from pydcomm.general_android.connection.fixers.get_user_attention_fixer import get_user_attention_fix
@@ -13,9 +12,9 @@ from pydcomm.general_android.connection.internal_adb_connection import InternalA
 from pydcomm.general_android.connection.wireless_adb_connection import add_connect_wireless, add_disconnect_wireless
 
 # Save InternalAdbConnection functions that can be decorated in order to allow resetting the class
-InternalAdbConnection.original_init = InternalAdbConnection.__init__
-InternalAdbConnection.original_adb = InternalAdbConnection.adb
-InternalAdbConnection.original_disconnect = InternalAdbConnection.disconnect
+# InternalAdbConnection.original_init = InternalAdbConnection.__init__
+# InternalAdbConnection.original_adb = InternalAdbConnection.adb
+# InternalAdbConnection.original_disconnect = InternalAdbConnection.disconnect
 
 
 class InternalAdbConnectionFactory(object):
@@ -32,11 +31,10 @@ class InternalAdbConnectionFactory(object):
         :return
         """
         fixers = fixers or []
-
         # Reset InternalAdbConnection decorated functions
-        InternalAdbConnection.__init__ = InternalAdbConnection.original_init
-        InternalAdbConnection.disconnect = InternalAdbConnection.original_disconnect
-        InternalAdbConnection.adb = InternalAdbConnection.original_adb
+        # InternalAdbConnection.__init__ = InternalAdbConnection.original_init
+        # InternalAdbConnection.disconnect = InternalAdbConnection.original_disconnect
+        # InternalAdbConnection.adb = InternalAdbConnection.original_adb
 
         con_cls = InternalAdbConnection
         if not wired:
@@ -54,12 +52,10 @@ class InternalAdbConnectionFactory(object):
 
         if use_manual_fixes:
             # call_a_developer_fix must be the first manual fixer
-            fixers.append(call_a_developer_fix)
             fixers.append(verify_same_network_fix)
             fixers.append(device_turned_off)
             fixers.append(enable_usb_debugging_fix)
             fixers.append(unreachable_device_fix)
-            # fixers.append(manually_set_usb_mode_to_mtp_fix)
             # get_user_attention_fix must be the last manual fixer.
             fixers.append(get_user_attention_fix)
 
@@ -72,7 +68,6 @@ class InternalAdbConnectionFactory(object):
 
         if use_manual_fixes:
             # call_a_developer_fix must be the first manual fixer
-            fixers.append(call_a_developer_fix)
             fixers.append(device_turned_off)
             fixers.append(enable_usb_debugging_fix)
             fixers.append(forgot_device_fix)

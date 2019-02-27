@@ -6,7 +6,7 @@ from unittest import TestCase
 # All tests are done with subprocess.check_output/Popen mocked to assert the output
 from mock import mock
 
-from pydcomm.general_android.connection.internal_connection_factory import InternalAdbConnectionFactory
+from pydcomm.general_android.connection.internal_adb_connection_factory import InternalAdbConnectionFactory
 from pydcomm.general_android.connection.device_selector import MultiDeviceBehavior
 
 

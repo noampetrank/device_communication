@@ -1,4 +1,4 @@
-from pydcomm.general_android.connection.internal_connection_factory import InternalAdbConnectionFactory
+from pydcomm.general_android.connection.internal_adb_connection_factory import InternalAdbConnectionFactory
 from pydcomm.general_android.connection.device_selector import adb_devices, get_device_to_connect_user_choice
 from pydcomm.impl.adb_connection_adapter import AdbConnection
 
