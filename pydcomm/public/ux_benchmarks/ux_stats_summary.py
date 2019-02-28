@@ -31,7 +31,9 @@ def ux_stats_json_to_pandas(ux_stats_data, verbose=False):
             ("pc_wifi", extra_stats.get('pc_wifi', None)),
             ("device_id", extra_stats.get('device_id', None)),
             ("device_wifi", extra_stats.get('device_wifi', None)),
-            ("call_time", api_call.get('end_time', None) - api_call.get('start_time', None)),
+            ("start_time", api_call.get('start_time', None)),
+            ("end_time", api_call.get('end_time', None)),
+            ("call_time_secs", api_call.get('end_time', None) - api_call.get('start_time', None)),
             ("manual_actions_count", len(api_call.get('manual_times', None))),
             ("manual_actions_time", sum([end - start for start, end in api_call.get('manual_times', [])])),
             ("is_exception", api_call.get('is_exception', None)),
@@ -53,7 +55,9 @@ def ux_stats_json_to_pandas(ux_stats_data, verbose=False):
         "pc_wifi": "N/A",
         "device_id": "N/A",
         "device_wifi": "N/A",
-        "call_time": 0,
+        "start_time": 0,
+        "end_time": 0,
+        "call_time_secs": 0,
         "manual_actions_count": 0,
         "manual_actions_time": 0,
         "is_exception": False,
@@ -62,6 +66,10 @@ def ux_stats_json_to_pandas(ux_stats_data, verbose=False):
         "kwargs": "",
         "ret": "",
     })
+
+    all_calls_table['start_time'] = pd.to_datetime(all_calls_table['start_time'], unit='s')
+    all_calls_table['end_time'] = pd.to_datetime(all_calls_table['end_time'], unit='s')
+    all_calls_table['day'] = all_calls_table['start_time'].dt.floor('d')
 
     if verbose:
         _setup_pandas()
@@ -79,7 +87,7 @@ def get_ux_stats_summary(all_calls_table, verbose=False):
     idx = "class_name function_name hostname pc_ip pc_wifi device_id device_wifi".split()
 
     all_calls_table = all_calls_table.set_index(idx).astype({
-        "call_time": np.float64,
+        "call_time_secs": np.float64,
         "manual_actions_count": np.int32,
         "manual_actions_time": np.float64,
         "is_exception": bool,
@@ -92,7 +100,7 @@ def get_ux_stats_summary(all_calls_table, verbose=False):
     }).groupby(all_calls_table.index.names)
 
     summary = gb.agg({
-        "call_time": np.mean,
+        "call_time_secs": np.mean,
         "manual_actions_count": np.mean,
         "manual_actions_time": np.sum,
         "is_exception": np.sum,
@@ -100,7 +108,7 @@ def get_ux_stats_summary(all_calls_table, verbose=False):
     }).join(gb.size().to_frame(name='total'))
 
     summary = summary.rename(columns={
-        "call_time": "avg_time",
+        "call_time_secs": "avg_time",
         "manual_actions_count": "manual_actions_avg",
         "manual_actions_time": "total_manual_time",
         "is_exception": "total_exceptions",
@@ -139,12 +147,12 @@ def get_rpc_audio_interface_stats_summary(all_calls_table, verbose=False):
 
     data_calls = pd.concat([setup_record_and_play_calls, get_recorded_data_calls], axis=0, sort=True)
 
-    data_calls['MBps'] = data_calls.apply(lambda x: x['data_len'] / x['call_time'] / 2 ** 20, axis=1)
+    data_calls['MBps'] = data_calls.apply(lambda x: x['data_len'] / x['call_time_secs'] / 2 ** 20, axis=1)
 
     bins = np.concatenate([[-float('inf')], np.arange(120) * 48000 * 12, [float('inf')]])
     data_calls['data_len_bin'] = pd.cut(data_calls['data_len'], bins).rename({'data_len': 'bin'})
-    summary = data_calls.groupby(['class_name', 'proc_name', 'data_len_bin']).agg(OrderedDict([
-        ('call_time', np.mean),
+    summary = data_calls.groupby(['day', 'class_name', 'proc_name', 'data_len_bin', 'hostname', 'pc_ip']).agg(OrderedDict([
+        ('call_time_secs', np.mean),
         ('MBps', np.mean),
     ]))
 
