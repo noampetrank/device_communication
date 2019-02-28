@@ -4,6 +4,7 @@ import sys
 from collections import namedtuple
 
 import numpy as np
+from mock import MagicMock
 from pybuga.tests.utils.test_helpers import Tee
 from pybuga.infra.utils.user_input import UserInput
 from pydcomm.public.rpcfactories import all_rpc_factories
@@ -232,7 +233,8 @@ def test_main():
     @mock.patch.object(cPickle, "dump")
     @mock.patch.object(__builtin__, "raw_input")
     @mock.patch.object(time, "sleep")
-    def call_main(msleep, mraw_input, mdump, mopen):
+    @mock.patch("pydcomm.public.ux_benchmarks.rpc_ux_benchmarks.ApiCallsRecorder._get_save_file", return_value=MagicMock())
+    def call_main(m_get_save_file, msleep, mraw_input, mdump, mopen):
         msleep.return_value = None
 
         def dummy_raw_input(*values):

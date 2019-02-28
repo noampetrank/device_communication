@@ -7,7 +7,7 @@ from pybuga.infra.utils.buga_utils import indent_printing
 from pybuga.infra.utils.user_input import UserInput
 from pydcomm.public.connfactories import all_connection_factories
 from pydcomm.public.ux_benchmarks.connection.scenarios import get_complete_benchmark
-from pydcomm.public.ux_benchmarks.rpc_ux_benchamrks import BetterTee
+from pydcomm.public.ux_benchmarks.rpc_ux_benchmarks import BetterTee
 from pydcomm.public.ux_benchmarks.utils import run_scenario
 
 
