@@ -1,7 +1,7 @@
 import unittest
 
 import mock
-from nose_parameterized import parameterized
+from parameterized import parameterized
 
 from pydcomm.general_android.connection.decorator_helpers import add_adb_recovery_decorator
 
