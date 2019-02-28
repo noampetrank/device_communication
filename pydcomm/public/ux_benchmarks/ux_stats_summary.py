@@ -174,7 +174,7 @@ def get_rpc_audio_interface_stats_summary(all_calls_table, verbose=False):
     return summary
 
 
-def main_test(which):
+def main_debug(which):
     from mock import patch
 
     @patch('pydcomm.public.ux_stats.ApiCallsRecorder._get_save_file')
@@ -263,7 +263,7 @@ def main(json_files='/home/buga/tmp_dir/ux_stats.jsons'):
 
 
 if __name__ == '__main__':
-    # main_test(which=1)
+    # main_debug(which=1)
 
     import sys
     if len(sys.argv) > 1:
