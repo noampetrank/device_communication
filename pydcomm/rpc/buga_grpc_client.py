@@ -35,7 +35,7 @@ class GRemoteProcedureClient(IRemoteProcedureClient, CommonExtraStats):
                 if device_id:
                     self.latest_device_wifi = get_device_wifi_network_name(device_id)
                     self.latest_device_wifi_update = time.time()
-            except:
+            except Exception:
                 pass
         common.update({
             "device_wifi": self.latest_device_wifi,

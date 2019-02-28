@@ -12,9 +12,10 @@ def _setup_pandas():
 
 def ux_stats_json_to_pandas(ux_stats_data, verbose=False):
     """
-    :param str ux_stats_data:
-    :param bool verbose:
-    :return:
+    Parses ux_stats.jsons and returns a pandas DataFrame.
+    :param str ux_stats_data: content of ux_stats.jsons file
+    :param bool verbose: Print final pandas
+    :return pandas.DataFrame:
     """
     ux_stats_jsons = map(json.loads, ux_stats_data.splitlines())
 
@@ -80,8 +81,12 @@ def ux_stats_json_to_pandas(ux_stats_data, verbose=False):
 
 def get_ux_stats_summary(all_calls_table, verbose=False):
     """
-    :param ps.DataFrame all_calls_table:
-    :param bool verbose:
+    Summarizes general UX stats on a per-class/method basis.
+    index/groupby - class_name function_name hostname pc_ip pc_wifi device_id device_wifi
+    columns - automatic_ratio manual_actions_avg avg_time total_manual_time total_exceptions total
+
+    :param pandas.DataFrame all_calls_table: Output from ux_stats_json_to_pandas()
+    :param bool verbose: Print final pandas
     :return:
     """
     idx = "class_name function_name hostname pc_ip pc_wifi device_id device_wifi".split()
@@ -92,12 +97,13 @@ def get_ux_stats_summary(all_calls_table, verbose=False):
         "manual_actions_time": np.float64,
         "is_exception": bool,
         "is_automatic": bool,
-    })
+    })  # type: pd.DataFrame
 
     gb = all_calls_table.astype({
         "is_exception": np.float64,
         "is_automatic": np.float64,
-    }).groupby(all_calls_table.index.names)
+    })  # type: pd.DataFrame
+    gb = gb.groupby(all_calls_table.index.names)
 
     summary = gb.agg({
         "call_time_secs": np.mean,
@@ -124,8 +130,12 @@ def get_ux_stats_summary(all_calls_table, verbose=False):
 
 def get_rpc_audio_interface_stats_summary(all_calls_table, verbose=False):
     """
-    :param ps.DataFrame all_calls_table:
-    :param bool verbose:
+    Summarizes UX stats for RPC audio interface send/receive.
+    index/groupby - day class_name proc_name data_len_bin hostname pc_ip
+    columns - call_time_secs MBps
+
+    :param pandas.DataFrame all_calls_table: Output from ux_stats_json_to_pandas()
+    :param bool verbose: Print final pandas
     :return:
     """
     def _is_format_supported(x):
