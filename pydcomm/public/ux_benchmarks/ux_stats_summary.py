@@ -1,15 +1,22 @@
 import json
 import numpy as np
 import pandas as pd
+from collections import OrderedDict
 
 
-def ux_stats_json_to_pandas(ux_stats_data):
+def _setup_pandas():
+    pd.set_option('display.max_columns', 500)
+    pd.set_option('display.width', 1000)
+    pd.set_option('display.max_colwidth', 100)
+
+
+def ux_stats_json_to_pandas(ux_stats_data, verbose=False):
     """
-    :param str ux_stats_data:
-    :return:
+    Parses ux_stats.jsons and returns a pandas DataFrame.
+    :param str ux_stats_data: content of ux_stats.jsons file
+    :param bool verbose: Print final pandas
+    :return pandas.DataFrame:
     """
-    from collections import OrderedDict
-
     ux_stats_jsons = map(json.loads, ux_stats_data.splitlines())
 
     def single_api_call_summary(api_call):
@@ -25,7 +32,9 @@ def ux_stats_json_to_pandas(ux_stats_data):
             ("pc_wifi", extra_stats.get('pc_wifi', None)),
             ("device_id", extra_stats.get('device_id', None)),
             ("device_wifi", extra_stats.get('device_wifi', None)),
-            ("call_time", api_call.get('end_time', None) - api_call.get('start_time', None)),
+            ("start_time", api_call.get('start_time', None)),
+            ("end_time", api_call.get('end_time', None)),
+            ("call_time_secs", api_call.get('end_time', None) - api_call.get('start_time', None)),
             ("manual_actions_count", len(api_call.get('manual_times', None))),
             ("manual_actions_time", sum([end - start for start, end in api_call.get('manual_times', [])])),
             ("is_exception", api_call.get('is_exception', None)),
@@ -47,7 +56,9 @@ def ux_stats_json_to_pandas(ux_stats_data):
         "pc_wifi": "N/A",
         "device_id": "N/A",
         "device_wifi": "N/A",
-        "call_time": 0,
+        "start_time": 0,
+        "end_time": 0,
+        "call_time_secs": 0,
         "manual_actions_count": 0,
         "manual_actions_time": 0,
         "is_exception": False,
@@ -57,32 +68,45 @@ def ux_stats_json_to_pandas(ux_stats_data):
         "ret": "",
     })
 
+    all_calls_table['start_time'] = pd.to_datetime(all_calls_table['start_time'], unit='s')
+    all_calls_table['end_time'] = pd.to_datetime(all_calls_table['end_time'], unit='s')
+    all_calls_table['day'] = all_calls_table['start_time'].dt.floor('d')
+
+    if verbose:
+        _setup_pandas()
+        print all_calls_table
+
     return all_calls_table
 
 
 def get_ux_stats_summary(all_calls_table, verbose=False):
     """
-    :param ps.DataFrame all_calls_table:
-    :param bool verbose:
+    Summarizes general UX stats on a per-class/method basis.
+    index/groupby - class_name function_name hostname pc_ip pc_wifi device_id device_wifi
+    columns - automatic_ratio manual_actions_avg avg_time total_manual_time total_exceptions total
+
+    :param pandas.DataFrame all_calls_table: Output from ux_stats_json_to_pandas()
+    :param bool verbose: Print final pandas
     :return:
     """
     idx = "class_name function_name hostname pc_ip pc_wifi device_id device_wifi".split()
 
     all_calls_table = all_calls_table.set_index(idx).astype({
-        "call_time": np.float64,
+        "call_time_secs": np.float64,
         "manual_actions_count": np.int32,
         "manual_actions_time": np.float64,
         "is_exception": bool,
         "is_automatic": bool,
-    })
+    })  # type: pd.DataFrame
 
     gb = all_calls_table.astype({
         "is_exception": np.float64,
         "is_automatic": np.float64,
-    }).groupby(all_calls_table.index.names)
+    })  # type: pd.DataFrame
+    gb = gb.groupby(all_calls_table.index.names)
 
     summary = gb.agg({
-        "call_time": np.mean,
+        "call_time_secs": np.mean,
         "manual_actions_count": np.mean,
         "manual_actions_time": np.sum,
         "is_exception": np.sum,
@@ -90,7 +114,7 @@ def get_ux_stats_summary(all_calls_table, verbose=False):
     }).join(gb.size().to_frame(name='total'))
 
     summary = summary.rename(columns={
-        "call_time": "avg_time",
+        "call_time_secs": "avg_time",
         "manual_actions_count": "manual_actions_avg",
         "manual_actions_time": "total_manual_time",
         "is_exception": "total_exceptions",
@@ -98,12 +122,56 @@ def get_ux_stats_summary(all_calls_table, verbose=False):
     })
 
     if verbose:
-        pd.set_option('display.max_columns', 500)
-        pd.set_option('display.width', 1000)
-        print all_calls_table
+        _setup_pandas()
         print summary
 
-    return all_calls_table, summary
+    return summary
+
+
+def get_rpc_audio_interface_stats_summary(all_calls_table, verbose=False):
+    """
+    Summarizes UX stats for RPC audio interface send/receive.
+    index/groupby - day class_name proc_name data_len_bin hostname pc_ip
+    columns - call_time_secs MBps
+
+    :param pandas.DataFrame all_calls_table: Output from ux_stats_json_to_pandas()
+    :param bool verbose: Print final pandas
+    :return:
+    """
+    def _is_format_supported(x):
+        return 'args' in x and isinstance(x['args'], list) and all(isinstance(a, dict) for a in x['args'])
+
+    call_calls = all_calls_table[(all_calls_table['class_name'] == 'GRemoteProcedureClient') & (all_calls_table['function_name'] == 'call')]
+    call_calls = call_calls[call_calls.apply(_is_format_supported, axis=1)]
+
+    call_calls['proc_name'] = call_calls.apply(lambda x: eval(x['args'][1]['repr']), axis=1)
+
+    setup_record_and_play_calls = (call_calls[call_calls['proc_name'] == 'setup_record_and_play']
+                                   .assign(data_len=lambda df: [((row['args'][2]['len'] if len(row['args']) > 2 else None) or
+                                                                 row['kwargs'].get('params', {'len': None})['len']) for _, row in df.iterrows()]))
+
+    get_recorded_data_calls = (call_calls[call_calls['proc_name'] == 'get_recorded_data']
+                               .assign(data_len=lambda df: [ret['len'] for ret in df.ret]))
+
+    get_recorded_data_calls = get_recorded_data_calls.assign(data_len=lambda df: [ret['len'] for ret in df.ret])
+
+    data_calls = pd.concat([setup_record_and_play_calls, get_recorded_data_calls], axis=0, sort=True)
+
+    data_calls['MBps'] = data_calls.apply(lambda x: x['data_len'] / x['call_time_secs'] / 2 ** 20, axis=1)
+
+    bins = np.concatenate([[-float('inf')], np.arange(120) * 48000 * 12, [float('inf')]])
+    data_calls['data_len_bin'] = pd.cut(data_calls['data_len'], bins).rename({'data_len': 'bin'})
+    summary = data_calls.groupby(['day', 'class_name', 'proc_name', 'data_len_bin', 'hostname', 'pc_ip']).agg(OrderedDict([
+        ('call_time_secs', np.mean),
+        ('MBps', np.mean),
+    ]))
+
+    if verbose:
+        _setup_pandas()
+        print summary
+        summary.to_clipboard()
+
+    return summary
 
 
 def main_test(which):
@@ -159,31 +227,46 @@ def main_test(which):
 
         with open(alt_json_file) as f:
             ux_stats_data = f.read()
-        all_calls_table = ux_stats_json_to_pandas(ux_stats_data)
-        get_ux_stats_summary(all_calls_table, True)
+        all_calls_table = ux_stats_json_to_pandas(ux_stats_data, verbose=True)
+        get_ux_stats_summary(all_calls_table, verbose=True)
 
     inner()
 
 
-def main(json_files):
+def main(json_files='/home/buga/tmp_dir/ux_stats.jsons'):
+    """
+    Run and print all summaries in this files on the given files/directories.
+    :param str|list[str] json_files: One or list of us_stats.json files or folders containing such files.
+    :return
+    """
     import os
     if isinstance(json_files, str):
-        if os.path.isdir(json_files):
-            json_files = os.listdir(json_files)
+        json_files = [json_files]
+
+    _json_files = []
+    for json_file in json_files:
+        if os.path.isdir(json_file):
+            _json_files += [os.path.join(json_file, x) for x in os.listdir(json_file)]
         else:
-            json_files = [json_files]
+            _json_files += [json_file]
+    json_files = _json_files
 
     ux_stats_data = ""
     for json_file in json_files:
         with open(json_file) as f:
             ux_stats_data += f.read()
 
-    all_calls_table = ux_stats_json_to_pandas(ux_stats_data)
-    get_ux_stats_summary(all_calls_table, True)
+    all_calls_table = ux_stats_json_to_pandas(ux_stats_data, verbose=True)
+    get_ux_stats_summary(all_calls_table, verbose=True)
+    get_rpc_audio_interface_stats_summary(all_calls_table, verbose=True)
+    pass
 
 
 if __name__ == '__main__':
-    main_test(which=1)
+    # main_test(which=1)
 
-    # import sys
-    # main(sys.argv[1]) #TODO
+    import sys
+    if len(sys.argv) > 1:
+        main(sys.argv[1:])
+    else:
+        main()

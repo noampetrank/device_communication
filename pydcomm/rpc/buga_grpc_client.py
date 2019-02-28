@@ -4,6 +4,7 @@ import sys
 import os
 import time
 
+from pydcomm.public.ux_benchmarks.common_extra_stats import get_device_wifi_network_name
 from pydcomm.public.ux_benchmarks.common_extra_stats import CommonExtraStats
 from pydcomm.public.bugarpc import IRemoteProcedureClient, IRemoteProcedureClientFactory, RpcError
 from pydcomm.rpc.gen.buga_rpc_pb2_grpc import DeviceRpcStub
@@ -20,7 +21,26 @@ class GRemoteProcedureClient(IRemoteProcedureClient, CommonExtraStats):
         self.channel = grpc.insecure_channel(self.host_port, options=[('grpc.max_send_message_length', self.MAX_MESSAGE_SIZE),
                                                                       ('grpc.max_receive_message_length', self.MAX_MESSAGE_SIZE)])
         self.stub = DeviceRpcStub(self.channel)
+
+        self.latest_device_wifi = None
+        self.latest_device_wifi_update = 0
+
         xver = self.get_executor_version()
+
+    def __extra_stats__(self):
+        common = super(GRemoteProcedureClient, self).__extra_stats__()
+        if time.time() - self.latest_device_wifi_update > 60:  # update every minute
+            try:
+                device_id = self.host_port.split(":")[0]
+                if device_id:
+                    self.latest_device_wifi = get_device_wifi_network_name(device_id)
+                    self.latest_device_wifi_update = time.time()
+            except Exception:
+                pass
+        common.update({
+            "device_wifi": self.latest_device_wifi,
+        })
+        return common
 
     def stop(self):
         self.call('_rpc_stop', '')

@@ -9,7 +9,7 @@ def _get_pc_ip():
         # doesn't even have to be reachable
         s.connect(('10.255.255.255', 1))
         ip = s.getsockname()[0]
-    except:
+    except Exception:
         ip = None
     finally:
         s.close()
@@ -18,8 +18,19 @@ def _get_pc_ip():
 
 def _get_pc_wifi():
     try:
-        return subprocess.check_output("iwgetid -r".split())
-    except:
+        return subprocess.check_output("iwgetid -r".split()).strip()
+    except Exception:
+        return None
+
+
+def get_device_wifi_network_name(device_id):
+    # This can take ~100ms
+    import re
+    try:
+        # TODO how to do ADB without subprocess?
+        netstats = subprocess.check_output('adb -s {} shell dumpsys netstats'.format(device_id), shell=True)
+        return re.findall(r'iface=wlan.*networkId="([^"]+)"', netstats)[0]
+    except Exception:
         return None
 
 
