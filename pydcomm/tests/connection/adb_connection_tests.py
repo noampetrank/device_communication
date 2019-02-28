@@ -15,7 +15,15 @@ WIRED_MODULE_NAME = "pydcomm.general_android.connection.wired_adb_connection"
 
 class WiredAdbConnectionTests(unittest.TestCase):
     def setUp(self):
-        self.con = InternalAdbConnection(device_id="avocado")
+        self.con = None # To prevent some warnings
+
+        @mock.patch(WIRED_MODULE_NAME + ".subprocess.Popen")
+        def create_connection(mock_popen):
+            mock_popen.return_value.communicate.return_value = "hi", mock.Mock()
+            mock_popen.return_value.returncode = 0
+            self.con = InternalAdbConnection(device_id="avocado")
+
+        create_connection()
 
     @mock.patch(WIRED_MODULE_NAME + ".subprocess.Popen")
     @mock.patch.object(InternalAdbConnection, "test_connection", lambda x: True)
@@ -116,8 +124,10 @@ class WirelessAdbConnectionTests(unittest.TestCase):
         self.mock_wired_connection.device_id = "penguin"
         self.mock_wired_connection.test_connection.return_value = True
 
-    def test_connect_wirelessly__device_is_not_connected_to_wifi__raise_exception(self):
+    @mock.patch(WIRELESS_MODULE_NAME + ".UserInput.yes_no")
+    def test_connect_wirelessly__device_is_not_connected_to_wifi__raise_exception(self, moch_yes_no):
         self.mock_get_device_ip.return_value = None
+        moch_yes_no.return_value = False    # ADB connection failed. Do you want to try again? n
 
         self.assert_raises_with_message("wifi")
 
@@ -126,7 +136,7 @@ class WirelessAdbConnectionTests(unittest.TestCase):
         self.assert_raises_with_message("connected to PC")
 
     @staticmethod
-    def raise_exception_error_if_command_equals(command):
+    def raise_connection_error_if_command_equals(command):
         def side_effect(*args, **kwargs):
             if args[0] == command:
                 raise AdbConnectionError(command)
@@ -146,12 +156,15 @@ class WirelessAdbConnectionTests(unittest.TestCase):
         return side_effect
 
     def test_connect__device_got_disconnected_before_adb_tcpip__raise_exception(self):
-        self.mock_wired_connection.adb.side_effect = self.raise_exception_error_if_command_equals("tcpip 5555")
+        self.mock_wired_connection.adb.side_effect = self.raise_connection_error_if_command_equals("tcpip 5555")
         self.assert_raises_with_message("tcp mode")
 
-    def test_connect__cant_connect_ip__raise_exception(self):
-        self.mock_wired_connection.adb.side_effect = self.raise_exception_error_if_command_equals(
+    @mock.patch(WIRELESS_MODULE_NAME + ".UserInput.yes_no")
+    def test_connect__cant_connect_ip__raise_exception(self, moch_yes_no):
+        self.mock_wired_connection.adb.side_effect = self.raise_connection_error_if_command_equals(
             "connect 10.0.0.101:5555")
+        moch_yes_no.return_value = False    # ADB connection failed. Do you want to try again? n
+
         self.assert_raises_with_message("10.0.0.101")
 
     @mock.patch(WIRELESS_MODULE_NAME + ".get_connected_interfaces_and_addresses")
