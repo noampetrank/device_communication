@@ -77,15 +77,15 @@ class ApiCallsRecorder(object):
                 ret["is_truncated"] = len(ret["repr"]) > max_len
                 if ret["is_truncated"]:
                     ret["repr"] = ret["repr"][:max_len] + "..."
-            except: pass
+            except Exception: pass
 
             try:
                 ret["len"] = len(x)
-            except: pass
+            except Exception: pass
 
             try:
                 ret["type"] = type(x).__name__
-            except: pass
+            except Exception: pass
 
             return ret
 

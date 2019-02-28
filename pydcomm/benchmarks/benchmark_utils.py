@@ -73,9 +73,9 @@ def time_it(obj, method, args, expected=None, kwargs=None):
         else:
             try:
                 ok = expected(res)
-            except:
+            except Exception:
                 ok = res in expected
-    except:
+    except Exception:
         ok = False
     finally:
         end = end or time.time()

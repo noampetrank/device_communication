@@ -353,7 +353,7 @@ class AndroidDeviceUtils:
         device = fields['device']
         try:
             return [x for x in fields['current'] if x['name'] == device][0]['vol']
-        except:
+        except Exception:
             raise AndroidDeviceUtilsError("Can't get headphone volume, you probably need to connect a headphone first.")
 
     def set_volume(self, val):

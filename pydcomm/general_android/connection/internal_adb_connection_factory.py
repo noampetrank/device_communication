@@ -11,11 +11,6 @@ from pydcomm.general_android.connection.fixers.verify_same_network_fixer import 
 from pydcomm.general_android.connection.internal_adb_connection import InternalAdbConnection
 from pydcomm.general_android.connection.wireless_adb_connection import add_connect_wireless, add_disconnect_wireless
 
-# Save InternalAdbConnection functions that can be decorated in order to allow resetting the class
-# InternalAdbConnection.original_init = InternalAdbConnection.__init__
-# InternalAdbConnection.original_adb = InternalAdbConnection.adb
-# InternalAdbConnection.original_disconnect = InternalAdbConnection.disconnect
-
 
 class InternalAdbConnectionFactory(object):
     @staticmethod
@@ -31,17 +26,13 @@ class InternalAdbConnectionFactory(object):
         :return
         """
         fixers = fixers or []
-        # Reset InternalAdbConnection decorated functions
-        # InternalAdbConnection.__init__ = InternalAdbConnection.original_init
-        # InternalAdbConnection.disconnect = InternalAdbConnection.original_disconnect
-        # InternalAdbConnection.adb = InternalAdbConnection.original_adb
 
         con_cls = InternalAdbConnection
         if not wired:
             con_cls = add_connect_wireless(con_cls)
             con_cls = add_disconnect_wireless(con_cls)
 
-        con_cls = add_fixers(con_cls, "adb", list(reversed(fixers)))
+        con_cls = add_fixers(con_cls, "adb", (fixers))
 
         con = con_cls(ip or device, filter_wireless_devices=wired)
         return con
@@ -49,32 +40,29 @@ class InternalAdbConnectionFactory(object):
     @staticmethod
     def get_oppo_wireless_device(use_manual_fixes=True, device_id=None):
         fixers = []
-
+        fixers.append(adb_connect_fix)
         if use_manual_fixes:
-            # call_a_developer_fix must be the first manual fixer
+            # get_user_attention_fix must be the first manual fixer.
+            fixers.append(get_user_attention_fix)
             fixers.append(verify_same_network_fix)
             fixers.append(device_turned_off)
             fixers.append(enable_usb_debugging_fix)
             fixers.append(unreachable_device_fix)
-            # get_user_attention_fix must be the last manual fixer.
-            fixers.append(get_user_attention_fix)
 
-        fixers.append(adb_connect_fix)
         return InternalAdbConnectionFactory.create_connection(wired=False, fixers=fixers, device=device_id)
 
     @staticmethod
     def get_oppo_wired_device(use_manual_fixes=True, device_id=None):
         fixers = []
+        fixers.append(set_usb_mode_to_mtp_fix)
+        fixers.append(restart_adb_server_fix)
 
         if use_manual_fixes:
-            # call_a_developer_fix must be the first manual fixer
-            fixers.append(device_turned_off)
-            fixers.append(enable_usb_debugging_fix)
-            fixers.append(forgot_device_fix)
-            fixers.append(manually_set_usb_mode_to_mtp_fix)
-            # get_user_attention_fix must be the last manual fixer.
+            # get_user_attention_fix must be the first manual fixer.
             fixers.append(get_user_attention_fix)
+            fixers.append(manually_set_usb_mode_to_mtp_fix)
+            fixers.append(forgot_device_fix)
+            fixers.append(enable_usb_debugging_fix)
+            fixers.append(device_turned_off)
 
-        fixers.append(restart_adb_server_fix)
-        fixers.append(set_usb_mode_to_mtp_fix)
         return InternalAdbConnectionFactory.create_connection(wired=True, fixers=fixers, device=device_id)

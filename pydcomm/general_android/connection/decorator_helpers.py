@@ -1,6 +1,6 @@
 from traceback import print_exc
 
-from python.infra.utils.user_input import UserInput
+from pybuga.infra.utils.user_input import UserInput
 
 from pydcomm.public.iconnection import ConnectionClosedError
 
