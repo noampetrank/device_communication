@@ -1,6 +1,6 @@
 import os
 import re
-import subprocess
+import subprocess32 as subprocess
 from ConfigParser import ConfigParser, NoOptionError
 from collections import OrderedDict
 from warnings import warn
@@ -9,6 +9,7 @@ from enum import IntEnum
 from pybuga.infra.utils.user_input import UserInput
 
 
+# TODO: Delete
 class MultiDeviceBehavior(IntEnum):
     CHOOSE_FIRST = 1
     USER_CHOICE = 2
@@ -71,19 +72,18 @@ def device_id_to_device_name(device_id, is_wireless=False, i_am_michael_and_i_wa
             warn("Couldn't find {} device in {}".format(device_id, cfg_path))
 
         try:
-            # device_utils = AndroidDeviceUtils(InternalAdbConnection(device_id, filter_wireless_devices=False))
-            # device_name = device_utils.get_device_name()
-            device_name = subprocess.check_output("adb -s {} shell cat /data/local/tmp/devicename".format(device_id), shell=True, stderr=subprocess.PIPE).strip()
+            device_name = subprocess.check_output("adb -s {} shell cat /data/local/tmp/devicename".format(device_id),
+                                                  stderr=subprocess.PIPE, timeout=3).strip()
+        except Exception:
+            device_name = None
 
-            if i_am_michael_and_i_want_to_store_serial_in_cache:
-                if device_name:
-                    cfg.set("mapping", device_id, device_name)
-                    with open(cfg_path, 'w') as configfile:
-                        cfg.write(configfile)
-                else:
-                    raise Exception("Couldn't get device name for {} device!".format(device_id))
-        except:
-            pass
+        if i_am_michael_and_i_want_to_store_serial_in_cache:
+            if device_name:
+                cfg.set("mapping", device_id, device_name)
+                with open(cfg_path, 'w') as configfile:
+                    cfg.write(configfile)
+            else:
+                raise Exception("Couldn't get device name for {} device!".format(device_id))
 
     # Finally if we still don't have the device name, return the device_id
     if not device_name:
