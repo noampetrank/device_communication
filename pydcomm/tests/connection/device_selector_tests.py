@@ -52,8 +52,9 @@ class UserChoiceDeviceDecoratorTests(unittest.TestCase):
                                                                                   adb_devices_mock):
         adb_devices_mock.side_effect = [
             [],
-            [("wired", "devicenome", "device")]
+            [("wired", "devicename", "device")]
         ]
+        user_input_mock.menu.return_value = "devicename"
         self.a._get_device_to_connect(self.a)
         self.assertEqual(adb_devices_mock.call_count, 2)
 
