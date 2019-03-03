@@ -61,7 +61,6 @@ class UnitTestDeviceUtils(unittest.TestCase):
         self.conn.adb.return_value = '[100%] /sdcard/tmp_file.tmp\n/sdcard/tmp_file.tmp: 1 file pulled. 0.0 MB/s (44 bytes in 0.003s)\n'
         self.device_utils.pull('/sdcard/tmp_file.tmp', '/home/buga/tmp_dir/')
 
-
     def test_pull_from_non_existent(self):
         err = CommandFailedError()
         err.stderr = "adb: error: failed to stat remote object '/sdcard/tmp_file.tm': No such file or directory\n"
@@ -78,7 +77,8 @@ class UnitTestDeviceUtils(unittest.TestCase):
         err = CommandFailedError()
         err.stderr = "adb: error: cannot create '/home/buga/tmp_dir/no_perm/tmp_file.tmp': Permission denied\n"
         self.conn.adb.side_effect = err
-        self.assertRaises(WrongPermissions, self.device_utils.pull, '/sdcard/tmp_file.tmp', '/home/buga/tmp_dir/no_perm')
+        self.assertRaises(WrongPermissions, self.device_utils.pull, '/sdcard/tmp_file.tmp',
+                          '/home/buga/tmp_dir/no_perm')
 
     # endregion
 
@@ -211,9 +211,13 @@ class UnitTestDeviceUtils(unittest.TestCase):
         self.assertEqual(len([x for x in ls if x['links_to']]), 5)
         self.assertEqual(len([x for x in ls if x['permissions'] is None]), 3)
         self.assertEqual(len(ls), 17)
-        self.assertIn(dict(permissions='drwxr-xr-x', n_links=2, owner='root', group='shell', size=8192, modified=datetime.datetime(2008, 12, 31, 20, 30), name='.', links_to=None), ls)
-        self.assertIn(dict(permissions='lrwxr-xr-x', n_links=1, owner='root', group='shell', size=6, modified=datetime.datetime(2008, 12, 31, 20, 30), name='acpi', links_to='toybox'), ls)
-        self.assertIn(dict(permissions=None, n_links=None, owner=None, group=None, size=None, modified=None, name='PktRspTest', links_to=None), ls)
+        self.assertIn(dict(permissions='drwxr-xr-x', n_links=2, owner='root', group='shell', size=8192,
+                           modified=datetime.datetime(2008, 12, 31, 20, 30), name='.', links_to=None), ls)
+        self.assertIn(dict(permissions='lrwxr-xr-x', n_links=1, owner='root', group='shell', size=6,
+                           modified=datetime.datetime(2008, 12, 31, 20, 30), name='acpi', links_to='toybox'), ls)
+        self.assertIn(
+            dict(permissions=None, n_links=None, owner=None, group=None, size=None, modified=None, name='PktRspTest',
+                 links_to=None), ls)
 
     def test_ls_doesnt_exist(self):
         err = CommandFailedError()
@@ -231,24 +235,6 @@ class UnitTestDeviceUtils(unittest.TestCase):
         device_time = self.device_utils.get_time()
         expected_time = datetime.datetime(2018, 9, 9, 11, 18, 4, 348158)
         self.assertEquals(device_time, expected_time)
-
-    # endregion
-
-    # region AndroidDeviceUtils.remove() unit tests
-
-    def test_remove_ok(self):
-        path = '/sdcard/somefile'
-        stdout = "\n"
-        self.conn.adb.return_value = stdout
-        self.device_utils.remove(path)
-
-    def test_remove_non_existent(self):
-        # TODO: Invoke device_utils.remove(path) where 'path' doesn't exist and expect a RemoteFileNotFound exception
-        pass
-
-    def test_remove_no_permissions(self):
-        # TODO: Invoke device_utils.remove(path) where 'path' has no write permissions and expect WrongPermissions exception
-        pass
 
     # endregion
 
@@ -282,7 +268,9 @@ class UnitTestDeviceUtils(unittest.TestCase):
 
     def test_set_prop_ok(self):
         def check_adb_input(*args):
-            self.assertTrue(args[-1][0] == '"' and args[-1][-1] == '"', 'setprop value should be wrapped in "double quotes" to keep whitespaces')
+            self.assertTrue(args[0][-1][0] == '"' and args[0][-1][-1] == '"',
+                            'setprop value should be wrapped in "double quotes" to keep whitespaces')
+
         self.conn.adb.side_effect = check_adb_input
         self.device_utils.set_prop("testprop", ' a b c ')
 
