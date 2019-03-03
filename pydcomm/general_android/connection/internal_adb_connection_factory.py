@@ -1,7 +1,6 @@
 from pydcomm.general_android.connection.connection_fixers import restart_adb_server_fix, \
     set_usb_mode_to_mtp_fix, manually_set_usb_mode_to_mtp_fix
 from pydcomm.general_android.connection.decorator_helpers import add_fixers
-from pydcomm.general_android.connection.device_selector import MultiDeviceBehavior
 from pydcomm.general_android.connection.fixers.adb_connect_fixer import adb_connect_fix
 from pydcomm.general_android.connection.fixers.connected_usb_device_fixes import forgot_device_fix, device_turned_off
 from pydcomm.general_android.connection.fixers.enable_usb_debugging_fixer import enable_usb_debugging_fix
@@ -20,9 +19,7 @@ class InternalAdbConnectionFactory(object):
         :param wired: Connect wired or wireless
         :param ip: If given and connecting wireless, connect to this IP
         :param device: If given, connect to this USB device
-        :param list[(connection) -> None]fixers: A list of fixer functions
-        :param device_selector: A strategy to select the device to connect to
-        :type device_selector: MultiDeviceBehavior
+        :param list[(connection) -> None] fixers: A list of fixer functions
         :return
         """
         fixers = fixers or []
@@ -32,7 +29,7 @@ class InternalAdbConnectionFactory(object):
             con_cls = add_connect_wireless(con_cls)
             con_cls = add_disconnect_wireless(con_cls)
 
-        con_cls = add_fixers(con_cls, "adb", (fixers))
+        con_cls = add_fixers(con_cls, "adb", fixers)
 
         con = con_cls(ip or device, filter_wireless_devices=wired)
         return con

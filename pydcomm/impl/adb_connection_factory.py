@@ -20,6 +20,7 @@ class WiredAdbConnectionFactory(ConnectionFactory):
         connection = AdbConnection(cls._get_oppo_device(device_id=device_id,
                                                         use_manual_fixes=use_manual_fixes))
         if connection.shell("echo hi") == "hi":
+            print("Successfully connected to " + connection.device_id())
             return connection
 
     @classmethod
@@ -42,7 +43,7 @@ class WiredAdbConnectionFactory(ConnectionFactory):
     @classmethod
     def _get_oppo_device(cls, *args, **kwargs):
         connection_factory = InternalAdbConnectionFactory()
-        return  connection_factory.get_oppo_wired_device(*args, **kwargs)
+        return connection_factory.get_oppo_wired_device(*args, **kwargs)
 
 
 class WirelessAdbConnectionFactory(WiredAdbConnectionFactory):
