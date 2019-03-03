@@ -16,5 +16,6 @@ setup(
                       'pandas',
                       'tqdm',
                       'grpcio',
+                      'deprecated',
                       'protobuf']
 )
