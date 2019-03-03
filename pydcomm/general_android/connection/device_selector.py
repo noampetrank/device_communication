@@ -96,7 +96,11 @@ def device_id_to_device_name(device_id, is_wireless=False, i_am_michael_and_i_wa
 def get_device_to_connect_user_choice(filter_wireless_devices=False):
     devices = adb_devices(filter_wireless_devices)
     while not devices:
-        UserInput.text("Please connect a device with a cable, choose 'Transfer files' USB mode and press ENTER.",
+        UserInput.text("No devices detected. Please do the following:\n"
+                       "1. Connect a device with a cable.\n"
+                       "2. Enable USB debugging.\n"
+                       "3. Choose 'Transfer files' USB mode.\n"
+                       "4. Press ENTER.",
                        lambda x: True)
         devices = adb_devices(filter_wireless_devices)
 
