@@ -5,32 +5,7 @@ from ConfigParser import ConfigParser, NoOptionError
 from collections import OrderedDict
 from warnings import warn
 
-from enum import IntEnum
 from pybuga.infra.utils.user_input import UserInput
-
-
-# TODO: Delete
-class MultiDeviceBehavior(IntEnum):
-    CHOOSE_FIRST = 1
-    USER_CHOICE = 2
-
-
-def add_choose_first_behavior(connection):
-    """
-    Decorates the _get_device_to_connect method with the choose first behavior.
-    :type filter_wireless_devices: bool
-    :type connection: InternalAdbConnection
-    :rtype: InternalAdbConnection
-    """
-
-    def _get_device_to_connect(self, filter_wireless_devices=False):
-        devices = adb_devices(filter_wireless_devices)
-        if not devices:
-            raise EnvironmentError("No devices connected")
-        return devices[0][1]
-
-    connection._get_device_to_connect = _get_device_to_connect
-    return connection
 
 
 def store_all_devices_serials_in_cache(i_am_michael=False):
