@@ -55,9 +55,8 @@ class WiredAdbConnectionTests(unittest.TestCase):
 
     @mock.patch.object(InternalAdbConnection, "test_connection", lambda x: False)
     def test_adb__test_connection_fails__raises_exception(self):
-        with assert_raises(CommandFailedError) as e:
+        with assert_raises(ConnectionClosedError) as e:
             self.con.adb("hay")
-        self.assertIn("test_connection", e.exception.message)
 
     @mock.patch(WIRED_MODULE_NAME + ".subprocess.Popen")
     def test_test_connection__valid_connection__return_true(self, mock_popen):
