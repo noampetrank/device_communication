@@ -107,8 +107,8 @@ def get_device_to_connect_user_choice(filter_wireless_devices=False):
     devices = sorted(devices, key=lambda x: x[0], reverse=True)  # This will make 'wireless' appear before 'wired'
     device_name_to_id = OrderedDict()
     for conn_type, device_id, _ in devices:
-        if device_id not in device_name_to_id:
-            device_name = device_id_to_device_name(device_id, conn_type == "wireless")
+        device_name = device_id_to_device_name(device_id, conn_type == "wireless")
+        if device_name not in device_name_to_id:
             device_name_to_id[device_name] = device_id
 
     print("Please select a device")
