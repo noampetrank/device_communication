@@ -1,5 +1,5 @@
 from pydcomm.general_android.connection.iadb_monitor import IAdbMonitor
-from pydcomm.general_android.connection.internal_adb_connection import ConnectionClosedError
+from pydcomm.public.iconnection import ConnectionClosedError
 
 
 class AdbMonitorWrappingEchoHi(IAdbMonitor):
