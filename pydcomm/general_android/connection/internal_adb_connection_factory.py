@@ -6,7 +6,6 @@ from pydcomm.general_android.connection.fixers.connected_usb_device_fixes import
 from pydcomm.general_android.connection.fixers.enable_usb_debugging_fixer import enable_usb_debugging_fix
 from pydcomm.general_android.connection.fixers.get_user_attention_fixer import get_user_attention_fix
 from pydcomm.general_android.connection.fixers.unreachable_device_fixer import unreachable_device_fix
-from pydcomm.general_android.connection.fixers.verify_same_network_fixer import verify_same_network_fix
 from pydcomm.general_android.connection.internal_adb_connection import InternalAdbConnection
 from pydcomm.general_android.connection.wireless_adb_connection import add_connect_wireless, add_disconnect_wireless
 
@@ -41,7 +40,6 @@ class InternalAdbConnectionFactory(object):
         if use_manual_fixes:
             # get_user_attention_fix must be the first manual fixer.
             fixers.append(get_user_attention_fix)
-            fixers.append(verify_same_network_fix)
             fixers.append(device_turned_off)
             fixers.append(enable_usb_debugging_fix)
             fixers.append(unreachable_device_fix)
