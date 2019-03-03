@@ -1,3 +1,5 @@
+import subprocess32
+from pybuga.infra.utils.user_input import UserInput
 from pydcomm.public.iconnection import CommandFailedError
 from pydcomm.general_android.connection.fixers.adb_connect_fixer import adb_connect_fix
 
@@ -6,7 +8,11 @@ from pydcomm.general_android.connection.fixers.adb_connect_fixer import adb_conn
 
 def restart_adb_server_fix(connection):
     connection.adb("kill-server", specific_device=False, disable_fixers=True, timeout=1)
-    connection.adb("start-server", specific_device=False, disable_fixers=True, timeout=10)
+    try:
+        connection.adb("start-server", specific_device=False, disable_fixers=True, timeout=10)
+    except subprocess32.TimeoutExpired:
+        while not UserInput.yes_no("Please call a developer. Is a developer here?"):
+            pass
 
 
 def set_usb_mode_to_mtp_fix(connection):
