@@ -11,7 +11,7 @@ from pydcomm.public.iconnection import ConnectionClosedError, CommandFailedError
 from pydcomm.tests.connection.consts import IFCONFIG_BAD, IFCONFIG_GOOD
 from pydcomm.tests.helpers import TestCasePatcher
 
-WIRED_MODULE_NAME = "pydcomm.general_android.connection.wired_adb_connection"
+WIRED_MODULE_NAME = "pydcomm.general_android.connection.internal_adb_connection"
 
 
 class WiredAdbConnectionTests(unittest.TestCase):
