@@ -61,8 +61,8 @@ class UserChoiceDeviceDecoratorTests(unittest.TestCase):
     @mock.patch("pydcomm.general_android.connection.device_selector.UserInput")
     def test_user_choice__single_devices_connected__correct_menu_is_shown_and_value_is_returned(self, user_input_mock,
                                                                                                 adb_devices_mock):
-        adb_devices_mock.return_value = [("wired", "devicenome", "device")]
-        user_input_mock.menu.return_value = 3
+        adb_devices_mock.return_value = [("wired", "devicename", "device")]
+        user_input_mock.menu.return_value = "devicename"
         res = self.a._get_device_to_connect(self.a)
-        user_input_mock.menu.assert_has_calls([mock.call([("devicenome", "device")])])
-        self.assertEqual(res, 3)
+        user_input_mock.menu.assert_has_calls([mock.call([("devicename")])])
+        self.assertEqual(res, "devicename")
