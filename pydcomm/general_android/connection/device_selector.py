@@ -1,16 +1,12 @@
 import os
 import re
 import subprocess
+from ConfigParser import ConfigParser, NoOptionError
 from collections import OrderedDict
 from warnings import warn
 
 from enum import IntEnum
 from pybuga.infra.utils.user_input import UserInput
-
-from ConfigParser import ConfigParser, NoOptionError
-
-from pydcomm.general_android.connection.wired_adb_connection import InternalAdbConnection
-from pydcomm.general_android.android_device_utils import AndroidDeviceUtils
 
 
 class MultiDeviceBehavior(IntEnum):
