@@ -63,41 +63,12 @@ class ApiCallsRecorder(object):
 
         :param ApiCall api_call: Data to save.
         """
-        def arg_to_dict(x):
-            max_len = 200
-            ret = {
-                "repr": None,
-                "is_truncated": None,
-                "len": None,
-                "type": None,
-            }
+        saveable_api_call = get_saveable_api_call(api_call)
 
-            try:
-                ret["repr"] = repr(x)
-                ret["is_truncated"] = len(ret["repr"]) > max_len
-                if ret["is_truncated"]:
-                    ret["repr"] = ret["repr"][:max_len] + "..."
-            except Exception: pass
-
-            try:
-                ret["len"] = len(x)
-            except Exception: pass
-
-            try:
-                ret["type"] = type(x).__name__
-            except Exception: pass
-
-            return ret
-
-        s_args = map(arg_to_dict, api_call.args)
-        s_kwargs = {k: arg_to_dict(v) for k, v in api_call.kwargs.items()}
-        s_ret = arg_to_dict(api_call.ret)
-        api_call = api_call._replace(args=s_args, kwargs=s_kwargs, ret=s_ret)
-
-        api_stats.append(api_call)
+        api_stats.append(saveable_api_call)
 
         with ApiCallsRecorder._get_save_file() as f:
-            f.write(json.dumps(api_call._asdict()).replace("\n", "\\\\nn"))
+            f.write(json.dumps(saveable_api_call._asdict()).replace("\n", "\\\\nn"))
             f.write("\n")
 
     def __init__(self, suspend_save=False):
@@ -120,6 +91,42 @@ class ApiCallsRecorder(object):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         ApiCallsRecorder.save_api_call = staticmethod(self._orig_save_api_call)
+
+
+def get_saveable_api_call(api_call):
+    def arg_to_dict(x):
+        max_len = 200
+        ret = {
+            "repr": None,
+            "is_truncated": None,
+            "len": None,
+            "type": None,
+        }
+
+        try:
+            ret["repr"] = repr(x)
+            ret["is_truncated"] = len(ret["repr"]) > max_len
+            if ret["is_truncated"]:
+                ret["repr"] = ret["repr"][:max_len] + "..."
+        except Exception:
+            pass
+
+        try:
+            ret["len"] = len(x)
+        except Exception:
+            pass
+
+        try:
+            ret["type"] = type(x).__name__
+        except Exception:
+            pass
+
+        return ret
+
+    s_args = map(arg_to_dict, api_call.args)
+    s_kwargs = {k: arg_to_dict(v) for k, v in api_call.kwargs.items()}
+    s_ret = arg_to_dict(api_call.ret)
+    return api_call._replace(args=s_args, kwargs=s_kwargs, ret=s_ret)
 
 
 _fake_sentinel = object()

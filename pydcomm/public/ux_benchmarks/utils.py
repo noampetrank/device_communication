@@ -1,5 +1,5 @@
 import tqdm
-from pydcomm.public.ux_stats import ApiCallsRecorder
+from pydcomm.public.ux_stats import ApiCallsRecorder, get_saveable_api_call
 
 
 class Scenario(object):
@@ -28,7 +28,7 @@ def run_scenario(actions, initial_context=None):  # TBD flag for only parameters
                 params, ret, context, additional, exception = api_action(scenario)
 
             for c in uxrecorder.api_stats:
-                scenario.stats.append(c)
+                scenario.stats.append(get_saveable_api_call(c))
                 scenario.params.append(params)
                 scenario.ret_vals.append(ret)
                 scenario.additionals.append(additional)
