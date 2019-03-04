@@ -19,6 +19,7 @@ def add_fixers(connection_cls, method, fixers):
     old_method = getattr(connection_cls, method)
 
     def run_with_fixers(*args, **kwargs):
+        fixers.append(lambda *args, **kwargs: None)     # Add 'do nothing' fixer to allow recovery after the last fix
         for fix in fixers:
             try:
                 return old_method(*args, **kwargs)
