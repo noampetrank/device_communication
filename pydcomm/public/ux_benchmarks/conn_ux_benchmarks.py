@@ -1,4 +1,5 @@
 import cPickle
+from itertools import chain
 import time
 
 import numpy as np
@@ -49,19 +50,30 @@ def print_run_summary(conn_factory_name, stats, params, ret_val, additionals, pr
     all_calls_raw, additional_columns = zip(*all_calls_raw)
 
     all_calls_table = pd.DataFrame(list(all_calls_raw)).set_index(['function_name'])
-    summary_per_function = pd.DataFrame(all_calls_table).assign(total_calls=lambda x: 1)
+    summary_per_function = pd.DataFrame(all_calls_table).assign(total_calls=1)
 
     aggregates = get_aggregates(additional_columns)
+    summary_per_function["success_rate"] = (~summary_per_function.is_exception).astype(float)
+    summary_per_function = summary_per_function.astype({
+        "is_exception": float,
+        "is_automatic": float,
+    })  # type: pd.DataFrame
     summary_per_function = summary_per_function.groupby(['function_name', "parameters"]).agg(aggregates)
     # TBD : add avg_automatic_time (avg time call for calls that ended automatically
     # TBD : add max_manual_time, median_manual_time??
     # TBD : filter per test scenario...
 
-    summary_per_function = summary_per_function.rename({"call_time": "avg_time",
-                                                        "manual_fixes_count": "manual_fixes_avg",
-                                                        "manual_fixes_time": "total_manual_time",
-                                                        "is_exception": "total_exceptions",
-                                                        "is_automatic": "automatic_success_ratio"})
+    summary_per_function = summary_per_function.rename(columns={
+        "call_time": "avg_time",
+        "manual_fixes_count": "manual_fixes_avg",
+        "manual_fixes_time": "total_manual_time",
+        "is_exception": "total_exceptions",
+        "is_automatic": "automatic_success_ratio",
+    })
+
+    summary_per_function = summary_per_function["avg_time success_rate total_calls".split()]
+
+    # summary_per_function["success_rate"] = summary_per_function.apply(axis=1)
 
     print "Summary for Connection Factory : {}".format(conn_factory_name)
     print "total runtime : ", stats[-1].end_time - stats[0].start_time
@@ -72,18 +84,20 @@ def print_run_summary(conn_factory_name, stats, params, ret_val, additionals, pr
 
 
 def get_aggregates(additional_columns):
-    aggregates = {"call_time": np.mean,
-                  "total_calls": np.sum,
-                  "manual_fixes_count": np.mean,
-                  "manual_fixes_time": np.sum,
-                  "is_exception": np.sum,
-                  "is_automatic": np.mean}
-    for c in additional_columns:
-        if not additional_columns:
-            continue
-        for b in c:
-            # atm every additional is summed. In the future if anyone needs add something else as well.
-            aggregates[b] = np.sum
+    aggregates = {
+        "call_time": np.mean,
+        "total_calls": np.sum,
+        "manual_fixes_count": np.mean,
+        "manual_fixes_time": np.sum,
+        "is_exception": np.sum,
+        "is_automatic": np.mean,
+        "success_rate": np.mean,
+    }
+    additional_columns_set = set(chain.from_iterable(additional_columns))
+    new_additional_columns = additional_columns_set.difference(aggregates)
+    # atm every additional is summed. In the future if anyone needs add something else as well.
+    for c in new_additional_columns:
+        aggregates[c] = np.sum
     return aggregates
 
 
@@ -101,7 +115,7 @@ def main():
             conn_factory = all_connection_factories[factory_name]
             """@type: pydcomm.public.iconnection.ConnectionFactory"""
 
-            test_scenario = get_complete_benchmark(repeats=100)
+            test_scenario = get_complete_benchmark(repeats=3)
 
             runs = run_scenario(test_scenario, initial_context={'conn_factory': conn_factory})
             runs['conn_factory_name'] = conn_factory.__name__
