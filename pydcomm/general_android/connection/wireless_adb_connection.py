@@ -36,7 +36,7 @@ def _run_adb_with_exception(connection, command, exception_message):
 
 def disconnect_wireless(connection):
     try:
-        connection.adb("disconnect " + connection.device_id, specific_device=False, disable_fixers=True, timeout=1)
+        connection.adb("disconnect " + connection.device_id, specific_device=False, disable_fixers=True, timeout=2)
     except CommandFailedError as e:
         if "error: no such device" in e.stderr:
             pass  # Disconnection will fail if a current connection doesn't exist, so we're ok with it.
