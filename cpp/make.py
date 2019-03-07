@@ -93,12 +93,12 @@ def build_platforms(options):
 
                 # The following is for computers that find the wrong python library.
                 # subprocess.check_call(
-                #     "/opt/cmake/bin/cmake -DPYTHON_LIBRARY=/usr/lib/x86_64-linux-gnu/libpython2.7.so .. {}-DCMAKE_BUILD_TYPE={}".format("-DMY_BUILD_ANDROID=TRUE " if platform == "android" else "-DMY_BUILD_ANDROID=FALSE ",
+                #     "cmake -DPYTHON_LIBRARY=/usr/lib/x86_64-linux-gnu/libpython2.7.so .. {}-DCMAKE_BUILD_TYPE={}".format("-DMY_BUILD_ANDROID=TRUE " if platform == "android" else "-DMY_BUILD_ANDROID=FALSE ",
                 #                                                              options.buildtype.capitalize()).split(" "), env=my_env)
 
                 # The weird spaces in the format string are important, doesn't work without them
                 subprocess.check_call(
-                    "/opt/cmake/bin/cmake .. {}-DCMAKE_BUILD_TYPE={}".format("-DMY_BUILD_ANDROID=TRUE " if platform == "android" else "-DMY_BUILD_ANDROID=FALSE ",
+                    "cmake .. {}-DCMAKE_BUILD_TYPE={}".format("-DMY_BUILD_ANDROID=TRUE " if platform == "android" else "-DMY_BUILD_ANDROID=FALSE ",
                                                                              options.buildtype.capitalize()).split(" "), env=my_env)
 
                 print(TITLE + " * Building")
