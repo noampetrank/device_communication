@@ -47,8 +47,10 @@ def device_id_to_device_name(device_id, is_wireless=False, i_am_michael_and_i_wa
             warn("Couldn't find {} device in {}".format(device_id, cfg_path))
 
         try:
-            device_name = subprocess.check_output("adb -s {} shell cat /data/local/tmp/devicename".format(device_id),
-                                                  stderr=subprocess.PIPE, timeout=3).strip()
+            p = subprocess.Popen("adb -s {} shell cat /data/local/tmp/devicename".format(device_id).split(),
+                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            output, error = p.communicate(timeout=3)
+            device_name = output.strip()
         except Exception:
             device_name = None
 
