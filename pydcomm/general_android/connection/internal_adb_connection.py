@@ -105,6 +105,8 @@ class InternalAdbConnection(object):
 
         p = subprocess.Popen(["adb"] + params, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         try:
+            if timeout is None:
+                timeout = 60
             output, error = p.communicate(timeout=timeout)
         finally:
             self.last_adb_call_time = time.time()
