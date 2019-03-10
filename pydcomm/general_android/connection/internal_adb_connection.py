@@ -71,12 +71,19 @@ class InternalAdbConnection(object):
             if self.device_id is None:
                 raise ConnectionClosedError()
             command = ["-s", self.device_id] + command
+
         if disable_fixers or not specific_device:
-            monitor = NullMonitor
+            monitor_cls = NullMonitor
         else:
-            monitor = AdbMonitorWrappingEchoHi
-        with monitor(self):
-            return self._run_adb_command(command, timeout)
+            monitor_cls = AdbMonitorWrappingEchoHi
+        with monitor_cls(self) as monitor:
+            try:
+                return self._run_adb_command(command, timeout)
+            except (CommandFailedError, subprocess.TimeoutExpired):
+                if monitor.is_connection_error():
+                    raise ConnectionClosedError()
+                raise
+
 
     def _run_adb_command(self, params, timeout):
         """

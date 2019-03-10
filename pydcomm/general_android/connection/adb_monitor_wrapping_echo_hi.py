@@ -12,10 +12,13 @@ class AdbMonitorWrappingEchoHi(IAdbMonitor):
     def __enter__(self):
         if not self.connection.test_connection():
             raise ConnectionClosedError()
+        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if not self.connection.test_connection():
-            raise ConnectionClosedError()
+        # TODO: uncomment after monitor is done in a more efficient way
+        # if not self.connection.test_connection():
+        #     raise ConnectionClosedError()
+        pass
 
     def is_connection_error(self):
         return not self.connection.test_connection()
@@ -26,7 +29,10 @@ class NullMonitor(IAdbMonitor):
         pass
 
     def __enter__(self):
-        pass
+        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         pass
+
+    def is_connection_error(self):
+        return False
