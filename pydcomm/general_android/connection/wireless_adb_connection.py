@@ -37,8 +37,10 @@ def _run_adb_with_exception(connection, command, exception_message):
 def disconnect_wireless(connection):
     try:
         connection.adb("disconnect " + connection.device_id, specific_device=False, disable_fixers=True, timeout=1)
-    except CommandFailedError as e:
+    except CommandFailedError:
         pass  # If disconnection fails, we assume it's no longer active.
+    except TimeoutExpired:
+        pass
 
 
 def connect_to_wireless_adb(connection, exception_message):
