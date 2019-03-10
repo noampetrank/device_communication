@@ -10,8 +10,6 @@ class AdbMonitorWrappingEchoHi(IAdbMonitor):
         self.connection = connection
 
     def __enter__(self):
-        if not self.connection.test_connection():
-            raise ConnectionClosedError()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
