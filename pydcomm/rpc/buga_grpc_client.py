@@ -1,4 +1,4 @@
-import subprocess
+import subprocess32 as subprocess
 import grpc
 import sys
 import os
@@ -17,15 +17,18 @@ class GRemoteProcedureClient(IRemoteProcedureClient, CommonExtraStats):
     def __init__(self, ip_port):
         self.host_port = ip_port
 
-        # This needs to remain an instance variable (according to https://blog.jeffli.me/blog/2017/08/02/keep-python-grpc-client-connection-truly-alive/)
-        self.channel = grpc.insecure_channel(self.host_port, options=[('grpc.max_send_message_length', self.MAX_MESSAGE_SIZE),
-                                                                      ('grpc.max_receive_message_length', self.MAX_MESSAGE_SIZE)])
-        self.stub = DeviceRpcStub(self.channel)
+        self._create_grpc_channel_and_stub()
 
         self.latest_device_wifi = None
         self.latest_device_wifi_update = 0
 
         xver = self.get_executor_version()
+
+    def _create_grpc_channel_and_stub(self):
+        # This needs to remain an instance variable (according to https://blog.jeffli.me/blog/2017/08/02/keep-python-grpc-client-connection-truly-alive/)
+        self.channel = grpc.insecure_channel(self.host_port, options=[('grpc.max_send_message_length', self.MAX_MESSAGE_SIZE),
+                                                                      ('grpc.max_receive_message_length', self.MAX_MESSAGE_SIZE)])
+        self.stub = DeviceRpcStub(self.channel)
 
     def __extra_stats__(self):
         common = super(GRemoteProcedureClient, self).__extra_stats__()
@@ -49,14 +52,18 @@ class GRemoteProcedureClient(IRemoteProcedureClient, CommonExtraStats):
         return '1.0'
 
     def call(self, procedure_name, params):
-        try:
-            response = self.stub.call(GRequest(name=procedure_name, buf=params))
-        except grpc.RpcError as ex:
-            raise RpcError(grpc_exception=ex)
-        return response.buf
-
+        for do_retry in (True, False):
+            try:
+                response = self.stub.call(GRequest(name=procedure_name, buf=params))
+                return response.buf
+            except grpc.RpcError as ex:
+                if do_retry:
+                    self._create_grpc_channel_and_stub()
+                else:
+                    raise RpcError(grpc_exception=ex)
 
 # region Client factories common stuff
+
 
 # noinspection PyAbstractClass
 class _GRpcClientFactory(IRemoteProcedureClientFactory, CommonExtraStats):
@@ -102,13 +109,15 @@ def _build(cmd, cwd, expected_output_strings, ok_message="Done", exception_messa
         raise RpcError(exception_message, original_exception=ex)
 
 
-def _push_mv(device_id, src, dst):
+def _push_mv(device_id, src, dst, minspeed_mbps=.05):
     # TODO Michael: use DeviceUtils.adb() when the new API is implemented (search entire file)
+    file_size_mb = os.path.getsize(src) / 2.**20
+    timeout = file_size_mb / minspeed_mbps + 15
     tmp_dir = "/sdcard/tmp"
     tmp_name = os.path.join(tmp_dir, os.path.basename(src))
-    subprocess.check_output("adb -s {} shell mkdir -p {}".format(device_id, tmp_dir), shell=True)
-    subprocess.check_output("adb -s {} push {} {}".format(device_id, src, tmp_name), shell=True)
-    subprocess.check_output("adb -s {} shell mv {} {}".format(device_id, tmp_name, dst), shell=True)
+    subprocess.check_output("adb -s {} shell mkdir -p {}".format(device_id, tmp_dir), shell=True, timeout=15)
+    subprocess.check_output("adb -s {} push {} {}".format(device_id, src, tmp_name), shell=True, timeout=timeout)
+    subprocess.check_output("adb -s {} shell mv {} {}".format(device_id, tmp_name, dst), shell=True, timeout=15)
 
 # endregion
 
@@ -162,14 +171,15 @@ class GRpcSoLoaderAndroidClientFactory(_GRpcSoLoaderClientFactory):
             _print_no_newline("Installing APK... ")
             apk_path = os.path.join(app_base_path, "./app/build/outputs/apk/debug/app-debug.apk")
             assert os.path.isfile(apk_path)
-            subprocess.check_output("adb -s {} install -r {}".format(device_id, apk_path), shell=True)
+            subprocess.check_output("adb -s {} install -r {}".format(device_id, apk_path), shell=True, timeout=30)
             print("Done")
 
         # Push .so
         for attempt_install in (True, False):
             try:
                 parent_dir = "/data/app"
-                child_dir = [x for x in subprocess.check_output("adb -s {} shell ls {}".format(device_id, parent_dir), shell=True).split('\n') if 'com.buga.rpcsoloader-' in x][0]
+                child_dir = [x for x in subprocess.check_output("adb -s {} shell ls {}".format(device_id, parent_dir),
+                                                                shell=True, timeout=15).split('\n') if 'com.buga.rpcsoloader-' in x][0]
                 device_so_path = "{}/{}/lib/arm64/{}.so".format(parent_dir, child_dir, rpc_id)
                 break
             except IndexError:
@@ -180,7 +190,7 @@ class GRpcSoLoaderAndroidClientFactory(_GRpcSoLoaderClientFactory):
 
         # Run app and create connection
         _print_no_newline("Running app and creating connection... ")
-        subprocess.check_output("adb -s {} shell am start -a android.intent.action.MAIN com.buga.rpcsoloader/.RpcSoLoaderActivity".format(device_id), shell=True)
+        subprocess.check_output("adb -s {} shell am start -a android.intent.action.MAIN com.buga.rpcsoloader/.RpcSoLoaderActivity".format(device_id), shell=True, timeout=15)
         for attempts_left in reversed(range(5)):
             try:
                 so_loader, device_id = cls._create_connection(device_id, cls.SO_LOADER_RPC_ID)
@@ -198,8 +208,8 @@ class GRpcSoLoaderAndroidClientFactory(_GRpcSoLoaderClientFactory):
         _print_no_newline("Pushing {}... ".format(os.path.basename(so_path)))
         # noinspection PyUnboundLocalVariable
         _push_mv(device_id, so_path, device_so_path)
-        subprocess.check_output("adb -s {} shell chown system:system {}".format(device_id, device_so_path), shell=True)
-        subprocess.check_output("adb -s {} shell chmod +rx {}".format(device_id, device_so_path), shell=True)
+        subprocess.check_output("adb -s {} shell chown system:system {}".format(device_id, device_so_path), shell=True, timeout=15)
+        subprocess.check_output("adb -s {} shell chmod +rx {}".format(device_id, device_so_path), shell=True, timeout=15)
         time.sleep(.2)
         print("Done")
 
@@ -239,7 +249,7 @@ class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):
         cls._ensure_headset_connected(device_id)
 
         # Set port of rpc_id on device
-        subprocess.check_output("adb -s {} shell setprop buga.rpc.libbugatone_executor_port {}".format(device_id, rpc_id), shell=True)
+        subprocess.check_output("adb -s {} shell setprop buga.rpc.libbugatone_executor_port {}".format(device_id, rpc_id), shell=True, timeout=15)
 
         # Build "satellite" .so's
         device_comm_sos = ('librpc_bugatone_proxy.so', 'librpc_server.so', 'libproto.so')
@@ -274,7 +284,7 @@ class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):
         device_libbugatone_main_path = os.path.join(device_lib_path, "libbugatone.so")
         libbugatone_real_path = os.path.join(device_lib_path, "libbugatone_real.so")
 
-        subprocess.check_output("adb -s {} remount".format(device_id), shell=True)
+        subprocess.check_output("adb -s {} remount".format(device_id), shell=True, timeout=15)
         for so_name in device_comm_sos:
             local_so_path = os.path.join(local_libs_path, so_name)
             _push_mv(device_id, local_so_path, device_lib_path)
@@ -286,7 +296,7 @@ class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):
         rpc_bugatone_main_exec_device_path = os.path.join(device_lib_path, rpc_bugatone_main_exec_file)
         if os.path.isdir(local_bin_path) and os.path.isfile(rpc_bugatone_main_exec_local_path):
             _push_mv(device_id, rpc_bugatone_main_exec_local_path, rpc_bugatone_main_exec_device_path)
-            subprocess.check_output("adb -s {} shell chmod +x {}".format(device_id, rpc_bugatone_main_exec_device_path), shell=True)
+            subprocess.check_output("adb -s {} shell chmod +x {}".format(device_id, rpc_bugatone_main_exec_device_path), shell=True, timeout=15)
 
         _push_mv(device_id, local_libbugatone_main_path, device_libbugatone_main_path)
         _push_mv(device_id, so_path, libbugatone_real_path)
@@ -303,10 +313,10 @@ class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):
     @classmethod
     def _restart_smart_earphone(cls, device_id, done_msg="Done", wasnt_running_msg="Wasn't running"):
         time.sleep(.2)
-        subprocess.check_output('adb -s {} shell input keyevent 86'.format(device_id), shell=True)
-        pid = subprocess.check_output('adb -s {} shell ps | grep com.oppo.smartearphone | $XKIT awk "{{printf \$2}}"'.format(device_id), shell=True).strip()
+        subprocess.check_output('adb -s {} shell input keyevent 86'.format(device_id), shell=True, timeout=15)
+        pid = subprocess.check_output('adb -s {} shell ps | grep com.oppo.smartearphone | $XKIT awk "{{printf \$2}}"'.format(device_id), shell=True, timeout=15).strip()
         if pid:
-            subprocess.check_output("adb -s {} shell kill {}".format(device_id, pid), shell=True)
+            subprocess.check_output("adb -s {} shell kill {}".format(device_id, pid), shell=True, timeout=15)
             time.sleep(1.5)
             print("{} (killed pid {})".format(done_msg, pid))
         else:
@@ -315,7 +325,7 @@ class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):
     @classmethod
     def _play_silence(cls, device_id):
         # TODO this is a workaround to directly open 321Player even if it's not the default
-        is_installed = "package:com.chahal.mpc.hd" in subprocess.check_output('adb shell pm list packages', shell=True)
+        is_installed = "package:com.chahal.mpc.hd" in subprocess.check_output('adb shell pm list packages', shell=True, timeout=15)
         media_player_activity = "com.chahal.mpc.hd/org.videolan.vlc.StartActivity" if is_installed else None
         if not is_installed:
             print("321Player isn't installed on your device, it's better for everyone that you install it right now!")
@@ -325,21 +335,22 @@ class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):
         subprocess.check_output('adb shell am start -a android.intent.action.VIEW -d file://{} -t audio/wav --user 0{}'.format(
             silence_device_path,
             (' -n ' + media_player_activity) if media_player_activity else ''
-        ), shell=True)  # Play
-        subprocess.check_output('adb shell input keyevent 89', shell=True)  # Rewind
+        ), shell=True, timeout=15)  # Play
+        subprocess.check_output('adb shell input keyevent 89', shell=True, timeout=15)  # Rewind
         time.sleep(.2)
 
     @classmethod
     def _stop_playback(cls, device_id):
-        subprocess.check_output('adb shell input keyevent 89', shell=True)  # Rewind
+        subprocess.check_output('adb shell input keyevent 89', shell=True, timeout=15)  # Rewind
         time.sleep(.2)
-        subprocess.check_output('adb shell input keyevent 86', shell=True)  # Stop
+        subprocess.check_output('adb shell input keyevent 86', shell=True, timeout=15)  # Stop
         time.sleep(.2)
 
     @classmethod
     def _ensure_headset_connected(cls, device_id):
         while True:
-            audio_devices = subprocess.check_output("adb -s {} shell dumpsys audio | grep -e '-\sSTREAM_MUSIC:' -A5 | grep Devices: | cut -c 13-".format(device_id), shell=True).split(' ')
+            audio_devices = subprocess.check_output("adb -s {} shell dumpsys audio | grep -e '-\sSTREAM_MUSIC:' -A5 | grep Devices: | cut -c 13-".format(device_id),
+                                                    shell=True, timeout=15).split(' ')
             if 'headset' in [x.strip() for x in audio_devices]:
                 break
             raw_input("Please connect earphone and press enter...")

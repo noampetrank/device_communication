@@ -71,7 +71,7 @@ def print_run_summary(conn_factory_name, stats, params, ret_val, additionals, pr
         "is_automatic": "automatic_success_ratio",
     })
 
-    summary_per_function = summary_per_function["avg_time success_rate total_calls".split()]
+    summary_per_function = summary_per_function["avg_time success_rate total_exceptions total_calls".split()]
 
     # summary_per_function["success_rate"] = summary_per_function.apply(axis=1)
 
