@@ -32,4 +32,4 @@ all_rpc_factories["grpc_libbugatone_android"] = RpcFactoryEntry(GRpcLibbugatoneA
 # all_rpc_factories["grpc_libbugatone_android"] = RpcFactoryEntry(GRpcLibbugatoneAndroidClientFactory, "/home/buga/mobileproduct/lib/arm64/Release/libbugatone_dummy.so")
 
 
-all_rpc_factories["michael_bench"] = RpcFactoryEntry(GRpcLibbugatoneAndroidClientFactory, "/home/buga/buga-recordings/lib/arm64/Release/libbugatone.so")
+all_rpc_factories["michael_bench"] = RpcFactoryEntry(GRpcLibbugatoneAndroidClientFactory, "/home/buga/buga-recordings/release/libbugatone.so")
