@@ -120,15 +120,24 @@ class DummyConnectionFactory(ConnectionFactory):
 
 
 class DummyRemoteProcedureClient(IRemoteProcedureClient):
+    def __init__(self):
+        self.last_params = ""
+
     def call(self, procedure_name, params):
         import random
-        if random.randint(0,1)<1:
-            raise Exception()
         import numpy as np
+        if procedure_name == "test_send_and_store":
+            self.last_params = params
+
+        if random.randint(0, 1) < 1:
+            raise Exception()
+
         if procedure_name == "_rpc_get_version":
             return "1.0"
-        elif procedure_name == "dummy_send":
-            return (np.frombuffer(params, np.uint8) + 1).tostring()
+        elif procedure_name == "test_send_and_store":
+            return ""
+        elif procedure_name == "test_receive_stored":
+            return (np.frombuffer(self.last_params, np.uint8) + 1).tostring()
         elif procedure_name == "_rpc_stop":
             return "stopped"
         else:

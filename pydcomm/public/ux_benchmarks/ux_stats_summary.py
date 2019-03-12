@@ -150,20 +150,22 @@ def get_rpc_audio_interface_stats_summary(all_calls_table, verbose=False):
                                    .assign(data_len=lambda df: [((row['args'][2]['len'] if len(row['args']) > 2 else None) or
                                                                  row['kwargs'].get('params', {'len': None})['len']) for _, row in df.iterrows()]))
 
-    get_recorded_data_calls = (call_calls[call_calls['proc_name'] == 'get_recorded_data']
+    get_recorded_signal_calls = (call_calls[call_calls['proc_name'].isin(['get_recorded_data', 'get_recorded_signal'])]
                                .assign(data_len=lambda df: [ret['len'] for ret in df.ret]))
 
-    get_recorded_data_calls = get_recorded_data_calls.assign(data_len=lambda df: [ret['len'] for ret in df.ret])
+    get_recorded_signal_calls = get_recorded_signal_calls.assign(data_len=lambda df: [ret['len'] for ret in df.ret])
 
-    data_calls = pd.concat([setup_record_and_play_calls, get_recorded_data_calls], axis=0, sort=True)
+    data_calls = pd.concat([setup_record_and_play_calls, get_recorded_signal_calls], axis=0, sort=True)
 
     data_calls['MBps'] = data_calls.apply(lambda x: x['data_len'] / x['call_time_secs'] / 2 ** 20, axis=1)
 
     bins = np.concatenate([[-float('inf')], np.arange(120) * 48000 * 12, [float('inf')]])
     data_calls['data_len_bin'] = pd.cut(data_calls['data_len'], bins).rename({'data_len': 'bin'})
-    summary = data_calls.groupby(['day', 'class_name', 'proc_name', 'data_len_bin', 'hostname', 'pc_ip']).agg(OrderedDict([
+    gb = data_calls.assign(total=1).groupby(['day', 'class_name', 'proc_name', 'data_len_bin', 'hostname', 'pc_ip'])
+    summary = gb.agg(OrderedDict([
         ('call_time_secs', np.mean),
         ('MBps', np.mean),
+        ('total', 'count'),
     ]))
 
     if verbose:
@@ -233,7 +235,7 @@ def main_debug(which):
     inner()
 
 
-def main(json_files='/home/buga/tmp_dir/ux_stats.jsons'):
+def main(json_files='/home/buga/tmp_dir/ux_stats.jsons', query_to_clipboard=None):
     """
     Run and print all summaries in this files on the given files/directories.
     :param str|list[str] json_files: One or list of us_stats.json files or folders containing such files.
@@ -258,8 +260,9 @@ def main(json_files='/home/buga/tmp_dir/ux_stats.jsons'):
 
     all_calls_table = ux_stats_json_to_pandas(ux_stats_data, verbose=True)
     get_ux_stats_summary(all_calls_table, verbose=True)
-    get_rpc_audio_interface_stats_summary(all_calls_table, verbose=True)
-    pass
+    df = get_rpc_audio_interface_stats_summary(all_calls_table, verbose=True)
+    if query_to_clipboard:
+        df.query(query_to_clipboard).to_clipboard(excel=False)
 
 
 if __name__ == '__main__':
@@ -267,6 +270,10 @@ if __name__ == '__main__':
 
     import sys
     if len(sys.argv) > 1:
-        main(sys.argv[1:])
+        print(sys.argv)
+        query_to_clipboard = sys.argv[2] if len(sys.argv) > 2 else None
+        main(sys.argv[1], query_to_clipboard=query_to_clipboard)
     else:
-        main()
+        import datetime
+        today = datetime.datetime.today().strftime('%Y-%m-%d')
+        main(query_to_clipboard='day=="{}"'.format(today))

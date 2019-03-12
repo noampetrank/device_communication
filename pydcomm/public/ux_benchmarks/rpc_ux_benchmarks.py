@@ -9,7 +9,7 @@ from pybuga.tests.utils.test_helpers import Tee
 from pybuga.infra.utils.user_input import UserInput
 from pydcomm.public.rpcfactories import all_rpc_factories
 
-from pydcomm.public.ux_stats import ApiCallsRecorder
+from pydcomm.public.ux_stats import ApiCallsRecorder, get_saveable_api_call
 
 
 ApiAction = namedtuple("ApiAction", "function_name params")
@@ -26,11 +26,13 @@ def single_api_call_summary(api_call, params=None, ret=None, ignore_first_manual
         "corrupted_data":       False
     }
 
+    orig_data = api_call.extra_stats.get('orig_data', "") if api_call.extra_stats else ""
+
     if api_call.function_name == "call" and params is not None:
         res['send_data_size'] = len(params[1])
+        res['recv_data_size'] = len(orig_data)
         if ret is not None:
-            res['corrupted_data'] = (np.frombuffer(params[1], np.uint8) + 1).tostring() != ret
-            res['recv_data_size'] = len(ret)
+            res['corrupted_data'] = (np.frombuffer(orig_data, np.uint8) + 1).tostring() != ret
 
     res["is_success"] = not api_call.is_exception and not res["corrupted_data"]
 
@@ -48,26 +50,35 @@ def print_run_summary(rpc_factory_name, stats, params, ret_val, print_all=False)
     all_calls_table.fillna(value=0, inplace=True)
 
     summary_per_function = pd.DataFrame(all_calls_table).assign(total_calls=lambda x: 1)
-    summary_per_function = summary_per_function.groupby(['function_name', "send_data_size", "recv_data_size"]).\
-        agg({"call_time": np.mean,
-             "total_calls": np.sum,
-             "manual_fixes_count": np.mean,
-             "manual_fixes_time": np.sum,
-             "is_exception": np.sum,
-             "is_automatic": np.mean,
-             "is_success": np.mean,
-             "corrupted_data": np.sum})
+    summary_per_function['MBps'] = (summary_per_function['recv_data_size'] + summary_per_function['send_data_size']) / summary_per_function['call_time'] / 2**20
+    summary_per_function = summary_per_function \
+        .astype({'is_automatic': float,
+                 'is_success': float,
+                 'corrupted_data': int,
+                 }) \
+        .groupby(['function_name', "send_data_size", "recv_data_size"]) \
+        .agg({"call_time": np.mean,
+              "total_calls": np.sum,
+              "manual_fixes_count": np.mean,
+              "manual_fixes_time": np.sum,
+              "is_exception": np.sum,
+              "is_automatic": np.mean,
+              "is_success": np.mean,
+              "corrupted_data": np.sum,
+              "MBps": np.mean,
+              })
     # TBD : add avg_automatic_time (avg time call for calls that ended automatically
     # TBD : add max_manual_time, median_manual_time??
     # TBD : filter per test scenario...
 
-    summary_per_function = summary_per_function.rename({"call_time": "avg_time",
-                                                        "manual_fixes_count": "manual_fixes_avg",
-                                                        "manual_fixes_time": "total_manual_time",
-                                                        "is_exception": "total_exceptions",
-                                                        "is_automatic": "automatic_success_ratio",
-                                                        "is_success": "success_ratio",
-                                                        "corrupted_data": "total_corrupted_data"})
+    summary_per_function = summary_per_function.rename(columns={"call_time": "avg_time",
+                                                                "manual_fixes_count": "manual_fixes_avg",
+                                                                "manual_fixes_time": "total_manual_time",
+                                                                "is_exception": "total_exceptions",
+                                                                "is_automatic": "automatic_success_ratio",
+                                                                "is_success": "success_ratio",
+                                                                "corrupted_data": "total_corrupted_data",
+                                                                })
 
     print "Summary for RPC Factory : {}".format(rpc_factory_name)
     print "total runtime : ", stats[-1].end_time - stats[0].start_time
@@ -114,14 +125,28 @@ class RPCDummyAction(object):
         return execute
 
     @staticmethod
-    def CALL_DUMMY_SEND(length):
+    def CALL_DUMMY_SEND_RECEIVE(length):
         random_string = np.random.randint(0, 256, int(length), np.uint8).tostring()
 
         def execute(scenario):
             """:type scenario: Scenario"""
-            scenario.params.append(("dummy_send", random_string))
-            scenario.ret_vals.append(scenario.connection.call("dummy_send", random_string))
+            scenario.params.append(("test_send_and_store", random_string))
+            try:
+                ret = scenario.connection.call("test_send_and_store", random_string)
+            except Exception:
+                ret = None
+            scenario.ret_vals.append(ret)
             scenario.stats.append(scenario.uxrecorder.api_stats[-1])
+
+            scenario.params.append(("test_receive_stored", ""))
+            try:
+                ret = scenario.connection.call("test_receive_stored", "")
+            except Exception:
+                ret = None
+            scenario.ret_vals.append(ret)
+            api_call = scenario.uxrecorder.api_stats[-1]
+            api_call = api_call._replace(extra_stats=dict(orig_data=random_string))
+            scenario.stats.append(api_call)
 
         return execute
 
@@ -157,7 +182,7 @@ def run_scenario(actions, so_path, rpc_factory):  # TBD flag for only parameters
                 api_action(scenario)
         except KeyboardInterrupt:
             pass
-    return dict(stats=scenario.stats, params=scenario.params, ret_vals=scenario.ret_vals)
+    return dict(stats=map(get_saveable_api_call, scenario.stats), params=scenario.params, ret_vals=scenario.ret_vals)
 
 
 # TODO: Extract code from pybuga to someplace else
@@ -176,12 +201,12 @@ def get_basic_scenario(rep_num=3, create_connections_num=10, input_lengths=(1, 1
         scenario += [RPCDummyAction.INSTALL()]
         for _ in range(create_connections_num):
             scenario += [RPCDummyAction.CREATE_CONNECTION()]
-            scenario += [RPCDummyAction.CALL_DUMMY_SEND(l) for l in input_lengths]
+            scenario += [RPCDummyAction.CALL_DUMMY_SEND_RECEIVE(l) for l in input_lengths]
     return scenario
 
 
 def get_multiple_connection_scenario():
-    return get_basic_scenario(1, create_connections_num=10, input_lengths=[]) + [RPCDummyAction.CALL_DUMMY_SEND(10000)]
+    return get_basic_scenario(1, create_connections_num=10, input_lengths=[]) + [RPCDummyAction.CALL_DUMMY_SEND_RECEIVE(10000)]
 
 
 def get_small_msgs_scenario(rep_num=1):
