@@ -9,7 +9,7 @@ from pybuga.tests.utils.test_helpers import Tee
 from pybuga.infra.utils.user_input import UserInput
 from pydcomm.public.rpcfactories import all_rpc_factories
 
-from pydcomm.public.ux_stats import ApiCallsRecorder
+from pydcomm.public.ux_stats import ApiCallsRecorder, get_saveable_api_call
 
 
 ApiAction = namedtuple("ApiAction", "function_name params")
@@ -48,6 +48,8 @@ def print_run_summary(rpc_factory_name, stats, params, ret_val, print_all=False)
     all_calls_table.fillna(value=0, inplace=True)
 
     summary_per_function = pd.DataFrame(all_calls_table).assign(total_calls=lambda x: 1)
+    summary_per_function['send_MBps'] = summary_per_function['send_data_size'] / summary_per_function['call_time'] / 2**20
+    summary_per_function['recv_MBps'] = summary_per_function['recv_data_size'] / summary_per_function['call_time'] / 2**20
     summary_per_function = summary_per_function.groupby(['function_name', "send_data_size", "recv_data_size"]).\
         agg({"call_time": np.mean,
              "total_calls": np.sum,
@@ -56,18 +58,22 @@ def print_run_summary(rpc_factory_name, stats, params, ret_val, print_all=False)
              "is_exception": np.sum,
              "is_automatic": np.mean,
              "is_success": np.mean,
-             "corrupted_data": np.sum})
+             "corrupted_data": np.sum,
+             "send_MBps": np.mean,
+             "recv_MBps": np.mean,
+             })
     # TBD : add avg_automatic_time (avg time call for calls that ended automatically
     # TBD : add max_manual_time, median_manual_time??
     # TBD : filter per test scenario...
 
-    summary_per_function = summary_per_function.rename({"call_time": "avg_time",
-                                                        "manual_fixes_count": "manual_fixes_avg",
-                                                        "manual_fixes_time": "total_manual_time",
-                                                        "is_exception": "total_exceptions",
-                                                        "is_automatic": "automatic_success_ratio",
-                                                        "is_success": "success_ratio",
-                                                        "corrupted_data": "total_corrupted_data"})
+    summary_per_function = summary_per_function.rename(columns={"call_time": "avg_time",
+                                                                "manual_fixes_count": "manual_fixes_avg",
+                                                                "manual_fixes_time": "total_manual_time",
+                                                                "is_exception": "total_exceptions",
+                                                                "is_automatic": "automatic_success_ratio",
+                                                                "is_success": "success_ratio",
+                                                                "corrupted_data": "total_corrupted_data",
+                                                                })
 
     print "Summary for RPC Factory : {}".format(rpc_factory_name)
     print "total runtime : ", stats[-1].end_time - stats[0].start_time
@@ -113,14 +119,29 @@ class RPCDummyAction(object):
             scenario.stats.append(scenario.uxrecorder.api_stats[-1])
         return execute
 
+    # @staticmethod
+    # def CALL_DUMMY_SEND(length):
+    #     random_string = np.random.randint(0, 256, int(length), np.uint8).tostring()
+    #
+    #     def execute(scenario):
+    #         """:type scenario: Scenario"""
+    #         scenario.params.append(("dummy_send", random_string))
+    #         scenario.ret_vals.append(scenario.connection.call("dummy_send", random_string))
+    #         scenario.stats.append(scenario.uxrecorder.api_stats[-1])
+    #
+    #     return execute
+
     @staticmethod
-    def CALL_DUMMY_SEND(length):
+    def CALL_DUMMY_SEND_RECEIVE(length):
         random_string = np.random.randint(0, 256, int(length), np.uint8).tostring()
 
         def execute(scenario):
             """:type scenario: Scenario"""
-            scenario.params.append(("dummy_send", random_string))
-            scenario.ret_vals.append(scenario.connection.call("dummy_send", random_string))
+            scenario.params.append(("test_send", random_string))
+            scenario.ret_vals.append(scenario.connection.call("test_send", random_string))
+            scenario.stats.append(scenario.uxrecorder.api_stats[-1])
+            scenario.params.append(("test_receive", ""))
+            scenario.ret_vals.append(scenario.connection.call("test_receive", ""))
             scenario.stats.append(scenario.uxrecorder.api_stats[-1])
 
         return execute
@@ -157,7 +178,7 @@ def run_scenario(actions, so_path, rpc_factory):  # TBD flag for only parameters
                 api_action(scenario)
         except KeyboardInterrupt:
             pass
-    return dict(stats=scenario.stats, params=scenario.params, ret_vals=scenario.ret_vals)
+    return dict(stats=map(get_saveable_api_call, scenario.stats), params=scenario.params, ret_vals=scenario.ret_vals)
 
 
 # TODO: Extract code from pybuga to someplace else
@@ -170,18 +191,19 @@ class BetterTee(Tee):
         sys.stdout = self.old_stdout
 
 
-def get_basic_scenario(rep_num=3, create_connections_num=10, input_lengths=(1, 1000, 1e5, 1e6, 1e7)):
+def get_basic_scenario(rep_num=3, create_connections_num=10, input_lengths=(1, 1000, 1e5, 1e6, 1e7, 1e8)):
     scenario = [RPCDummyAction.CHOOSE_DEVICE_ID()]
     for _ in range(rep_num):
         scenario += [RPCDummyAction.INSTALL()]
         for _ in range(create_connections_num):
             scenario += [RPCDummyAction.CREATE_CONNECTION()]
-            scenario += [RPCDummyAction.CALL_DUMMY_SEND(l) for l in input_lengths]
+            # scenario += [RPCDummyAction.CALL_DUMMY_SEND(l) for l in input_lengths]
+            scenario += [RPCDummyAction.CALL_DUMMY_SEND_RECEIVE(l) for l in input_lengths]
     return scenario
 
 
 def get_multiple_connection_scenario():
-    return get_basic_scenario(1, create_connections_num=10, input_lengths=[]) + [RPCDummyAction.CALL_DUMMY_SEND(10000)]
+    return get_basic_scenario(1, create_connections_num=10, input_lengths=[]) + [RPCDummyAction.CALL_DUMMY_SEND_RECEIVE(10000)]
 
 
 def get_small_msgs_scenario(rep_num=1):

@@ -30,3 +30,6 @@ all_rpc_factories["grpc_soloader_apk_android"] = RpcFactoryEntry(GRpcSoLoaderAnd
 # all_rpc_factories["grpc_libbugatone_linux"] = RpcFactoryEntry(GRpcLibbugatoneLinuxClientFactory, "/home/buga/test-files/device_communication/resources/libbugatone_dummy.so.linux_x86.dummy_buga.c89bf5774a964bfe8f923dd75fe1d5e8a73cff05")
 all_rpc_factories["grpc_libbugatone_android"] = RpcFactoryEntry(GRpcLibbugatoneAndroidClientFactory, "/home/buga/test-files/device_communication/resources/libbugatone_dummy.so.arm64.dummy_buga.c89bf5774a964bfe8f923dd75fe1d5e8a73cff05")
 # all_rpc_factories["grpc_libbugatone_android"] = RpcFactoryEntry(GRpcLibbugatoneAndroidClientFactory, "/home/buga/mobileproduct/lib/arm64/Release/libbugatone_dummy.so")
+
+
+all_rpc_factories["michael_bench"] = RpcFactoryEntry(GRpcLibbugatoneAndroidClientFactory, "/home/buga/buga-recordings/lib/arm64/Release/libbugatone.so")
