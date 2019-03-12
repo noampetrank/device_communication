@@ -191,7 +191,7 @@ class BetterTee(Tee):
         sys.stdout = self.old_stdout
 
 
-def get_basic_scenario(rep_num=3, create_connections_num=10, input_lengths=(1, 1000, 1e5, 1e6, 1e7, 1e8)):
+def get_basic_scenario(rep_num=3, create_connections_num=10, input_lengths=(1, 1000, 1e5, 1e6, 1e7)):
     scenario = [RPCDummyAction.CHOOSE_DEVICE_ID()]
     for _ in range(rep_num):
         scenario += [RPCDummyAction.INSTALL()]
