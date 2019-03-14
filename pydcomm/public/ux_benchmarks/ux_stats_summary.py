@@ -146,20 +146,25 @@ def get_rpc_audio_interface_stats_summary(all_calls_table, verbose=False):
 
     call_calls['proc_name'] = call_calls.apply(lambda x: eval(x['args'][1]['repr']), axis=1)
 
-    setup_record_and_play_calls = (call_calls[call_calls['proc_name'] == 'setup_record_and_play']
-                                   .assign(data_len=lambda df: [((row['args'][2]['len'] if len(row['args']) > 2 else None) or
-                                                                 row['kwargs'].get('params', {'len': None})['len']) for _, row in df.iterrows()]))
+    upstream_calls = (call_calls[call_calls['proc_name'].isin(('setup_record_and_play',
+                                                               'setup_record_dings',
+                                                               'set_signal_to_play',
+                                                               'get_recording_start_ts',
+                                                               'wait_for_recorded_signal'))]
+                      .assign(data_len=lambda df: [((row['args'][2]['len'] if len(row['args']) > 2 else None) or
+                                                    row['kwargs'].get('params', {'len': None})['len']) for _, row in df.iterrows()]))
 
-    get_recorded_signal_calls = (call_calls[call_calls['proc_name'].isin(['get_recorded_data', 'get_recorded_signal'])]
-                               .assign(data_len=lambda df: [ret['len'] for ret in df.ret]))
+    downstream_calls = (call_calls[call_calls['proc_name'].isin(['get_recorded_data',
+                                                                 'get_recorded_signal'])]
+                        .assign(data_len=lambda df: [ret['len'] for ret in df.ret]))
 
-    get_recorded_signal_calls = get_recorded_signal_calls.assign(data_len=lambda df: [ret['len'] for ret in df.ret])
+    downstream_calls = downstream_calls.assign(data_len=lambda df: [ret['len'] for ret in df.ret])
 
-    data_calls = pd.concat([setup_record_and_play_calls, get_recorded_signal_calls], axis=0, sort=True)
+    data_calls = pd.concat([upstream_calls, downstream_calls], axis=0, sort=True).fillna(-1)
 
     data_calls['MBps'] = data_calls.apply(lambda x: x['data_len'] / x['call_time_secs'] / 2 ** 20, axis=1)
 
-    bins = np.concatenate([[-float('inf')], np.arange(120) * 48000 * 12, [float('inf')]])
+    bins = np.concatenate([[-float('inf'), -1, 0, 1, 100, 1000], np.arange(1, 120) * 48000 * 12, [float('inf')]])
     data_calls['data_len_bin'] = pd.cut(data_calls['data_len'], bins).rename({'data_len': 'bin'})
     gb = data_calls.assign(total=1).groupby(['day', 'class_name', 'proc_name', 'data_len_bin', 'hostname', 'pc_ip', 'pc_wifi', 'device_id', 'device_wifi'])
     summary = gb.agg(OrderedDict([
