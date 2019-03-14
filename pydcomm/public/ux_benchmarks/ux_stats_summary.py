@@ -161,7 +161,7 @@ def get_rpc_audio_interface_stats_summary(all_calls_table, verbose=False):
 
     bins = np.concatenate([[-float('inf')], np.arange(120) * 48000 * 12, [float('inf')]])
     data_calls['data_len_bin'] = pd.cut(data_calls['data_len'], bins).rename({'data_len': 'bin'})
-    gb = data_calls.assign(total=1).groupby(['day', 'class_name', 'proc_name', 'data_len_bin', 'hostname', 'pc_ip'])
+    gb = data_calls.assign(total=1).groupby(['day', 'class_name', 'proc_name', 'data_len_bin', 'hostname', 'pc_ip', 'pc_wifi', 'device_id', 'device_wifi'])
     summary = gb.agg(OrderedDict([
         ('call_time_secs', np.mean),
         ('MBps', np.mean),

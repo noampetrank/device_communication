@@ -32,15 +32,20 @@ class GRemoteProcedureClient(IRemoteProcedureClient, CommonExtraStats):
 
     def __extra_stats__(self):
         common = super(GRemoteProcedureClient, self).__extra_stats__()
+        device_id = None
+        try:
+            device_id = self.host_port.split(":")[0]
+        except Exception:
+            pass
         if time.time() - self.latest_device_wifi_update > 60:  # update every minute
             try:
-                device_id = self.host_port.split(":")[0]
                 if device_id:
                     self.latest_device_wifi = get_device_wifi_network_name(device_id)
                     self.latest_device_wifi_update = time.time()
             except Exception:
                 pass
         common.update({
+            "device_id": device_id,
             "device_wifi": self.latest_device_wifi,
         })
         return common
