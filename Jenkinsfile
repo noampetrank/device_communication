@@ -29,24 +29,26 @@ node ('x86') {
 				git config credential.helper "store --file /home/ubuntu/.git_credentials"
 				echo "https://$GIT_AUTOMATION_USER:$GIT_AUTOMATION_PASS@github.com" > /home/ubuntu/.git_credentials
 				cd ../Bugatone-Space && ./make.sh linux && pip install -e . --user
-				cd ../test-files && git pull
+				cd ../test-files && git fetch origin && git reset --hard origin/master
 				cd ../mobileproduct
 				pip install -e ../buga-recordings --user
 				pip install -e $SAVED_CWD --user
 				pip install -e . --user
 				./make.py -c -p 
 
+				cd $SAVED_CWD
 				if [ -z "${CHANGE_ID}" ]
 				then
-					cd $SAVED_CWD
 					context=commits
 					page=`git rev-parse HEAD`
+					description="commit $page"
 				else
 					context=issues
 					page=${CHANGE_ID}
+					description="branch ${CHANGE_BRANCH}"
 				fi
 
-				curl -u automation@bugatone.com:bugaAuto1 -s -X POST -d "{\\"body\\": \\"Build $BUILD_NUMBER passed.\\nSee ${BUILD_URL}console\\"}" "https://api.github.com/repos/Bugatone/device_communication/$context/$page/comments"
+				curl -u automation@bugatone.com:bugaAuto1 -s -X POST -d "{\\"body\\": \\"Build number ${BUILD_NUMBER} passed for $description.\\nSee ${BUILD_URL}console\\"}" "https://api.github.com/repos/Bugatone/device_communication/$context/$page/comments"
 			'''
 		} 
 		catch(exc) {
@@ -55,12 +57,15 @@ node ('x86') {
 				then
 					context=commits
 					page=`git rev-parse HEAD`
+					description="commit $page"
+					tags="\\n@noharh @karpadbugatone"
 				else
 					context=issues
 					page=${CHANGE_ID}
+					description="branch ${CHANGE_BRANCH}"
 				fi
 
-				curl -u automation@bugatone.com:bugaAuto1 -s -X POST -d "{\\"body\\": \\"Build $BUILD_NUMBER failed.\\nSee ${BUILD_URL}console\\"}" "https://api.github.com/repos/Bugatone/device_communication/$context/$page/comments"
+				curl -u automation@bugatone.com:bugaAuto1 -s -X POST -d "{\\"body\\": \\"Build number ${BUILD_NUMBER} failed for $description.\\nSee ${BUILD_URL}console$tags\\"}" "https://api.github.com/repos/Bugatone/device_communication/$context/$page/comments"
 			'''
 			throw exc
 		}
