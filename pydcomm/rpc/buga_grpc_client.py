@@ -4,6 +4,7 @@ import sys
 import os
 import time
 
+from pydcomm.public.deviceutils.media_player_utils import DEVICE_MUSIC_PATH
 from pydcomm.public.ux_benchmarks.common_extra_stats import get_device_wifi_network_name
 from pydcomm.public.ux_benchmarks.common_extra_stats import CommonExtraStats
 from pydcomm.public.bugarpc import IRemoteProcedureClient, IRemoteProcedureClientFactory, RpcError
@@ -233,7 +234,6 @@ class GRpcLibbugatoneLinuxClientFactory(_GRpcClientFactory):
 
 class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):
     SILENCE_FILENAME = "silence_1h.mp3"
-    DEVICE_MUSIC_PATH = "/sdcard/Music"
 
     @classmethod
     def install_executor(cls, so_path, rpc_id, device_id=None):
@@ -248,7 +248,7 @@ class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):
         local_silence_path = os.path.join(res_path, cls.SILENCE_FILENAME)
         if not os.path.isdir(res_path) or not os.path.isfile(local_silence_path):
             raise RpcError("{} not found. (do you need to pull test-files?)".format(local_silence_path))
-        _push_mv(device_id, local_silence_path, cls.DEVICE_MUSIC_PATH)
+        _push_mv(device_id, local_silence_path, DEVICE_MUSIC_PATH)
 
         # Make sure a headset is connected so Bugatone would work
         cls._ensure_headset_connected(device_id)
@@ -336,7 +336,7 @@ class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):
             print("321Player isn't installed on your device, it's better for everyone that you install it right now!")
             print("But I'll assume that you know what you're doing and let you continue...")
 
-        silence_device_path = os.path.join(cls.DEVICE_MUSIC_PATH, cls.SILENCE_FILENAME)
+        silence_device_path = os.path.join(DEVICE_MUSIC_PATH, cls.SILENCE_FILENAME)
         subprocess.check_output('adb shell am start -a android.intent.action.VIEW -d file://{} -t audio/wav --user 0{}'.format(
             silence_device_path,
             (' -n ' + media_player_activity) if media_player_activity else ''

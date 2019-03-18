@@ -1,7 +1,8 @@
 import os
 import time
 
-from pydcomm.rpc.buga_grpc_client import GRpcLibbugatoneAndroidClientFactory
+
+DEVICE_MUSIC_PATH = "/sdcard/Music"
 
 
 class MediaPlayerUtils(object):
@@ -40,7 +41,6 @@ class MediaPlayerUtils(object):
         # delay script (by sleeping) in an attempt to avoid media player crashes / red screens
         if self.delay:
             time.sleep(self.delay)
-        self.media_player_rewind_song()  # so it play from the beginning
     
     def media_player_rewind_song(self):
         """
@@ -83,7 +83,7 @@ class MediaPlayerUtils(object):
         if self.delay:
             time.sleep(self.delay)
 
-    def play_song(self, song, path=GRpcLibbugatoneAndroidClientFactory.DEVICE_MUSIC_PATH):
+    def select_and_play_song(self, song, path=DEVICE_MUSIC_PATH):
         """
         player this song on the default activity
         :param str song: name of song file
