@@ -83,7 +83,7 @@ class MediaPlayerUtils(object):
         if self.delay:
             time.sleep(self.delay)
 
-    def play_song(self, song, path=GRpcLibbugatoneAndroidClientFactory.DEVICE_MUSIC_PATH):
+    def select_and_play_song(self, song, path=GRpcLibbugatoneAndroidClientFactory.DEVICE_MUSIC_PATH):
         """
         player this song on the default activity
         :param str song: name of song file
