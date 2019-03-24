@@ -40,7 +40,6 @@ class MediaPlayerUtils(object):
         # delay script (by sleeping) in an attempt to avoid media player crashes / red screens
         if self.delay:
             time.sleep(self.delay)
-        self.media_player_rewind_song()  # so it play from the beginning
     
     def media_player_rewind_song(self):
         """
