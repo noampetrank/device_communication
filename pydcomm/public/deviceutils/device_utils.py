@@ -16,7 +16,7 @@ class DeviceUtils(object):
         :return str|None: ip address
         """
         address = self.list_device_ips()
-        if len(address) is 0:
+        if len(address) == 0:
             if verbose:
                 print("Could not find ip address for the device. Please fix and try again")
             return None

@@ -1,7 +1,8 @@
 import os
 import time
 
-from pydcomm.rpc.buga_grpc_client import GRpcLibbugatoneAndroidClientFactory
+
+DEVICE_MUSIC_PATH = "/sdcard/Music"
 
 
 class MediaPlayerUtils(object):
@@ -82,7 +83,7 @@ class MediaPlayerUtils(object):
         if self.delay:
             time.sleep(self.delay)
 
-    def select_and_play_song(self, song, path=GRpcLibbugatoneAndroidClientFactory.DEVICE_MUSIC_PATH):
+    def select_and_play_song(self, song, path=DEVICE_MUSIC_PATH):
         """
         player this song on the default activity
         :param str song: name of song file
