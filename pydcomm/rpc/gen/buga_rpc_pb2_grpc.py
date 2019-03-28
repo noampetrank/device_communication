@@ -61,3 +61,45 @@ def add_DeviceRpcServicer_to_server(servicer, server):
   generic_handler = grpc.method_handlers_generic_handler(
       'buga_rpc.DeviceRpc', rpc_method_handlers)
   server.add_generic_rpc_handlers((generic_handler,))
+
+
+class DeviceRpcStreamingStub(object):
+  # missing associated documentation comment in .proto file
+  pass
+
+  def __init__(self, channel):
+    """Constructor.
+
+    Args:
+      channel: A grpc.Channel.
+    """
+    self.callStreaming = channel.unary_stream(
+        '/buga_rpc.DeviceRpcStreaming/callStreaming',
+        request_serializer=buga__rpc__pb2.GRequest.SerializeToString,
+        response_deserializer=buga__rpc__pb2.GResponse.FromString,
+        )
+
+
+class DeviceRpcStreamingServicer(object):
+  # missing associated documentation comment in .proto file
+  pass
+
+  def callStreaming(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
+
+def add_DeviceRpcStreamingServicer_to_server(servicer, server):
+  rpc_method_handlers = {
+      'callStreaming': grpc.unary_stream_rpc_method_handler(
+          servicer.callStreaming,
+          request_deserializer=buga__rpc__pb2.GRequest.FromString,
+          response_serializer=buga__rpc__pb2.GResponse.SerializeToString,
+      ),
+  }
+  generic_handler = grpc.method_handlers_generic_handler(
+      'buga_rpc.DeviceRpcStreaming', rpc_method_handlers)
+  server.add_generic_rpc_handlers((generic_handler,))
