@@ -11,6 +11,10 @@ service DeviceRpc {
     rpc grpc_echo (GRequest) returns (GResponse) {}
 }
 
+service DeviceRpcStreaming {
+    rpc callStreaming (GRequest) returns (stream GResponse) {}
+}
+
 message GRequest {
     string name = 1;
     bytes buf = 2;

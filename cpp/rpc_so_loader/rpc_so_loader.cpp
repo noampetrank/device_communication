@@ -16,6 +16,7 @@
 
 
 std::unique_ptr<IRemoteProcedureServer> createBugaGRPCServer();
+std::unique_ptr<IRemoteProcedureStreamingServer> createBugaGRPCStreamingServer();
 
 
 class SoLoaderExecutor : public IRemoteProcedureExecutor {
@@ -40,6 +41,10 @@ private:
 
     std::string getSoPath(int rpcId);
     void stopExecutor(RpcData& openRpc);
+
+    template <typename TCreateServerFunc, typename TCreateExecutorFunc, typename TListenFunc>
+    void startExecutor(int rpcId, SoLoaderExecutor::RpcData &openRpc, const TCreateServerFunc& create_server,
+            const TCreateExecutorFunc& create_executor, const TListenFunc& listenFunc) const;
 };
 
 std::string SoLoaderExecutor::getSoPath(int rpcId) {
@@ -111,37 +116,24 @@ Buffer SoLoaderExecutor::executeProcedure(const std::string &procedureName, cons
 
         void *lib = openRpc.libHandle = dlopen(getSoPath(rpcId).c_str(), RTLD_LAZY);
         if (lib != nullptr && dlerror() == NULL) {
-            auto create_executor = (CreateExecutorFunc) dlsym(lib, "create_executor");
-
-            buga_rpc_log("Loaded " + sRpcId + ".so");
-            if (create_executor != nullptr && dlerror() == NULL) {
-                std::mutex m;
-                std::condition_variable cv;
-                bool flag = false;
-
-                openRpc.server = createBugaGRPCServer();
-                openRpc.thrd = std::thread([create_executor, rpcId, &m, &cv, &flag, server=openRpc.server.get()] {
-                    buga_rpc_log("Creating executor for rpcId " + std::to_string(rpcId));
-                    std::unique_ptr<IRemoteProcedureExecutor> executor = create_executor();
-                    buga_rpc_log("Starting server for rpcId " + std::to_string(rpcId));
-                    server->listen(*executor, rpcId, false);
-
-                    {
-                        std::lock_guard<std::mutex> lock(m);
-                        flag = true;
-                    }
-
-                    cv.notify_one();
-                    server->wait();
-
-                    buga_rpc_log("Server stopped for rpcId " + std::to_string(rpcId));
-                });
-
-                std::unique_lock<std::mutex> lock(m);
-                cv.wait(lock, [&] { return flag; });
+            auto create_streaming_executor = (CreateStreamingExecutorFunc) dlsym(lib, "create_streaming_executor");
+            if (create_streaming_executor != nullptr && dlerror() == NULL) {
+                startExecutor(rpcId, openRpc, createBugaGRPCStreamingServer, create_streaming_executor,
+                        [] (auto& server, auto& executor, auto rpcId, auto wait) { server->listenStreaming(executor, rpcId, false); }
+                        );
+                buga_rpc_log("Loaded " + sRpcId + ".so as streaming");
             } else {
-                buga_rpc_log("Could not load func for rpcId " + sRpcId + " (" + dlerror() + ")");
-                return "FAIL";
+                auto create_executor = (CreateExecutorFunc) dlsym(lib, "create_executor");
+
+                if (create_executor != nullptr && dlerror() == NULL) {
+                    startExecutor(rpcId, openRpc, createBugaGRPCServer, create_executor,
+                                  [] (auto& server, auto& executor, auto rpcId, auto wait) { server->listen(executor, rpcId, false); }
+                                  );
+                    buga_rpc_log("Loaded " + sRpcId + ".so");
+                } else {
+                    buga_rpc_log("Could not load func for rpcId " + sRpcId + " (" + dlerror() + ")");
+                    return "FAIL";
+                }
             }
         } else {
             buga_rpc_log("Couldn't load so for rpcId " + sRpcId + " (" + dlerror() + ")");
@@ -163,6 +155,40 @@ Buffer SoLoaderExecutor::executeProcedure(const std::string &procedureName, cons
         }
     }
     return "NOT_SUPPORTED";
+}
+
+template <typename TCreateServerFunc, typename TCreateExecutorFunc, typename TListenFunc>
+void
+SoLoaderExecutor::startExecutor(int rpcId, SoLoaderExecutor::RpcData &openRpc, const TCreateServerFunc& create_server,
+        const TCreateExecutorFunc& create_executor, const TListenFunc& listenFunc) const {
+    std::mutex m;
+    std::condition_variable cv;
+    bool flag = false;
+
+    auto server = create_server();
+    auto server_ptr = server.get();
+    openRpc.server = std::move(server);
+
+    openRpc.thrd = std::thread([create_executor, rpcId, &m, &cv, &flag, server=server_ptr, &listenFunc] {
+                    buga_rpc_log("Creating executor for rpcId " + std::to_string(rpcId));
+                    auto executor = create_executor();
+                    buga_rpc_log("Starting server for rpcId " + std::to_string(rpcId));
+                    // server->listen(*executor, rpcId, false);
+                    listenFunc(server, *executor, rpcId, false);
+
+                    {
+                        std::lock_guard<std::mutex> lock(m);
+                        flag = true;
+                    }
+
+                    cv.notify_one();
+                    server->wait();
+
+                    buga_rpc_log("Server stopped for rpcId " + std::to_string(rpcId));
+                });
+
+    std::unique_lock<std::mutex> lock(m);
+    cv.wait(lock, [&] { return flag; });
 }
 
 void init(const char *sosDir) {

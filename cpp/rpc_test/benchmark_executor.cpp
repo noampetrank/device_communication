@@ -12,3 +12,23 @@ Buffer BenchmarkExecutor::executeProcedure(const std::string &procedureName, con
 extern "C" std::unique_ptr<IRemoteProcedureExecutor> create_executor() {
     return std::make_unique<BenchmarkExecutor>();
 }
+
+
+class BenchmarkStreamingExecutor : public IRemoteProcedureStreamingExecutor {
+public:
+    void executeProcedureStreaming(const std::string &procedureName, const Buffer &params,
+                                   std::unique_ptr<IBufferStreamWriter> writer) override {
+        std::cout << "returning hello world\n";
+        writer->write("hello");
+        writer->write("world");
+    }
+
+    std::string getVersion() override { return "1.0"; }
+    Buffer executeProcedure(const std::string &procedureName, const Buffer &params) override {
+        return "NOT IMPLEMENTED";
+    }
+};
+
+extern "C" std::unique_ptr<IRemoteProcedureStreamingExecutor> create_streaming_executor() {
+    return std::make_unique<BenchmarkStreamingExecutor>();
+}
