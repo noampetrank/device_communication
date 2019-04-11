@@ -330,32 +330,35 @@ class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):
     @classmethod
     def _play_silence(cls, device_id):
         # TODO this is a workaround to directly open 321Player even if it's not the default
-        is_installed = "package:com.chahal.mpc.hd" in subprocess.check_output('adb shell pm list packages', shell=True, timeout=15)
+        is_installed = "package:com.chahal.mpc.hd" in subprocess.check_output(
+            'adb -s {} shell pm list packages'.format(device_id), shell=True, timeout=15)
         media_player_activity = "com.chahal.mpc.hd/org.videolan.vlc.StartActivity" if is_installed else None
         if not is_installed:
             print("321Player isn't installed on your device, it's better for everyone that you install it right now!")
             print("But I'll assume that you know what you're doing and let you continue...")
 
         silence_device_path = os.path.join(DEVICE_MUSIC_PATH, cls.SILENCE_FILENAME)
-        subprocess.check_output('adb shell am start -a android.intent.action.VIEW -d file://{} -t audio/wav --user 0{}'.format(
-            silence_device_path,
-            (' -n ' + media_player_activity) if media_player_activity else ''
-        ), shell=True, timeout=15)  # Play
-        subprocess.check_output('adb shell input keyevent 89', shell=True, timeout=15)  # Rewind
+        subprocess.check_output(
+            'adb -s {} shell am start -a android.intent.action.VIEW -d file://{} -t audio/wav --user 0{}'.format(
+                device_id, silence_device_path,
+                (' -n ' + media_player_activity) if media_player_activity else ''
+            ), shell=True, timeout=15)  # Play
+        subprocess.check_output('adb -s {} shell input keyevent 89'.format(device_id), shell=True, timeout=15)  # Rewind
         time.sleep(.2)
 
     @classmethod
     def _stop_playback(cls, device_id):
-        subprocess.check_output('adb shell input keyevent 89', shell=True, timeout=15)  # Rewind
+        subprocess.check_output('adb -s {} shell input keyevent 89'.format(device_id), shell=True, timeout=15)  # Rewind
         time.sleep(.2)
-        subprocess.check_output('adb shell input keyevent 86', shell=True, timeout=15)  # Stop
+        subprocess.check_output('adb -s {} shell input keyevent 86'.format(device_id), shell=True, timeout=15)  # Stop
         time.sleep(.2)
 
     @classmethod
     def _ensure_headset_connected(cls, device_id):
         while True:
-            audio_devices = subprocess.check_output("adb -s {} shell dumpsys audio | grep -e '-\sSTREAM_MUSIC:' -A5 | grep Devices: | cut -c 13-".format(device_id),
-                                                    shell=True, timeout=15).split(' ')
+            audio_devices = subprocess.check_output(
+                "adb -s {} shell dumpsys audio | grep -e '-\\sSTREAM_MUSIC:' -A5 | grep Devices: | cut -c 13-".format(
+                    device_id), shell=True, timeout=15).split(' ')
             if 'headset' in [x.strip() for x in audio_devices]:
                 break
             raw_input("Please connect earphone and press enter...")
