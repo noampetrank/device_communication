@@ -52,7 +52,7 @@ def parse_options():
     parser.add_option('-X', '--export-release',
                       dest="export_release",
                       action="store_true",
-                      default=True)
+                      default=False)
 
     options, args = parser.parse_args()
     if args:

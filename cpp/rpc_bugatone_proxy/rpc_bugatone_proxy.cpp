@@ -57,6 +57,7 @@ int_between_30000_and_50000 get_requested_port() {
 extern "C" void* _Z17createBugatoneApiv() {
     buga_rpc_log("[RPCBugatoneProxy] outer createBugatoneApi called");
     void* bugatoneApi = nullptr;
+    std::unique_ptr<IRemoteProcedureExecutor> executor = nullptr;
 
     void* myso = nullptr;
     const std::vector<const char*> libbugatone_paths = LIBBUGATONE_LOOKUP_PATHS;
@@ -74,30 +75,51 @@ extern "C" void* _Z17createBugatoneApiv() {
     }
     buga_rpc_log("[RPCBugatoneProxy] .so loaded");
 
-    auto create_executor = (CreateExecutorFunc)dlsym(myso, "create_executor");
-    if (create_executor != nullptr) {
+    using CreatePairFunc = std::pair<void*, std::unique_ptr<IRemoteProcedureExecutor>> (*)();
+
+    auto create_pair = (CreatePairFunc)dlsym(myso, "create_bugatoneapi_and_executor");
+    if (create_pair != nullptr) {
+        buga_rpc_log("[RPCBugatoneProxy] calling loaded create_bugatoneapi_and_executor");
+        auto pair = create_pair();
+        bugatoneApi = pair.first;
+        executor = std::move(pair.second);
+    } else {
+        buga_rpc_log("[RPCBugatoneProxy] symbol create_bugatoneapi_and_executor not found, trying to load create_executor and _Z17createBugatoneApiv instead");
+        buga_rpc_log(dlerror());
+
+        auto create_executor = (CreateExecutorFunc)dlsym(myso, "create_executor");
+        if (create_executor != nullptr) {
+            buga_rpc_log("[RPCBugatoneProxy] calling loaded create_executor");
+            executor = create_executor();
+        } else {
+            buga_rpc_log("[RPCBugatoneProxy] symbol create_executor not found, not starting gRPC");
+            buga_rpc_log(dlerror());
+        }
+
+        auto createBugatoneApi = (void* (*)())dlsym(myso, "_Z17createBugatoneApiv");
+        if (createBugatoneApi != nullptr) {
+            buga_rpc_log("[RPCBugatoneProxy] calling loaded createBugatoneApi");
+            bugatoneApi = createBugatoneApi();
+        } else {
+            buga_rpc_log("[RPCBugatoneProxy] symbol _Z17createBugatoneApiv not found, returning nullptr as bugatone api");
+            buga_rpc_log(dlerror());
+            if (executor != nullptr) {
+                buga_rpc_log("[RPCBugatoneProxy] not starting gRPC since no bugatone api was created");
+            }
+        }
+    }
+
+    if (executor != nullptr && bugatoneApi != nullptr) {
         buga_rpc_log("[RPCBugatoneProxy] creating gRPC thread");
-        std::thread serverThread([create_executor] {
-            buga_rpc_log("[RPCBugatoneProxy] gRPC thread started, calling create_executor");
-            std::unique_ptr<IRemoteProcedureExecutor> executor = create_executor();
+        std::thread serverThread([executor=std::move(executor)] {
+            buga_rpc_log("[RPCBugatoneProxy] gRPC thread started");  // , calling create_executor");
+            // std::unique_ptr<IRemoteProcedureExecutor> executor = create_executor();
             buga_rpc_log("[RPCBugatoneProxy] calling listen");
             createBugaGRPCServer()->listen(*executor, get_requested_port(), true);
             buga_rpc_log("[RPCBugatoneProxy] gRPC server listen done, thread returning");
         });
         buga_rpc_log("[RPCBugatoneProxy] detaching gRPC server thread");
         serverThread.detach();
-    } else {
-        buga_rpc_log("[RPCBugatoneProxy] symbol create_executor not found");
-        buga_rpc_log(dlerror());
-    }
-
-    auto createBugatoneApi = (void* (*)())dlsym(myso, "_Z17createBugatoneApiv");
-    if (createBugatoneApi == nullptr) {
-        buga_rpc_log("[RPCBugatoneProxy] symbol _Z17createBugatoneApiv not found, returning nullptr as bugatone api");
-        buga_rpc_log(dlerror());
-    } else {
-        buga_rpc_log("[RPCBugatoneProxy] calling loaded createBugatoneApi");
-        bugatoneApi = createBugatoneApi();
     }
 
     return bugatoneApi;
