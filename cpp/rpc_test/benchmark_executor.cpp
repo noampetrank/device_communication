@@ -17,7 +17,7 @@ extern "C" std::unique_ptr<IRemoteProcedureExecutor> create_executor() {
 class BenchmarkStreamingExecutor : public IRemoteProcedureStreamingExecutor {
 public:
     void executeProcedureStreaming(const std::string &procedureName, const Buffer &params,
-                                   std::unique_ptr<IBufferStreamWriter> writer) override {
+                                   std::unique_ptr<IBufferStreamReaderWriter> writer) override {
         std::cout << "returning hello world\n";
         writer->write("hello");
         writer->write("world");

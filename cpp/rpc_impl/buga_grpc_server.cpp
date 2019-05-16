@@ -2,6 +2,7 @@
 #include "buga_rpc.grpc.pb.h"
 
 #include <iostream>
+#include <cstdio>
 #include <grpcpp/grpcpp.h>
 #include <thread>
 #include "buga_rpc.pb.h"
@@ -83,8 +84,7 @@ public:
     BugaGRpcStreamingServiceImpl(IRemoteProcedureStreamingExecutor &listener, GRemoteProcedureServer *parentServer) : listener(listener), parentServer(parentServer) {}
 
     Status callStreaming(ServerContext* context,
-                const GRequest* req,
-                grpc::ServerWriter<GResponse>* res) override;
+                grpc::ServerReaderWriter<GResponse, GResponse>* stream) override;
 
 private:
     IRemoteProcedureExecutor &listener;
@@ -112,22 +112,43 @@ Status BugaGRpcServiceImpl::call(ServerContext *context, const GRequest *req, GR
     return Status::OK;
 }
 
-struct GRpcBufferStreamWriter : IBufferStreamWriter {
-    grpc::ServerWriter<GResponse> *writer;
-    explicit GRpcBufferStreamWriter(grpc::ServerWriter<GResponse> *writer_) : writer(writer_) {}
-    void write(const Buffer& buffer) override {
+struct GRpcBufferStreamWriter : IBufferStreamReaderWriter {
+    grpc::ServerReaderWriter<GResponse, GResponse> *stream;
+    explicit GRpcBufferStreamWriter(grpc::ServerReaderWriter<GResponse, GResponse> *stream_) : stream(stream_) {}
+    std::unique_ptr<Buffer> read() override {
+        GResponse response;
+        std::puts("[GRpcBufferStreamWriter] calling stream->Read");
+        if (stream->Read(&response)) {
+            std::puts("[GRpcBufferStreamWriter] stream->Read returned true");
+            return std::make_unique<Buffer>(response.buf());
+        } else {
+            std::puts("[GRpcBufferStreamWriter] stream->Read returned false");
+            return std::unique_ptr<Buffer>(nullptr);
+        }
+    }
+    bool write(const Buffer& buffer) override {
         GResponse response;
         response.set_buf(buffer);
-        writer->Write(response);
+        std::puts("[GRpcBufferStreamWriter] calling stream->Write");
+        return stream->Write(response);
     }
 };
 
-Status BugaGRpcStreamingServiceImpl::callStreaming(ServerContext *context, const GRequest *req, grpc::ServerWriter<GResponse> *res) {
-    const std::string &name = req->name();
-    const Buffer &params = req->buf();
-
+Status BugaGRpcStreamingServiceImpl::callStreaming(ServerContext *context, grpc::ServerReaderWriter<GResponse, GResponse> *stream) {
     try {
-        auto writer = std::make_unique<GRpcBufferStreamWriter>(res);
+        GResponse res;
+
+        if (!stream->Read(&res)) {
+            return Status(grpc::INVALID_ARGUMENT, "callStreaming must start with procedureName and params sent from client");
+        }
+        const std::string name = res.buf();
+
+        if (!stream->Read(&res)) {
+            return Status(grpc::INVALID_ARGUMENT, "callStreaming must start with procedureName and params sent from client");
+        }
+        const std::string params = res.buf();
+
+        auto writer = std::make_unique<GRpcBufferStreamWriter>(stream);
         static_cast<IRemoteProcedureStreamingExecutor*>(&this->listener)->executeProcedureStreaming(name, params, std::move(writer));
     } catch (RpcError &ex) {
         return Status(grpc::UNKNOWN, std::string("RPC error in executeProcedure: ") + ex.what());

@@ -7,9 +7,16 @@ import time
 from pydcomm.public.deviceutils.media_player_utils import DEVICE_MUSIC_PATH
 from pydcomm.public.ux_benchmarks.common_extra_stats import get_device_wifi_network_name
 from pydcomm.public.ux_benchmarks.common_extra_stats import CommonExtraStats
-from pydcomm.public.bugarpc import IRemoteProcedureClient, IRemoteProcedureClientFactory, RpcError
-from pydcomm.rpc.gen.buga_rpc_pb2_grpc import DeviceRpcStub
-from pydcomm.rpc.gen.buga_rpc_pb2 import GRequest
+from pydcomm.public.bugarpc import IRemoteProcedureClient, IRemoteProcedureStreamingClient, IRemoteProcedureClientFactory, RpcError, ReaderWriterStream
+from pydcomm.rpc.gen.buga_rpc_pb2_grpc import DeviceRpcStub, DeviceRpcStreamingStub
+from pydcomm.rpc.gen.buga_rpc_pb2 import GRequest, GResponse
+
+class StreamingStub(DeviceRpcStreamingStub, DeviceRpcStub):
+  pass
+
+  def __init__(self, channel):
+    DeviceRpcStreamingStub.__init__(self, channel)
+    DeviceRpcStub.__init__(self, channel)
 
 
 class GRemoteProcedureClient(IRemoteProcedureClient, CommonExtraStats):
@@ -67,6 +74,73 @@ class GRemoteProcedureClient(IRemoteProcedureClient, CommonExtraStats):
                     self._create_grpc_channel_and_stub()
                 else:
                     raise RpcError(grpc_exception=ex)
+
+
+class GRemoteProcedureStreamingClient(IRemoteProcedureStreamingClient, GRemoteProcedureClient):
+    def _create_grpc_channel_and_stub(self):
+        # This needs to remain an instance variable (according to https://blog.jeffli.me/blog/2017/08/02/keep-python-grpc-client-connection-truly-alive/)
+        self.channel = grpc.insecure_channel(self.host_port, options=[('grpc.max_send_message_length', self.MAX_MESSAGE_SIZE),
+                                                                      ('grpc.max_receive_message_length', self.MAX_MESSAGE_SIZE)])
+        self.stub = StreamingStub(self.channel)
+
+    def call_streaming(self, procedure_name, params):
+        """
+        Calls a streaming procedure with the params, and returns an iterator of streamed resuls.
+
+        :param str procedure_name: Name of procedure that device side handles.
+        :param str params: String to send.
+        :return: Iterator of streamed results from device.
+        :rtype: ReaderWriterStream
+        """
+        from Queue import Queue
+        from threading import Event
+        queue = Queue()
+        end_write_sential = object()
+
+        def read_from_queue():
+            yield GResponse(buf=procedure_name)
+            yield GResponse(buf=params)
+
+            while True:
+                value = queue.get()
+                if value is end_write_sential:
+                    raise StopIteration
+                else:
+                    yield GResponse(buf=value)
+
+        res = self.stub.callStreaming(read_from_queue())
+
+        class GReaderWriterStream(ReaderWriterStream):
+            """
+            Interface for return object from a streaming call.
+            Member functions:
+                read, write, end_write
+            """
+            def __init__(self):
+                self._end_write = Event()
+
+            def read(self):
+                """
+                Receive value from server side.
+
+                This is blocking until server sends a response, or closes the connection.
+                """
+                return next(res).buf
+
+            def write(self, value):
+                """Write a value to the server."""
+                assert not self._end_write.is_set(), "already called end_write"
+                queue.put(value)
+
+            def end_write(self):
+                """Tell server that you're done writing."""
+                self._end_write.set()
+                queue.put(end_write_sential)
+
+            def __del__(self):
+                self.end_write()
+
+        return GReaderWriterStream()
 
 # region Client factories common stuff
 
