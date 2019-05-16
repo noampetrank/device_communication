@@ -73,9 +73,9 @@ class DeviceRpcStreamingStub(object):
     Args:
       channel: A grpc.Channel.
     """
-    self.callStreaming = channel.unary_stream(
+    self.callStreaming = channel.stream_stream(
         '/buga_rpc.DeviceRpcStreaming/callStreaming',
-        request_serializer=buga__rpc__pb2.GRequest.SerializeToString,
+        request_serializer=buga__rpc__pb2.GResponse.SerializeToString,
         response_deserializer=buga__rpc__pb2.GResponse.FromString,
         )
 
@@ -84,7 +84,7 @@ class DeviceRpcStreamingServicer(object):
   # missing associated documentation comment in .proto file
   pass
 
-  def callStreaming(self, request, context):
+  def callStreaming(self, request_iterator, context):
     # missing associated documentation comment in .proto file
     pass
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -94,9 +94,9 @@ class DeviceRpcStreamingServicer(object):
 
 def add_DeviceRpcStreamingServicer_to_server(servicer, server):
   rpc_method_handlers = {
-      'callStreaming': grpc.unary_stream_rpc_method_handler(
+      'callStreaming': grpc.stream_stream_rpc_method_handler(
           servicer.callStreaming,
-          request_deserializer=buga__rpc__pb2.GRequest.FromString,
+          request_deserializer=buga__rpc__pb2.GResponse.FromString,
           response_serializer=buga__rpc__pb2.GResponse.SerializeToString,
       ),
   }

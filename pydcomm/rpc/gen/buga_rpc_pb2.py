@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='buga_rpc.proto',
   package='buga_rpc',
   syntax='proto3',
-  serialized_pb=_b('\n\x0e\x62uga_rpc.proto\x12\x08\x62uga_rpc\"%\n\x08GRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0b\n\x03\x62uf\x18\x02 \x01(\x0c\"\x18\n\tGResponse\x12\x0b\n\x03\x62uf\x18\x01 \x01(\x0c\x32v\n\tDeviceRpc\x12\x31\n\x04\x63\x61ll\x12\x12.buga_rpc.GRequest\x1a\x13.buga_rpc.GResponse\"\x00\x12\x36\n\tgrpc_echo\x12\x12.buga_rpc.GRequest\x1a\x13.buga_rpc.GResponse\"\x00\x32R\n\x12\x44\x65viceRpcStreaming\x12<\n\rcallStreaming\x12\x12.buga_rpc.GRequest\x1a\x13.buga_rpc.GResponse\"\x00\x30\x01\x62\x06proto3')
+  serialized_pb=_b('\n\x0e\x62uga_rpc.proto\x12\x08\x62uga_rpc\"%\n\x08GRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0b\n\x03\x62uf\x18\x02 \x01(\x0c\"\x18\n\tGResponse\x12\x0b\n\x03\x62uf\x18\x01 \x01(\x0c\x32v\n\tDeviceRpc\x12\x31\n\x04\x63\x61ll\x12\x12.buga_rpc.GRequest\x1a\x13.buga_rpc.GResponse\"\x00\x12\x36\n\tgrpc_echo\x12\x12.buga_rpc.GRequest\x1a\x13.buga_rpc.GResponse\"\x00\x32U\n\x12\x44\x65viceRpcStreaming\x12?\n\rcallStreaming\x12\x13.buga_rpc.GResponse\x1a\x13.buga_rpc.GResponse\"\x00(\x01\x30\x01\x62\x06proto3')
 )
 
 
@@ -153,14 +153,14 @@ _DEVICERPCSTREAMING = _descriptor.ServiceDescriptor(
   index=1,
   options=None,
   serialized_start=213,
-  serialized_end=295,
+  serialized_end=298,
   methods=[
   _descriptor.MethodDescriptor(
     name='callStreaming',
     full_name='buga_rpc.DeviceRpcStreaming.callStreaming',
     index=0,
     containing_service=None,
-    input_type=_GREQUEST,
+    input_type=_GRESPONSE,
     output_type=_GRESPONSE,
     options=None,
   ),

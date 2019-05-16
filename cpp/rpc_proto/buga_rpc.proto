@@ -12,7 +12,7 @@ service DeviceRpc {
 }
 
 service DeviceRpcStreaming {
-    rpc callStreaming (GRequest) returns (stream GResponse) {}
+    rpc callStreaming (stream GResponse) returns (stream GResponse) {}
 }
 
 message GRequest {

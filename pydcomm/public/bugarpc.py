@@ -41,6 +41,44 @@ class IRemoteProcedureClient(object):
         return self.call("_rpc_get_version", "")
 
 
+class ReaderWriterStream(object):
+    """
+    Interface for return object from a streaming call.
+    Member functions:
+        read, write, end_write
+    """
+    def read(self):
+        """
+        Receive value from server side.
+
+        This is blocking until server sends a response, or closes the connection.
+        """
+        raise NotImplementedError
+
+    def write(self, value):
+        """Write a value to the server."""
+        raise NotImplementedError
+
+    def end_write(self):
+        """Tell server that you're done writing."""
+        raise NotImplementedError
+
+
+class IRemoteProcedureStreamingClient(object):
+    __metaclass__ = metacollectstats
+
+    def call_streaming(self, procedure_name, params):
+        """
+        Calls a streaming procedure with the params, and returns an iterator of streamed resuls.
+
+        :param str procedure_name: Name of procedure that device side handles.
+        :param str params: String to send.
+        :return: Iterator of streamed results from device.
+        :rtype: ReaderWriterStream
+        """
+        raise NotImplementedError
+
+
 class IRemoteProcedureClientFactory(object):
     """
     Interface for factories creating remote procedure callers with a specific underlying technology.
