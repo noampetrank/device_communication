@@ -44,6 +44,7 @@ target_include_directories(rpc_server PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
         ../3rdparty/device_communication_common/
         ../3rdparty/nlohmann/include/
+        build_linux_release/rpc_proto/proto-src
         )
 target_link_libraries(rpc_server proto)
 

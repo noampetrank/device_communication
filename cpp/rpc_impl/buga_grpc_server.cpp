@@ -18,6 +18,7 @@ using buga_rpc::GRequest;
 using buga_rpc::GResponse;
 using buga_rpc::DeviceRpc;
 using buga_rpc::DeviceRpcStreaming;
+using buga_rpc::GBuffer;
 
 
 // region Server declaration
@@ -31,8 +32,11 @@ using GRpcStreamingServiceImpl = buga_rpc::DeviceRpcStreaming::Service;
 class GRemoteProcedureServer : virtual public IRemoteProcedureServer {
 public:
     void listen(IRemoteProcedureExecutor &listener, int_between_30000_and_50000 rpcId, bool wait) override;
+
     void wait() override;
+
     void stop() override;
+
     ~GRemoteProcedureServer() override {
         if (shutdownThread.joinable()) {
             shutdownThread.join();
@@ -49,7 +53,8 @@ protected:
 };
 
 struct GRemoteProcedureStreamingServer : public GRemoteProcedureServer, public IRemoteProcedureStreamingServer {
-    void listenStreaming(IRemoteProcedureStreamingExecutor& executor, int_between_30000_and_50000 rpc_id, bool wait) override;
+    void listenStreaming(IRemoteProcedureStreamingExecutor &executor, int_between_30000_and_50000 rpc_id,
+                         bool wait) override;
 };
 
 // endregion
@@ -63,11 +68,13 @@ struct GRemoteProcedureStreamingServer : public GRemoteProcedureServer, public I
  */
 class BugaGRpcServiceImpl : virtual public GRpcServiceImpl {
 public:
-    BugaGRpcServiceImpl(IRemoteProcedureExecutor &listener, GRemoteProcedureServer *parentServer) : listener(listener), parentServer(parentServer) {}
+    BugaGRpcServiceImpl(IRemoteProcedureExecutor &listener, GRemoteProcedureServer *parentServer) : listener(listener),
+                                                                                                    parentServer(
+                                                                                                            parentServer) {}
 
-    Status call(ServerContext* context,
-                const GRequest* req,
-                GResponse* res) override;
+    Status call(ServerContext *context,
+                const GRequest *req,
+                GResponse *res) override;
 
     Status grpc_echo(ServerContext *context,
                      const GRequest *req,
@@ -75,20 +82,22 @@ public:
 
 private:
     IRemoteProcedureExecutor &listener;
-    GRemoteProcedureServer * const parentServer;
+    GRemoteProcedureServer *const parentServer;
+
     bool handleServerRpc(const std::string &name, const Buffer &params, Buffer &ret);
 };
 
 class BugaGRpcStreamingServiceImpl : public GRpcStreamingServiceImpl {
 public:
-    BugaGRpcStreamingServiceImpl(IRemoteProcedureStreamingExecutor &listener, GRemoteProcedureServer *parentServer) : listener(listener), parentServer(parentServer) {}
+    BugaGRpcStreamingServiceImpl(IRemoteProcedureStreamingExecutor &listener, GRemoteProcedureServer *parentServer)
+            : listener(listener), parentServer(parentServer) {}
 
-    Status callStreaming(ServerContext* context,
-                grpc::ServerReaderWriter<GResponse, GResponse>* stream) override;
+    Status call_streaming(::grpc::ServerContext *context,
+                          ::grpc::ServerReaderWriter<::buga_rpc::GBuffer, ::buga_rpc::GBuffer> *stream) override;
 
 private:
     IRemoteProcedureExecutor &listener;
-    GRemoteProcedureServer * const parentServer;
+    GRemoteProcedureServer *const parentServer;
 };
 
 Status BugaGRpcServiceImpl::call(ServerContext *context, const GRequest *req, GResponse *res) {
@@ -113,10 +122,12 @@ Status BugaGRpcServiceImpl::call(ServerContext *context, const GRequest *req, GR
 }
 
 struct GRpcBufferStreamWriter : IBufferStreamReaderWriter {
-    grpc::ServerReaderWriter<GResponse, GResponse> *stream;
-    explicit GRpcBufferStreamWriter(grpc::ServerReaderWriter<GResponse, GResponse> *stream_) : stream(stream_) {}
+    grpc::ServerReaderWriter<GBuffer, GBuffer> *stream;
+
+    explicit GRpcBufferStreamWriter(grpc::ServerReaderWriter<GBuffer, GBuffer> *stream_) : stream(stream_) {}
+
     std::unique_ptr<Buffer> read() override {
-        GResponse response;
+        GBuffer response;
         std::puts("[GRpcBufferStreamWriter] calling stream->Read");
         if (stream->Read(&response)) {
             std::puts("[GRpcBufferStreamWriter] stream->Read returned true");
@@ -126,30 +137,35 @@ struct GRpcBufferStreamWriter : IBufferStreamReaderWriter {
             return std::unique_ptr<Buffer>(nullptr);
         }
     }
-    bool write(const Buffer& buffer) override {
-        GResponse response;
+
+    bool write(const Buffer &buffer) override {
+        GBuffer response;
         response.set_buf(buffer);
         std::puts("[GRpcBufferStreamWriter] calling stream->Write");
         return stream->Write(response);
     }
 };
 
-Status BugaGRpcStreamingServiceImpl::callStreaming(ServerContext *context, grpc::ServerReaderWriter<GResponse, GResponse> *stream) {
+Status BugaGRpcStreamingServiceImpl::call_streaming(::grpc::ServerContext *context,
+                                                    ::grpc::ServerReaderWriter<::buga_rpc::GBuffer, ::buga_rpc::GBuffer> *stream) {
     try {
-        GResponse res;
+        GBuffer res;
 
         if (!stream->Read(&res)) {
-            return Status(grpc::INVALID_ARGUMENT, "callStreaming must start with procedureName and params sent from client");
+            return Status(grpc::INVALID_ARGUMENT,
+                          "callStreaming must start with procedureName and params sent from client");
         }
         const std::string name = res.buf();
 
         if (!stream->Read(&res)) {
-            return Status(grpc::INVALID_ARGUMENT, "callStreaming must start with procedureName and params sent from client");
+            return Status(grpc::INVALID_ARGUMENT,
+                          "callStreaming must start with procedureName and params sent from client");
         }
         const std::string params = res.buf();
 
         auto writer = std::make_unique<GRpcBufferStreamWriter>(stream);
-        static_cast<IRemoteProcedureStreamingExecutor*>(&this->listener)->executeProcedureStreaming(name, params, std::move(writer));
+        static_cast<IRemoteProcedureStreamingExecutor *>(&this->listener)->executeProcedureStreaming(name, params,
+                                                                                                     std::move(writer));
     } catch (RpcError &ex) {
         return Status(grpc::UNKNOWN, std::string("RPC error in executeProcedure: ") + ex.what());
     } catch (std::runtime_error &ex) {
@@ -171,7 +187,8 @@ bool BugaGRpcServiceImpl::handleServerRpc(const std::string &name, const Buffer 
         ret = listener.getVersion();
         return true;
     } else if (name == "_rpc_device_time_usec") {
-        ret = std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+        ret = std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(
+                std::chrono::system_clock::now().time_since_epoch()).count());
         return true;
     } else if (name == "_rpc_stop") {
         parentServer->stop();
@@ -192,7 +209,7 @@ void GRemoteProcedureServer::listen(IRemoteProcedureExecutor &listener, int_betw
 
 
 void GRemoteProcedureStreamingServer::listenStreaming(IRemoteProcedureStreamingExecutor &executor,
-                                                                    int_between_30000_and_50000 rpc_id, bool wait) {
+                                                      int_between_30000_and_50000 rpc_id, bool wait) {
     this->rpcId = rpc_id;
     this->services.push_back(std::make_unique<BugaGRpcServiceImpl>(executor, this));
     this->services.push_back(std::make_unique<BugaGRpcStreamingServiceImpl>(executor, this));
@@ -212,12 +229,12 @@ void GRemoteProcedureServer::buildAndStart(bool wait) {
     // Register "service" as the instance through which we'll communicate with
     // clients. In this case it corresponds to an *synchronous* service.
 
-    for (auto& service : services) {
+    for (auto &service : services) {
         builder.RegisterService(service.get());
     }
 
     // Set max message size to 1Gb
-    const int max_message_size = 1024*1024*1024;
+    const int max_message_size = 1024 * 1024 * 1024;
     builder.SetMaxReceiveMessageSize(max_message_size);
     builder.SetMaxSendMessageSize(max_message_size);
     buga_rpc_log("Server max message size is " + std::to_string(max_message_size) + " bytes");
