@@ -62,51 +62,28 @@ struct GRemoteProcedureStreamingServer : public GRemoteProcedureServer, public I
 
 // region Service
 
-/**
- * This is the gRPC "service" implementation (https://grpc.io/img/landing-2.svg), which handles calls on the server.
- * It's a thin translation layer from gRPC "service" to Buga "executor".
- */
-class BugaGRpcServiceImpl : virtual public GRpcServiceImpl {
-public:
-    BugaGRpcServiceImpl(IRemoteProcedureExecutor &listener, GRemoteProcedureServer *parentServer) : listener(listener),
-                                                                                                    parentServer(
-                                                                                                            parentServer) {}
+bool handleServerRpc(GRemoteProcedureServer *const parentServer, IRemoteProcedureExecutor &listener, const std::string &name, const Buffer &params, Buffer &ret) {
+    if (name == "_rpc_get_version") {
+        ret = listener.getVersion();
+        return true;
+    } else if (name == "_rpc_device_time_usec") {
+        ret = std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(
+                std::chrono::system_clock::now().time_since_epoch()).count());
+        return true;
+    } else if (name == "_rpc_stop") {
+        parentServer->stop();
+        return true;
+    }
+    return false;
+}
 
-    Status call(ServerContext *context,
-                const GRequest *req,
-                GResponse *res) override;
-
-    Status grpc_echo(ServerContext *context,
-                     const GRequest *req,
-                     GResponse *res) override;
-
-private:
-    IRemoteProcedureExecutor &listener;
-    GRemoteProcedureServer *const parentServer;
-
-    bool handleServerRpc(const std::string &name, const Buffer &params, Buffer &ret);
-};
-
-class BugaGRpcStreamingServiceImpl : public GRpcStreamingServiceImpl {
-public:
-    BugaGRpcStreamingServiceImpl(IRemoteProcedureStreamingExecutor &listener, GRemoteProcedureServer *parentServer)
-            : listener(listener), parentServer(parentServer) {}
-
-    Status call_streaming(::grpc::ServerContext *context,
-                          ::grpc::ServerReaderWriter<::buga_rpc::GBuffer, ::buga_rpc::GBuffer> *stream) override;
-
-private:
-    IRemoteProcedureExecutor &listener;
-    GRemoteProcedureServer *const parentServer;
-};
-
-Status BugaGRpcServiceImpl::call(ServerContext *context, const GRequest *req, GResponse *res) {
+Status call_impl(GRemoteProcedureServer *const parentServer, IRemoteProcedureExecutor &listener, ServerContext *context, const GRequest *req, GResponse *res) {
     buga_rpc_log("called!");
     const std::string &name = req->name();
     const Buffer &params = req->buf();
 
     Buffer ret;
-    if (!handleServerRpc(name, params, ret)) {
+    if (!handleServerRpc(parentServer, listener, name, params, ret)) {
         try {
             ret = listener.executeProcedure(name, params);
         } catch (RpcError &ex) {
@@ -120,6 +97,56 @@ Status BugaGRpcServiceImpl::call(ServerContext *context, const GRequest *req, GR
     res->set_buf(ret);
     return Status::OK;
 }
+
+/**
+ * This is the gRPC "service" implementation (https://grpc.io/img/landing-2.svg), which handles calls on the server.
+ * It's a thin translation layer from gRPC "service" to Buga "executor".
+ */
+class BugaGRpcServiceImpl : virtual public GRpcServiceImpl {
+public:
+    BugaGRpcServiceImpl(IRemoteProcedureExecutor &listener, GRemoteProcedureServer *parentServer) : listener(listener),
+                                                                                                    parentServer(
+                                                                                                            parentServer) {}
+
+    Status call(ServerContext *context,
+                const GRequest *req,
+                GResponse *res) override {
+        return call_impl(parentServer, listener, context, req, res);
+    }
+
+    Status grpc_echo(ServerContext *context,
+                     const GRequest *req,
+                     GResponse *res) override;
+
+protected:
+    IRemoteProcedureExecutor &listener;
+    GRemoteProcedureServer *const parentServer;
+};
+
+class BugaGRpcStreamingServiceImpl : public GRpcStreamingServiceImpl {
+public:
+    BugaGRpcStreamingServiceImpl(IRemoteProcedureStreamingExecutor &listener, GRemoteProcedureServer *parentServer)
+            : listener(listener), parentServer(parentServer) {}
+
+    
+    Status call(ServerContext *context,
+                const GRequest *req,
+                GResponse *res) override {
+        return call_impl(parentServer, listener, context, req, res);
+    }
+
+    Status call_streaming(::grpc::ServerContext *context,
+                          ::grpc::ServerReaderWriter<::buga_rpc::GBuffer, ::buga_rpc::GBuffer> *stream) override;
+
+    Status grpc_echo(ServerContext *context, const GRequest *req, GResponse *res) override {
+        res->set_buf(req->buf());
+        return Status::OK;
+    }
+
+protected:
+    IRemoteProcedureExecutor &listener;
+    GRemoteProcedureServer *const parentServer;
+};
 
 struct GRpcBufferStreamWriter : IBufferStreamReaderWriter {
     grpc::ServerReaderWriter<GBuffer, GBuffer> *stream;
@@ -182,26 +209,12 @@ Status BugaGRpcServiceImpl::grpc_echo(ServerContext *context, const GRequest *re
     return Status::OK;
 }
 
-bool BugaGRpcServiceImpl::handleServerRpc(const std::string &name, const Buffer &params, Buffer &ret) {
-    if (name == "_rpc_get_version") {
-        ret = listener.getVersion();
-        return true;
-    } else if (name == "_rpc_device_time_usec") {
-        ret = std::to_string(std::chrono::duration_cast<std::chrono::microseconds>(
-                std::chrono::system_clock::now().time_since_epoch()).count());
-        return true;
-    } else if (name == "_rpc_stop") {
-        parentServer->stop();
-        return true;
-    }
-    return false;
-}
-
 // endregion
 
 
 // region Server
 void GRemoteProcedureServer::listen(IRemoteProcedureExecutor &listener, int_between_30000_and_50000 rpcId, bool wait) {
+    buga_rpc_log("GRemoteProcedureStreamingServer::listen called");
     this->rpcId = rpcId;
     this->services.push_back(std::make_unique<BugaGRpcServiceImpl>(listener, this));
     this->buildAndStart(wait);
@@ -210,8 +223,8 @@ void GRemoteProcedureServer::listen(IRemoteProcedureExecutor &listener, int_betw
 
 void GRemoteProcedureStreamingServer::listenStreaming(IRemoteProcedureStreamingExecutor &executor,
                                                       int_between_30000_and_50000 rpc_id, bool wait) {
+    buga_rpc_log("GRemoteProcedureStreamingServer::listenStreaming called");
     this->rpcId = rpc_id;
-    this->services.push_back(std::make_unique<BugaGRpcServiceImpl>(executor, this));
     this->services.push_back(std::make_unique<BugaGRpcStreamingServiceImpl>(executor, this));
     this->buildAndStart(wait);
 
@@ -240,7 +253,7 @@ void GRemoteProcedureServer::buildAndStart(bool wait) {
     buga_rpc_log("Server max message size is " + std::to_string(max_message_size) + " bytes");
     // Finally assemble the server.
     this->server = builder.BuildAndStart();
-    buga_rpc_log("Streaming Server listening on " + server_address);
+    buga_rpc_log("Server listening on " + server_address);
 
     if (!this->server)
         throw RpcError("Server object is null (1)");
