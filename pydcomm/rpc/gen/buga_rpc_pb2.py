@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='buga_rpc.proto',
   package='buga_rpc',
   syntax='proto3',
-  serialized_pb=_b('\n\x0e\x62uga_rpc.proto\x12\x08\x62uga_rpc\"%\n\x08GRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0b\n\x03\x62uf\x18\x02 \x01(\x0c\"\x18\n\tGResponse\x12\x0b\n\x03\x62uf\x18\x01 \x01(\x0c\x32v\n\tDeviceRpc\x12\x31\n\x04\x63\x61ll\x12\x12.buga_rpc.GRequest\x1a\x13.buga_rpc.GResponse\"\x00\x12\x36\n\tgrpc_echo\x12\x12.buga_rpc.GRequest\x1a\x13.buga_rpc.GResponse\"\x00\x32U\n\x12\x44\x65viceRpcStreaming\x12?\n\rcallStreaming\x12\x13.buga_rpc.GResponse\x1a\x13.buga_rpc.GResponse\"\x00(\x01\x30\x01\x62\x06proto3')
+  serialized_pb=_b('\n\x0e\x62uga_rpc.proto\x12\x08\x62uga_rpc\"%\n\x08GRequest\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0b\n\x03\x62uf\x18\x02 \x01(\x0c\"\x18\n\tGResponse\x12\x0b\n\x03\x62uf\x18\x01 \x01(\x0c\"\x16\n\x07GBuffer\x12\x0b\n\x03\x62uf\x18\x01 \x01(\x0c\x32v\n\tDeviceRpc\x12\x31\n\x04\x63\x61ll\x12\x12.buga_rpc.GRequest\x1a\x13.buga_rpc.GResponse\"\x00\x12\x36\n\tgrpc_echo\x12\x12.buga_rpc.GRequest\x1a\x13.buga_rpc.GResponse\"\x00\x32\x80\x02\n\x12\x44\x65viceRpcStreaming\x12\x31\n\x04\x63\x61ll\x12\x12.buga_rpc.GRequest\x1a\x13.buga_rpc.GResponse\"\x00\x12<\n\x0e\x63\x61ll_streaming\x12\x11.buga_rpc.GBuffer\x1a\x11.buga_rpc.GBuffer\"\x00(\x01\x30\x01\x12\x36\n\tgrpc_echo\x12\x12.buga_rpc.GRequest\x1a\x13.buga_rpc.GResponse\"\x00\x12\x41\n\x13grpc_echo_streaming\x12\x11.buga_rpc.GBuffer\x1a\x11.buga_rpc.GBuffer\"\x00(\x01\x30\x01\x42 \n\rcom.buga.grpcB\rBugaGrpcProtoP\x01\x62\x06proto3')
 )
 
 
@@ -93,8 +93,40 @@ _GRESPONSE = _descriptor.Descriptor(
   serialized_end=91,
 )
 
+
+_GBUFFER = _descriptor.Descriptor(
+  name='GBuffer',
+  full_name='buga_rpc.GBuffer',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='buf', full_name='buga_rpc.GBuffer.buf', index=0,
+      number=1, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=93,
+  serialized_end=115,
+)
+
 DESCRIPTOR.message_types_by_name['GRequest'] = _GREQUEST
 DESCRIPTOR.message_types_by_name['GResponse'] = _GRESPONSE
+DESCRIPTOR.message_types_by_name['GBuffer'] = _GBUFFER
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 GRequest = _reflection.GeneratedProtocolMessageType('GRequest', (_message.Message,), dict(
@@ -111,7 +143,16 @@ GResponse = _reflection.GeneratedProtocolMessageType('GResponse', (_message.Mess
   ))
 _sym_db.RegisterMessage(GResponse)
 
+GBuffer = _reflection.GeneratedProtocolMessageType('GBuffer', (_message.Message,), dict(
+  DESCRIPTOR = _GBUFFER,
+  __module__ = 'buga_rpc_pb2'
+  # @@protoc_insertion_point(class_scope:buga_rpc.GBuffer)
+  ))
+_sym_db.RegisterMessage(GBuffer)
 
+
+DESCRIPTOR.has_options = True
+DESCRIPTOR._options = _descriptor._ParseOptions(descriptor_pb2.FileOptions(), _b('\n\rcom.buga.grpcB\rBugaGrpcProtoP\001'))
 
 _DEVICERPC = _descriptor.ServiceDescriptor(
   name='DeviceRpc',
@@ -119,8 +160,8 @@ _DEVICERPC = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   options=None,
-  serialized_start=93,
-  serialized_end=211,
+  serialized_start=117,
+  serialized_end=235,
   methods=[
   _descriptor.MethodDescriptor(
     name='call',
@@ -152,16 +193,43 @@ _DEVICERPCSTREAMING = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=1,
   options=None,
-  serialized_start=213,
-  serialized_end=298,
+  serialized_start=238,
+  serialized_end=494,
   methods=[
   _descriptor.MethodDescriptor(
-    name='callStreaming',
-    full_name='buga_rpc.DeviceRpcStreaming.callStreaming',
+    name='call',
+    full_name='buga_rpc.DeviceRpcStreaming.call',
     index=0,
     containing_service=None,
-    input_type=_GRESPONSE,
+    input_type=_GREQUEST,
     output_type=_GRESPONSE,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='call_streaming',
+    full_name='buga_rpc.DeviceRpcStreaming.call_streaming',
+    index=1,
+    containing_service=None,
+    input_type=_GBUFFER,
+    output_type=_GBUFFER,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='grpc_echo',
+    full_name='buga_rpc.DeviceRpcStreaming.grpc_echo',
+    index=2,
+    containing_service=None,
+    input_type=_GREQUEST,
+    output_type=_GRESPONSE,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='grpc_echo_streaming',
+    full_name='buga_rpc.DeviceRpcStreaming.grpc_echo_streaming',
+    index=3,
+    containing_service=None,
+    input_type=_GBUFFER,
+    output_type=_GBUFFER,
     options=None,
   ),
 ])

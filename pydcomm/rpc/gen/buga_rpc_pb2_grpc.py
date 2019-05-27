@@ -73,10 +73,25 @@ class DeviceRpcStreamingStub(object):
     Args:
       channel: A grpc.Channel.
     """
-    self.callStreaming = channel.stream_stream(
-        '/buga_rpc.DeviceRpcStreaming/callStreaming',
-        request_serializer=buga__rpc__pb2.GResponse.SerializeToString,
+    self.call = channel.unary_unary(
+        '/buga_rpc.DeviceRpcStreaming/call',
+        request_serializer=buga__rpc__pb2.GRequest.SerializeToString,
         response_deserializer=buga__rpc__pb2.GResponse.FromString,
+        )
+    self.call_streaming = channel.stream_stream(
+        '/buga_rpc.DeviceRpcStreaming/call_streaming',
+        request_serializer=buga__rpc__pb2.GBuffer.SerializeToString,
+        response_deserializer=buga__rpc__pb2.GBuffer.FromString,
+        )
+    self.grpc_echo = channel.unary_unary(
+        '/buga_rpc.DeviceRpcStreaming/grpc_echo',
+        request_serializer=buga__rpc__pb2.GRequest.SerializeToString,
+        response_deserializer=buga__rpc__pb2.GResponse.FromString,
+        )
+    self.grpc_echo_streaming = channel.stream_stream(
+        '/buga_rpc.DeviceRpcStreaming/grpc_echo_streaming',
+        request_serializer=buga__rpc__pb2.GBuffer.SerializeToString,
+        response_deserializer=buga__rpc__pb2.GBuffer.FromString,
         )
 
 
@@ -84,7 +99,28 @@ class DeviceRpcStreamingServicer(object):
   # missing associated documentation comment in .proto file
   pass
 
-  def callStreaming(self, request_iterator, context):
+  def call(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
+  def call_streaming(self, request_iterator, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
+  def grpc_echo(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
+  def grpc_echo_streaming(self, request_iterator, context):
     # missing associated documentation comment in .proto file
     pass
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -94,10 +130,25 @@ class DeviceRpcStreamingServicer(object):
 
 def add_DeviceRpcStreamingServicer_to_server(servicer, server):
   rpc_method_handlers = {
-      'callStreaming': grpc.stream_stream_rpc_method_handler(
-          servicer.callStreaming,
-          request_deserializer=buga__rpc__pb2.GResponse.FromString,
+      'call': grpc.unary_unary_rpc_method_handler(
+          servicer.call,
+          request_deserializer=buga__rpc__pb2.GRequest.FromString,
           response_serializer=buga__rpc__pb2.GResponse.SerializeToString,
+      ),
+      'call_streaming': grpc.stream_stream_rpc_method_handler(
+          servicer.call_streaming,
+          request_deserializer=buga__rpc__pb2.GBuffer.FromString,
+          response_serializer=buga__rpc__pb2.GBuffer.SerializeToString,
+      ),
+      'grpc_echo': grpc.unary_unary_rpc_method_handler(
+          servicer.grpc_echo,
+          request_deserializer=buga__rpc__pb2.GRequest.FromString,
+          response_serializer=buga__rpc__pb2.GResponse.SerializeToString,
+      ),
+      'grpc_echo_streaming': grpc.stream_stream_rpc_method_handler(
+          servicer.grpc_echo_streaming,
+          request_deserializer=buga__rpc__pb2.GBuffer.FromString,
+          response_serializer=buga__rpc__pb2.GBuffer.SerializeToString,
       ),
   }
   generic_handler = grpc.method_handlers_generic_handler(
