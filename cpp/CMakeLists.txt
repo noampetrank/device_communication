@@ -144,6 +144,24 @@ target_include_directories(rpc_bugatone_proxy PRIVATE
 target_link_libraries(rpc_bugatone_proxy proto rpc_server)
 
 
+# Daemon RPC proxy library
+project(rpc_authdemo_proxy)
+add_library(rpc_authdemo_proxy SHARED
+        rpc_bugatone_proxy/rpc_bugatone_proxy.cpp
+        ../3rdparty/device_communication_common/rpc_bindings/bugarpc.h)
+target_include_directories(rpc_authdemo_proxy PRIVATE
+        ${CMAKE_CURRENT_BINARY_DIR}
+        ${PROTO_SRC_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ../3rdparty/device_communication_common/
+        ../3rdparty/nlohmann/include/
+        )
+target_link_libraries(rpc_authdemo_proxy proto rpc_server)
+target_compile_definitions(rpc_authdemo_proxy PRIVATE
+        IS_AUTHDEMO=1
+        )
+
+
 # Daemon RPC main library
 project(rpc_bugatone_main)
 add_library(rpc_bugatone_main SHARED

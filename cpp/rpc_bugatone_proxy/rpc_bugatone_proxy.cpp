@@ -46,7 +46,11 @@ int_between_30000_and_50000 get_requested_port() {
 #else
 #include <cstdio>
 
+#ifndef IS_AUTHDEMO
 #define LIBBUGATONE_LOOKUP_PATHS {"libbugatone.so"}
+#else
+#define LIBBUGATONE_LOOKUP_PATHS {"libauthdemo.so"}
+#endif
 
 int_between_30000_and_50000 get_requested_port() {
     return 29999;
@@ -64,6 +68,7 @@ extern "C" void* _Z17createBugatoneApiv() {
     void* myso = nullptr;
     const std::vector<const char*> libbugatone_paths = LIBBUGATONE_LOOKUP_PATHS;
     for (auto libbugatone_path : libbugatone_paths) {
+        buga_rpc_log("[RPCBugatoneProxy] trying to load: " + std::string(libbugatone_path));
         myso = dlopen(libbugatone_path, RTLD_LAZY);
         if (myso != nullptr) {
             buga_rpc_log(std::string("[RPCBugatoneProxy] *** loaded ") + libbugatone_path);
