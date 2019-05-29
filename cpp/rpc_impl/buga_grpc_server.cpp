@@ -78,7 +78,6 @@ bool handleServerRpc(GRemoteProcedureServer *const parentServer, IRemoteProcedur
 }
 
 Status call_impl(GRemoteProcedureServer *const parentServer, IRemoteProcedureExecutor &listener, ServerContext *context, const GRequest *req, GResponse *res) {
-    buga_rpc_log("called!");
     const std::string &name = req->name();
     const Buffer &params = req->buf();
 
