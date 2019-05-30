@@ -196,6 +196,8 @@ Status BugaGRpcStreamingServiceImpl::call_streaming(::grpc::ServerContext *conte
         return Status(grpc::UNKNOWN, std::string("RPC error in executeProcedure: ") + ex.what());
     } catch (std::runtime_error &ex) {
         return Status(grpc::UNKNOWN, std::string("Runtime error in executeProcedure: ") + ex.what());
+    } catch (std::exception &ex) {
+        return Status(grpc::UNKNOWN, std::string("Exception in executeProcedure: ") + ex.what());
     } catch (...) {
         return Status(grpc::UNKNOWN, std::string("Exception in executeProcedure"));
     }
