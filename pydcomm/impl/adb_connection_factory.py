@@ -2,7 +2,7 @@ from pydcomm.general_android.connection.internal_adb_connection_factory import I
 from pydcomm.general_android.connection.device_selector import adb_devices, get_device_to_connect_user_choice
 from pydcomm.impl.adb_connection_adapter import AdbConnection
 
-from pydcomm.public.iconnection import ConnectionFactory
+from pydcomm.public.iconnection import ConnectionFactory, CommandFailedError
 
 
 class WiredAdbConnectionFactory(ConnectionFactory):
@@ -20,7 +20,10 @@ class WiredAdbConnectionFactory(ConnectionFactory):
         connection = AdbConnection(cls._get_oppo_device(device_id=device_id,
                                                         use_manual_fixes=use_manual_fixes))
         if connection.shell("echo hi") == "hi":
-            print("Successfully connected to " + connection.device_id())
+            try:
+                print("Successfully connected to " + connection.device_id())
+            except CommandFailedError:
+                print("Successfully connected to device with no name, it felt good to be out of the rain.")
             return connection
 
     @classmethod
