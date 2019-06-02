@@ -42,7 +42,7 @@ int_between_30000_and_50000 get_requested_port() {
             throw std::runtime_error(err);
         }
         return ret;
-    } catch(const std::exception& e) {
+    } catch (const std::runtime_error& e) {
         return 44444;
     }
 }
