@@ -26,6 +26,10 @@ node ('x86-fleet') {
 					PATH=.:/var/lib/jenkins/workspace/Bugatone-Space/bin/linux_x86:$PATH ; export PATH
 					PYTHONPATH=/var/lib/jenkins/workspace/Bugatone-Space/python ; export PYTHONPATH
 					cd ../Bugatone-Space && ./make.sh linux && pip install -e . --user
+					cd $SAVED_CWD/cpp
+					./make.py linux
+					./make.py android
+					cd $SAVED_CWD
 					cd ../mobileproduct
 					pip install -e ../buga-recordings --user
 					pip install -e $SAVED_CWD --user
