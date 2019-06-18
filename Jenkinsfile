@@ -43,6 +43,7 @@ node ('x86-fleet') {
 					LD_LIBRARY_PATH=.:/var/lib/jenkins/workspace/Bugatone-Space/lib/linux_x86:$LD_LIBRARY_PATH ; export LD_LIBRARY_PATH
 					PATH=.:/var/lib/jenkins/workspace/Bugatone-Space/bin/linux_x86:$PATH ; export PATH
 					PYTHONPATH=/var/lib/jenkins/workspace/Bugatone-Space/python ; export PYTHONPATH
+					ANDROID_SDK_ROOT=/home/ubuntu/android-sdk ; export ANDROID_SDK_ROOT
 					cd ../Bugatone-Space && ./make.sh linux && pip install -e . --user
 					cd $SAVED_CWD/cpp
 					./make.py linux
