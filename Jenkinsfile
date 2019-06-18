@@ -8,8 +8,26 @@ node ('x86-fleet') {
 
 	stage ('mobileproduct - Checkout') {
 	 checkout scm
-	 checkout([$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: '../mobileproduct']], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'GithubAutomation', url: 'https://github.com/Bugatone/mobileproduct']]])
-         checkout([$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: '../Bugatone-Space']], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'GithubAutomation', url: 'https://github.com/Bugatone/Bugatone-Space']]])
+
+	 checkout([$class: 'GitSCM',
+		branches: [[name: '*/master']],
+		doGenerateSubmoduleConfigurations: false,
+		extensions: [
+			[
+				$class: 'SubmoduleOption',
+				disableSubmodules: false,
+				parentCredentials: false,
+				recursiveSubmodules: true,
+				reference: '',
+				trackingSubmodules: false
+			],
+			[$class: 'RelativeTargetDirectory', relativeTargetDir: '../mobileproduct']
+		],
+		submoduleCfg: [],
+		userRemoteConfigs: [[credentialsId: 'GithubAutomation', url: 'https://github.com/Bugatone/mobileproduct']]]
+	 )
+
+     checkout([$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: '../Bugatone-Space']], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'GithubAutomation', url: 'https://github.com/Bugatone/Bugatone-Space']]])
 	 checkout([$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: '../oppo_daemon']], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'GithubAutomation', url: 'https://github.com/Bugatone/oppo_daemon']]])
 	 checkout([$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: '../buga-recordings']], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'GithubAutomation', url: 'https://github.com/Bugatone/buga-recordings']]])
 	}
