@@ -53,7 +53,22 @@ int_between_30000_and_50000 get_requested_port() {
 #ifndef IS_AUTHDEMO
 #define LIBBUGATONE_LOOKUP_PATHS {"libbugatone.so"}
 #else
-#define LIBBUGATONE_LOOKUP_PATHS {"libauthdemo.so"}
+
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+#include <dlfcn.h>
+
+std::string same_dir_authdemo() {
+    Dl_info dl_info;
+    dladdr((void*)same_dir_authdemo, &dl_info);
+    std::string ret = dl_info.dli_fname;
+    auto x = ret.rfind('/');
+    if (x == -1) return "libauthdemo.so";
+    return ret.substr(0, x) + "/libauthdemo.so";
+}
+
+#define LIBBUGATONE_LOOKUP_PATHS {same_dir_authdemo(), std::string("libauthdemo.so")}
 #endif
 
 int_between_30000_and_50000 get_requested_port() {
@@ -70,10 +85,10 @@ extern "C" void* _Z17createBugatoneApiv() {
     std::unique_ptr<IRemoteProcedureExecutor> executor = nullptr;
 
     void* myso = nullptr;
-    const std::vector<const char*> libbugatone_paths = LIBBUGATONE_LOOKUP_PATHS;
+    const std::vector<std::string> libbugatone_paths = LIBBUGATONE_LOOKUP_PATHS;
     for (auto libbugatone_path : libbugatone_paths) {
         buga_rpc_log("[RPCBugatoneProxy] trying to load: " + std::string(libbugatone_path));
-        myso = dlopen(libbugatone_path, RTLD_LAZY);
+        myso = dlopen(libbugatone_path.c_str(), RTLD_NOW);
         if (myso != nullptr) {
             buga_rpc_log(std::string("[RPCBugatoneProxy] *** loaded ") + libbugatone_path);
             break;
