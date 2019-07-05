@@ -20,6 +20,10 @@ pymobileproduct.egg-info/
 **/.idea/**/dynamic.xml
 **/.idea/**/uiDesigner.xml
 **/.idea/dictionaries/
+**/.idea/.name
+**/.idea/inspectionProfiles/
+
+**/.vscode/
 
 # Gradle:
 .idea/**/gradle.xml
