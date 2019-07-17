@@ -73,27 +73,28 @@ node ('x86-fleet') {
 				'''
 			}
 			catch(exc) {
-				sh '''
-					if [ -z "${CHANGE_ID}" ]
-					then
-						context=commits
-						page=`git rev-parse HEAD`
-						description="commit $page"
-						tags="\\n@noharh @karpadbugatone"
-					else
-						context=issues
-						page=${CHANGE_ID}
-						description="branch ${CHANGE_BRANCH}"
-					fi
+				if (env.BRANCH_NAME ==~ /(master)/) {
+					def committer = sh (returnStdout: true, script: '''
+						git log -1 --pretty=format:'%an'
+						''')
 
-					curl -u automation@bugatone.com:bugaAuto1 -s -X POST -d "{\\"body\\": \\"Build number ${BUILD_NUMBER} failed for $description.\\nSee ${BUILD_URL}console$tags\\"}" "https://api.github.com/repos/Bugatone/device_communication/$context/$page/comments"
-				'''
+					emailext (
+						from: "Bugatone CI <automation@bugatone.com>",
+						subject: "Build failed in master branch after a push by ${committer}",
+						body: '''${JELLY_SCRIPT,template="html"}''',
+						mimeType: 'text/html',
+						to: "dev@bugatone.com"
+					)
+				}
+				else {
+					sh '''
+						curl -u automation@bugatone.com:bugaAuto1 -s -X POST -d "{\\"body\\": \\"Build number ${BUILD_NUMBER} failed for branch ${CHANGE_BRANCH}.\\nSee ${BUILD_URL}console\\"}" "https://api.github.com/repos/Bugatone/device_communication/issues/${CHANGE_ID}/comments"
+					'''
+				}
+
 				throw exc
 			}
 		}
 	}
-	// stage ('mobileproduct - Postbuild') {
-	//   githubPRComment comment: githubPRMessage('Build ${BUILD_NUMBER} ${BUILD_STATUS}')
-	//}
 }
 }
