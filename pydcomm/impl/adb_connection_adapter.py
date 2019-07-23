@@ -80,7 +80,7 @@ class AdbConnection(IConnection):
         elif clear:
             self.adb_connection.adb("logcat -c", timeout=self._get_timeout_seconds(timeout_ms))
         else:
-            cat = LogCat(device_id=self.adb_connection.device_id)
+            cat = LogCat(device_id=self.adb_connection.device_id, clear=clear)
             # cat.start()
             return cat
 
