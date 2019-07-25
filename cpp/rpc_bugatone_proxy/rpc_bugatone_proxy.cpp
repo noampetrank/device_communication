@@ -98,14 +98,15 @@ int_between_30000_and_50000 get_requested_port() {
 
 
 extern "C" void *_Z17createBugatoneApiv() {
-    try {
-        buga_rpc_log("[RPCBugatoneProxy] outer createBugatoneApi called");
-        void *bugatoneApi = nullptr;
-        std::unique_ptr<IRemoteProcedureStreamingExecutor> streaming_executor = nullptr;
-        std::unique_ptr<IRemoteProcedureExecutor> executor = nullptr;
+    buga_rpc_log("[RPCBugatoneProxy] outer createBugatoneApi called");
+    void *bugatoneApi = nullptr;
+    std::unique_ptr<IRemoteProcedureStreamingExecutor> streaming_executor = nullptr;
+    std::unique_ptr<IRemoteProcedureExecutor> executor = nullptr;
 
-        void *myso = nullptr;
-        const std::vector<std::string> libbugatone_paths = LIBBUGATONE_LOOKUP_PATHS;
+    void *myso = nullptr;
+    const std::vector<std::string> libbugatone_paths = LIBBUGATONE_LOOKUP_PATHS;
+
+    try {
         for (auto libbugatone_path : libbugatone_paths) {
             buga_rpc_log("[RPCBugatoneProxy] trying to load: " + std::string(libbugatone_path));
             myso = dlopen(libbugatone_path.c_str(), RTLD_NOW);
@@ -121,55 +122,64 @@ extern "C" void *_Z17createBugatoneApiv() {
         }
         buga_rpc_log("[RPCBugatoneProxy] .so loaded");
 
-        using CreateStreamingPairFunc = std::pair<void *, std::unique_ptr<IRemoteProcedureStreamingExecutor>> (*)();
-        using CreatePairFunc = std::pair<void *, std::unique_ptr<IRemoteProcedureExecutor>> (*)();
+    }
+    catch(const std::exception& e) {
+        buga_rpc_log("Exception in proxy");
+        buga_rpc_log(e.what());
 
-        auto create_streaming_pair = (CreateStreamingPairFunc) dlsym(myso, "create_bugatoneapi_and_streaming_executor");
-        if (create_streaming_pair != nullptr) {
-            buga_rpc_log("[RPCBugatoneProxy] calling loaded create_bugatoneapi_and_streaming_executor");
-            auto pair = create_streaming_pair();
+        return nullptr;
+    }
+
+    using CreateStreamingPairFunc = std::pair<void *, std::unique_ptr<IRemoteProcedureStreamingExecutor>> (*)();
+    using CreatePairFunc = std::pair<void *, std::unique_ptr<IRemoteProcedureExecutor>> (*)();
+
+    auto create_streaming_pair = (CreateStreamingPairFunc) dlsym(myso, "create_bugatoneapi_and_streaming_executor");
+    if (create_streaming_pair != nullptr) {
+        buga_rpc_log("[RPCBugatoneProxy] calling loaded create_bugatoneapi_and_streaming_executor");
+        auto pair = create_streaming_pair();
+        bugatoneApi = pair.first;
+        streaming_executor = std::move(pair.second);
+    } else {
+        buga_rpc_log(dlerror());
+        buga_rpc_log(
+                "[RPCBugatoneProxy] symbol create_bugatoneapi_and_streaming_executor not found, trying to load create_bugatoneapi_and_executor instead");
+
+        auto create_pair = (CreatePairFunc) dlsym(myso, "create_bugatoneapi_and_executor");
+        if (create_pair != nullptr) {
+            buga_rpc_log("[RPCBugatoneProxy] calling loaded create_bugatoneapi_and_executor");
+            auto pair = create_pair();
             bugatoneApi = pair.first;
-            streaming_executor = std::move(pair.second);
+            executor = std::move(pair.second);
         } else {
             buga_rpc_log(dlerror());
             buga_rpc_log(
-                    "[RPCBugatoneProxy] symbol create_bugatoneapi_and_streaming_executor not found, trying to load create_bugatoneapi_and_executor instead");
+                    "[RPCBugatoneProxy] symbol create_bugatoneapi_and_executor not found, trying to load create_executor and _Z17createBugatoneApiv instead");
 
-            auto create_pair = (CreatePairFunc) dlsym(myso, "create_bugatoneapi_and_executor");
-            if (create_pair != nullptr) {
-                buga_rpc_log("[RPCBugatoneProxy] calling loaded create_bugatoneapi_and_executor");
-                auto pair = create_pair();
-                bugatoneApi = pair.first;
-                executor = std::move(pair.second);
+            auto create_executor = (CreateExecutorFunc) dlsym(myso, "create_executor");
+            if (create_executor != nullptr) {
+                buga_rpc_log("[RPCBugatoneProxy] calling loaded create_executor");
+                executor = create_executor();
+            } else {
+                buga_rpc_log(dlerror());
+                buga_rpc_log("[RPCBugatoneProxy] symbol create_executor not found, not starting gRPC");
+            }
+
+            auto createBugatoneApi = (void *(*)()) dlsym(myso, "_Z17createBugatoneApiv");
+            if (createBugatoneApi != nullptr) {
+                buga_rpc_log("[RPCBugatoneProxy] calling loaded createBugatoneApi");
+                bugatoneApi = createBugatoneApi();
             } else {
                 buga_rpc_log(dlerror());
                 buga_rpc_log(
-                        "[RPCBugatoneProxy] symbol create_bugatoneapi_and_executor not found, trying to load create_executor and _Z17createBugatoneApiv instead");
-
-                auto create_executor = (CreateExecutorFunc) dlsym(myso, "create_executor");
-                if (create_executor != nullptr) {
-                    buga_rpc_log("[RPCBugatoneProxy] calling loaded create_executor");
-                    executor = create_executor();
-                } else {
-                    buga_rpc_log(dlerror());
-                    buga_rpc_log("[RPCBugatoneProxy] symbol create_executor not found, not starting gRPC");
-                }
-
-                auto createBugatoneApi = (void *(*)()) dlsym(myso, "_Z17createBugatoneApiv");
-                if (createBugatoneApi != nullptr) {
-                    buga_rpc_log("[RPCBugatoneProxy] calling loaded createBugatoneApi");
-                    bugatoneApi = createBugatoneApi();
-                } else {
-                    buga_rpc_log(dlerror());
-                    buga_rpc_log(
-                            "[RPCBugatoneProxy] symbol _Z17createBugatoneApiv not found, returning nullptr as bugatone api");
-                    if (executor != nullptr) {
-                        buga_rpc_log("[RPCBugatoneProxy] not starting gRPC since no bugatone api was created");
-                    }
+                        "[RPCBugatoneProxy] symbol _Z17createBugatoneApiv not found, returning nullptr as bugatone api");
+                if (executor != nullptr) {
+                    buga_rpc_log("[RPCBugatoneProxy] not starting gRPC since no bugatone api was created");
                 }
             }
         }
+    }
 
+    try {
         if (streaming_executor != nullptr) {
             buga_rpc_log("[RPCBugatoneProxy] creating gRPC thread");
             std::thread serverThread([executor = std::move(streaming_executor)] {
