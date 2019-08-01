@@ -354,15 +354,16 @@ class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):
         subprocess.check_output('adb -s {} shell input keyevent 86'.format(device_id), shell=True, timeout=15)
         pid = subprocess.check_output('adb -s {} shell ps | grep com.oppo.smartearphone | $XKIT awk "{{printf \$2}}"'.format(device_id), shell=True, timeout=15).strip()
         if pid:
-            subprocess.check_output("adb -s {} shell kill {}".format(device_id, pid), shell=True, timeout=15)
+            subprocess.check_output("adb -s {} shell kill -9 {}".format(device_id, pid), shell=True, timeout=15)
 
-            for _ in range(15):
-                try:
-                    subprocess.check_output("adb -s {} shell kill -0 {}".format(device_id, pid), shell=True, timeout=15)
-                    return
-                except CalledProcessError:
-                    time.sleep(0.1)
-            raise RuntimeError("Couldn't kill smart earphone process")
+            time.sleep(0.5) # To prevent ADB call race
+            try:
+                # This call will raise if the process is not running
+                subprocess.check_output("adb -s {} shell kill -0 {}".format(device_id, pid), shell=True, timeout=15)
+                raise RuntimeError("Couldn't kill smart earphone process")
+            except subprocess.CalledProcessError:
+                # Process was killed successfully
+                time.sleep(0.5) # To prevent ADB call race
         else:
             print(wasnt_running_msg)
 
