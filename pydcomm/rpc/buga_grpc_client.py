@@ -319,7 +319,6 @@ class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):
 
         # Push .so's
         local_libs_path = os.path.normpath(local_libs_path)
-        _print_no_newline("Pushing 'satellite' .so's from {}... ".format(local_libs_path))
         assert os.path.isdir(local_libs_path)
         device_lib_path = '/system/lib64'
 
@@ -343,25 +342,20 @@ class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):
 
         _push_mv(device_id, local_libbugatone_main_path, device_libbugatone_main_path)
         _push_mv(device_id, so_path, libbugatone_real_path)
-        print("Done")
 
-        _print_no_newline("Restarting smart earphone... ")
         cls._restart_smart_earphone(device_id)
 
-        _print_no_newline("Playing music (well umm, silence)... ")
         cls._play_silence(device_id)
         cls._stop_playback(device_id)
-        print("OK")
 
     @classmethod
-    def _restart_smart_earphone(cls, device_id, done_msg="Done", wasnt_running_msg="Wasn't running"):
+    def _restart_smart_earphone(cls, device_id, wasnt_running_msg="Wasn't running"):
         time.sleep(.2)
         subprocess.check_output('adb -s {} shell input keyevent 86'.format(device_id), shell=True, timeout=15)
         pid = subprocess.check_output('adb -s {} shell ps | grep com.oppo.smartearphone | $XKIT awk "{{printf \$2}}"'.format(device_id), shell=True, timeout=15).strip()
         if pid:
             subprocess.check_output("adb -s {} shell kill {}".format(device_id, pid), shell=True, timeout=15)
             time.sleep(1.5)
-            print("{} (killed pid {})".format(done_msg, pid))
         else:
             print(wasnt_running_msg)
 
