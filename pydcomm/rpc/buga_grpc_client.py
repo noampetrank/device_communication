@@ -355,7 +355,14 @@ class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):
         pid = subprocess.check_output('adb -s {} shell ps | grep com.oppo.smartearphone | $XKIT awk "{{printf \$2}}"'.format(device_id), shell=True, timeout=15).strip()
         if pid:
             subprocess.check_output("adb -s {} shell kill {}".format(device_id, pid), shell=True, timeout=15)
-            time.sleep(1.5)
+
+            for _ in range(15):
+                try:
+                    subprocess.check_output("adb -s {} shell kill -0 {}".format(device_id, pid), shell=True, timeout=15)
+                    return
+                except CalledProcessError:
+                    time.sleep(0.1)
+            raise RuntimeError("Couldn't kill smart earphone process")
         else:
             print(wasnt_running_msg)
 
