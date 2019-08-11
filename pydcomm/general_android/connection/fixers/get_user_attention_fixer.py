@@ -10,5 +10,5 @@ def get_user_attention_fix(connection):
     :param connection: The connection to fix (ignored)
     """
     print("Manual fixes required! Please press enter when you're ready to do them.")
-    os.system('spd-say "Manual fixes required"')
+    os.system('spd-say "Manual fixes required" -t child_female -r -50 -p 100')
     raw_input()
