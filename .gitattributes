@@ -1,0 +1,10 @@
+/android/ export-ignore
+/cpp/ export-ignore
+/.gitignore export-ignore
+/.gitmodules export-ignore
+/.gitattributes export-ignore
+/.idea/ export-ignore
+/Jenkinsfile export-ignore
+/old/ export-ignore
+/pydcomm.egg-info/ export-ignore
+/README.md export-ignore
