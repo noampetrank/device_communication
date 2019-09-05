@@ -140,7 +140,9 @@ class GRemoteProcedureServer(RemoteProcedureServer):
     def listen(self, executor, rpc_id, wait):
         self.server = server = grpc.server(futures.ThreadPoolExecutor(max_workers=self.max_workers))
         self._add_servicer_to_server(server, executor)
-        server.add_insecure_port('[::]:{}'.format(rpc_id))
+        ret = server.add_insecure_port('[::]:{}'.format(rpc_id))
+        if ret == 0:
+            raise RuntimeError("Cannot bind to port {}".format(rpc_id))
         server.start()
         if wait:
             self.wait()
