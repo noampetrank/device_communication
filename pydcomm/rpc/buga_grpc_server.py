@@ -124,6 +124,8 @@ class BugaGRpcStreamingServiceImpl(BugaGRpcServiceImpl, DeviceRpcStreamingServic
 
     
 class GRemoteProcedureServer(RemoteProcedureServer):
+    MAX_MESSAGE_SIZE = 1024*1024*1024  # 1Gb
+
     """
     A remote procedure server implementation that uses gRPC
     
@@ -138,7 +140,9 @@ class GRemoteProcedureServer(RemoteProcedureServer):
         add_DeviceRpcServicer_to_server(BugaGRpcServiceImpl(executor, self.stop), server)
         
     def listen(self, executor, rpc_id, wait):
-        self.server = server = grpc.server(futures.ThreadPoolExecutor(max_workers=self.max_workers))
+        self.server = server = grpc.server(futures.ThreadPoolExecutor(max_workers=self.max_workers),
+                                           options=[('grpc.max_send_message_length', self.MAX_MESSAGE_SIZE),
+                                                    ('grpc.max_receive_message_length', self.MAX_MESSAGE_SIZE)])
         self._add_servicer_to_server(server, executor)
         ret = server.add_insecure_port('[::]:{}'.format(rpc_id))
         if ret == 0:
