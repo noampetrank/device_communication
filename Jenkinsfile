@@ -46,15 +46,15 @@ node ('x86-fleet') {
 					ANDROID_SDK_ROOT=/home/ubuntu/android-sdk ; export ANDROID_SDK_ROOT
 					export BUGATONE_CI=1
 
-					cd ../Bugatone-Space && ./make.sh linux && pip install -e . --user
+					cd ../Bugatone-Space && ./make.sh linux && pip install -e . --user --upgrade
 					cd $SAVED_CWD/cpp
 					./make.py linux
 					./make.py android
 					cd $SAVED_CWD
 					cd ../mobileproduct
-					pip install -e ../buga-recordings --user
-					pip install -e $SAVED_CWD --user
-					pip install -e . --user
+					pip install -e ../buga-recordings --user --upgrade
+					pip install -e $SAVED_CWD --user --upgrade
+					pip install -e . --user --upgrade
 					./make.py -c -p
 
 					cd $SAVED_CWD
