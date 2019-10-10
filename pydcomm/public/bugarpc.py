@@ -133,3 +133,77 @@ class RpcError(RuntimeError):
 
     def __str__(self):
         return super(RpcError, self).__str__() + "\nOriginal gRPC exception: " + repr(self.grpc_exception)
+
+
+class RemoteProcedureExecutor(object):
+    def execute_procedure(self, procedure_name, params):
+        """
+        This method will be called by the RemoteProcedureServer on each sent message.
+
+        Notes:
+          Procedure names beginning with "_rpc_" are reserved for server implementers, and therefore must not be used.
+
+        @param str procedure_name: Name of procedure called, not beginning with "_rpc_".
+        @param str params: The Buffer sent from python.
+        @return: Buffer representing return value to be sent back to python.
+        @rtype: str
+        """
+        raise NotImplementedError
+        
+    def get_version(self):
+        """
+        @return: String representing the version of the executor.
+        @rtype: str
+        """
+        raise NotImplementedError
+
+class RemoteProcedureStreamingExecutor(RemoteProcedureExecutor):
+    """
+    This method will be called by the RemoteProcedureStreamingServer.
+    The method return an iterbale or be a generator. Each yielded value will
+    be written back to the caller. Use the `it` argument to read values
+    written by the caller.
+    """
+    def execute_streaming_procedure(self, procedure_name, params, it):
+        raise NotImplementedError
+
+class RemoteProcedureServer(object):
+    """
+    Public interface to RPC servers. This is implemented by the library owners and used by the library clients.
+
+    All server implementations have the following requirements:
+        1. If python calls the procedure "_rpc_get_version", server must call `getVersion` on the executor
+            instance and return the result.
+        2. If python calls the procedure "_rpc_stop", server must call its `stop` method.
+    """
+    def listen(self, executor, rpc_id, wait):
+        """
+        Start listening on given port to messages from python and pass them along to the executor.
+        
+        @param RemoteProcedureExecutor listener: Executor implementation that responds to messages.
+        @param int rpc_id: Unique identifier for your executor to listen to, must be between 30,000 and 50,000.
+        @param bool wait: Whether to block waiting or to return immediately. It this is false, 
+            you need to call wait() later on.
+        """
+        raise NotImplementedError
+        
+    def wait(self):
+        """
+        Block waiting in a server loop. This should be used if listen() was called with wait==false.
+        Could be from a different thread than listen().
+        """
+        raise NotImplementedError
+        
+    def stop(self):
+        """
+        Stop listening, makes the listen thread return.
+        """
+        raise NotImplementedError
+        
+class RemoteProcedureStreamingServer(object):
+    """
+    Start listening on given port to calls from python. Each call will trigger calling
+    `executor.execute_streaming_procedure`.
+    """
+    def listen_streaming(self, executor, rpc_id, wait):
+        raise NotImplementedError
