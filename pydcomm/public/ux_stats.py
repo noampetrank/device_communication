@@ -324,7 +324,7 @@ def decorateallfuncs(wrapper):
 
 
 # Use this metaclass to collect stats on all calls to a class's methods.
-metacollectstats = decorateallfuncs(collectstats)
+metacollectstats = type  # decorateallfuncs(collectstats)
 
 
 def test_collectstats():
