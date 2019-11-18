@@ -399,7 +399,7 @@ class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):
             audio_devices = subprocess.check_output(
                 "adb -s {} shell dumpsys audio | grep -e '-\\sSTREAM_MUSIC:' -A5 | grep Devices: | cut -c 13-".format(
                     device_id), shell=True, timeout=15).split(' ')
-            if 'headset' in [x.strip() for x in audio_devices]:
+            if any([device in [x.strip() for x in audio_devices] for device in ['headset', 'usb_headset']]):
                 break
             raw_input("Please connect earphone and press enter...")
             print("")
