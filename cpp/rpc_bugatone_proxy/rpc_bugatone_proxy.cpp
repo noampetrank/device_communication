@@ -170,7 +170,7 @@ extern "C" void *_Z17createBugatoneApiv() {
             }
         }
 
-        if (streaming_executor != nullptr && bugatoneApi != nullptr) {
+        if (streaming_executor != nullptr) {
             buga_rpc_log("[RPCBugatoneProxy] creating gRPC thread");
             std::thread serverThread([executor = std::move(streaming_executor)] {
                 buga_rpc_log("[RPCBugatoneProxy] gRPC thread started");  // , calling create_executor");
@@ -181,7 +181,7 @@ extern "C" void *_Z17createBugatoneApiv() {
             });
             buga_rpc_log("[RPCBugatoneProxy] detaching gRPC server thread");
             serverThread.detach();
-        } else if (executor != nullptr && bugatoneApi != nullptr) {
+        } else if (executor != nullptr) {
             buga_rpc_log("[RPCBugatoneProxy] creating gRPC thread");
             std::thread serverThread([executor = std::move(executor)] {
                 buga_rpc_log("[RPCBugatoneProxy] gRPC thread started");  // , calling create_executor");
