@@ -172,9 +172,6 @@ extern "C" void *_Z17createBugatoneApiv() {
                 buga_rpc_log(dlerror());
                 buga_rpc_log(
                         "[RPCBugatoneProxy] symbol _Z17createBugatoneApiv not found, returning nullptr as bugatone api");
-                if (executor != nullptr) {
-                    buga_rpc_log("[RPCBugatoneProxy] not starting gRPC since no bugatone api was created");
-                }
             }
         }
     }
