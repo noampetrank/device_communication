@@ -92,6 +92,11 @@ int_between_30000_and_50000 get_requested_port() {
 #endif
 
 
+#ifdef RUN_CREATE_BUGATONE_API_ON_INIT
+extern "C" void *_Z17createBugatoneApiv(void) __attribute__((constructor));
+#endif
+
+
 extern "C" void *_Z17createBugatoneApiv() {
     buga_rpc_log("[RPCBugatoneProxy] outer createBugatoneApi called");
     void *bugatoneApi = nullptr;
