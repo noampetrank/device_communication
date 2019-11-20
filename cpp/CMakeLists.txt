@@ -142,6 +142,9 @@ target_include_directories(rpc_bugatone_proxy PRIVATE
         ../3rdparty/nlohmann/include/
         )
 target_link_libraries(rpc_bugatone_proxy proto rpc_server)
+target_compile_definitions(rpc_bugatone_proxy PRIVATE
+        REAL_LIB_NAME="libbugatone.so"
+        )
 
 
 # Daemon RPC proxy library
@@ -158,7 +161,24 @@ target_include_directories(rpc_authdemo_proxy PRIVATE
         )
 target_link_libraries(rpc_authdemo_proxy proto rpc_server)
 target_compile_definitions(rpc_authdemo_proxy PRIVATE
-        IS_AUTHDEMO=1
+        REAL_LIB_NAME="libauthdemo.so"
+        )
+
+# Daemon RPC proxy library
+project(rpc_mobileproduct2_proxy)
+add_library(rpc_mobileproduct2_proxy SHARED
+        rpc_bugatone_proxy/rpc_bugatone_proxy.cpp
+        ../3rdparty/device_communication_common/rpc_bindings/bugarpc.h)
+target_include_directories(rpc_mobileproduct2_proxy PRIVATE
+        ${CMAKE_CURRENT_BINARY_DIR}
+        ${PROTO_SRC_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ../3rdparty/device_communication_common/
+        ../3rdparty/nlohmann/include/
+        )
+target_link_libraries(rpc_mobileproduct2_proxy proto rpc_server)
+target_compile_definitions(rpc_mobileproduct2_proxy PRIVATE
+        REAL_LIB_NAME="libmobileproduct2.so"
         )
 
 
