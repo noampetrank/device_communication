@@ -181,6 +181,7 @@ target_link_libraries(rpc_mobileproduct2_proxy proto rpc_server)
 target_compile_definitions(rpc_mobileproduct2_proxy PRIVATE
         REAL_LIB_NAME="libmobileproduct2.so"
         RUN_CREATE_BUGATONE_API_ON_INIT=1
+        USE_REAL_NAME_ON_ANDROID=1
         )
 
 

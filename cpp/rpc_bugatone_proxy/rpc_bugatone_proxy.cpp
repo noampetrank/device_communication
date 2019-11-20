@@ -13,7 +13,11 @@ std::unique_ptr<IRemoteProcedureServer> createBugaGRPCServer();
 #include <array>
 #include <regex>
 
+#ifndef USE_REAL_NAME_ON_ANDROID
 #define LIBBUGATONE_LOOKUP_PATHS {"libbugatone_real.so"};
+#else
+#define LIBBUGATONE_LOOKUP_PATHS {REAL_LIB_NAME};
+#endif
 
 int_between_30000_and_50000 get_requested_port() {
     try {
