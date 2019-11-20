@@ -52,26 +52,21 @@ int_between_30000_and_50000 get_requested_port() {
 
 #include <cstdio>
 
-#ifndef IS_AUTHDEMO
-#define LIBBUGATONE_LOOKUP_PATHS {"libbugatone.so"}
-#else
-
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
 #include <dlfcn.h>
 
-std::string same_dir_authdemo() {
+std::string same_dir_lib() {
     Dl_info dl_info;
-    dladdr((void*)same_dir_authdemo, &dl_info);
+    dladdr((void*)same_dir_lib, &dl_info);
     std::string ret = dl_info.dli_fname;
     auto x = ret.rfind('/');
-    if (x == -1) return "libauthdemo.so";
-    return ret.substr(0, x) + "/libauthdemo.so";
+    if (x == -1) return REAL_LIB_NAME;
+    return ret.substr(0, x) + "/" + REAL_LIB_NAME;
 }
 
-#define LIBBUGATONE_LOOKUP_PATHS {same_dir_authdemo(), std::string("libauthdemo.so")}
-#endif
+#define LIBBUGATONE_LOOKUP_PATHS {same_dir_lib(), std::string(REAL_LIB_NAME)}
 
 int_between_30000_and_50000 get_requested_port() {
     char *port_string = std::getenv("BUGA_RPC_PORT");
@@ -94,6 +89,11 @@ int_between_30000_and_50000 get_requested_port() {
     }
 }
 
+#endif
+
+
+#ifdef RUN_CREATE_BUGATONE_API_ON_INIT
+extern "C" void *_Z17createBugatoneApiv(void) __attribute__((constructor));
 #endif
 
 
