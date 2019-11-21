@@ -144,6 +144,7 @@ class MediaPlayerUtils(IMediaPlayerUtils):
         """
         device_path = os.path.join(path, song)
         self.media_player_select_song(device_path)
+        self.media_player_play_song()
 
 
 class LinuxVlcMediaPlayerUtils(IMediaPlayerUtils):
