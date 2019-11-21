@@ -45,12 +45,13 @@ class AdbConnection(IConnection):
         """
         Run command on the device, returning the output.
 
-        :param str command: Shell command to run.
+        :param str|list[str] command: Shell command to run.
         :param int|None timeout_ms: Maximum time to allow the command to run.
         :return: Output of command.
         :rtype: str
         """
-        return self.adb_connection.adb(["shell", command], timeout=self._get_timeout_seconds(timeout_ms))
+        full_command = ["shell", command] if type(command) is str else ["shell"] + command
+        return self.adb_connection.adb(full_command, timeout=self._get_timeout_seconds(timeout_ms))
 
     def streaming_shell(self, command, timeout_ms=None):
         """

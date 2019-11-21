@@ -82,7 +82,7 @@ class IConnection(object):
     def shell(self, command, timeout_ms=None):
         """Run command on the device, returning the output.
 
-        :param str command: Shell command to run.
+        :param str|list[str] command: Shell command to run.
         :param int|None timeout_ms: Maximum time to allow the command to run.
         :return: Output of command.
         :rtype: str
