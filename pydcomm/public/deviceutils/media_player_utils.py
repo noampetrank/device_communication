@@ -87,8 +87,10 @@ class MediaPlayerUtils(IMediaPlayerUtils):
          :param str device_song_path: path to the song we want to play
         :return:
         """
-        media_cmd = 'am start -a android.intent.action.VIEW -d file://%s -t audio/wav --user 0%s' % (
-            device_song_path, (" -n " + self.activity) if self.activity is not None else "")
+        media_cmd = ['am', 'start', '-a', 'android.intent.action.VIEW', '-d', '"file://{}"'.format(device_song_path),
+                     '-t', 'audio/wav', '--user', '0']
+        if self.activity is not None:
+            media_cmd.extend(['-n', self.activity])
         self.connection.shell(media_cmd)
         # delay script (by sleeping) in an attempt to avoid media player crashes / red screens
         if self.delay:
