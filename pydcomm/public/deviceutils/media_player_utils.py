@@ -211,3 +211,24 @@ class LinuxVlcMediaPlayerUtils(IMediaPlayerUtils):
         except subprocess.TimeoutExpired:
             print('Installation Successful, proceeding...')
             self.media_player_pause_song()
+
+
+class Mp2MediaPlayerUtils(MediaPlayerUtils):
+    def media_player_pause_song(self):
+        """
+        pause in the media player (like pressing the pause button)
+        if song is already paused, nothing happens
+        """
+        self.connection.shell(["am", "broadcast", "-a", "com.bugatone.mobileproduct2app.stopMusic"])
+
+    def media_player_stop_song(self):
+        """
+        stop to play in the media player - pauses and rewinds to beginning of song
+        """
+        self.connection.shell(["am", "broadcast", "-a", "com.bugatone.mobileproduct2app.stopMusic"])
+
+    def media_player_play_song(self):
+        """
+        Send the play button event
+        """
+        self.connection.shell(["am", "broadcast", "-a", "com.bugatone.mobileproduct2app.playMusic"])
