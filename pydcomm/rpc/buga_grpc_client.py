@@ -11,7 +11,7 @@ from pydcomm.public.bugarpc import IRemoteProcedureClient, IRemoteProcedureStrea
 from pydcomm.rpc.common import GReaderWriterStream
 from pydcomm.rpc.gen.buga_rpc_pb2_grpc import DeviceRpcStub, DeviceRpcStreamingStub
 from pydcomm.rpc.gen.buga_rpc_pb2 import GRequest, GResponse
-
+from pydcomm.public.iconnection import CommandFailedError
 
 class GRemoteProcedureClient(IRemoteProcedureClient, CommonExtraStats):
     MAX_MESSAGE_SIZE = 1024*1024*1024  # 1Gb
@@ -268,6 +268,30 @@ class GRpcLibbugatoneLinuxClientFactory(_GRpcClientFactory):
     @classmethod
     def install_executor(cls, so_path, rpc_id, device_id=None):
         pass
+
+class GRpcMp2AndroidClientFactory(_GRpcClientFactory):
+    @classmethod
+    def install_executor(cls, adb_connection, port, apk_path):
+        """
+        Install everything needed for creating RPC connection.
+        :param pydcomm.public.iconnection.IConnection adb_connection: ADB connection to use
+        :param int port: RPC port to use
+        :param str apk_path: Path for APK file to install
+        """
+        # Set RPC port on device
+        adb_connection.shell(["su", "-c", "setprop", "buga.rpc.libbugatone_executor_port", str(port)])
+        try:
+            adb_connection.install(apk_path)
+        except CommandFailedError:
+            try:
+                adb_connection.uninstall("com.bugatone.mobileproduct2app")
+            except Exception:
+                import traceback
+                traceback.print_exc()
+            adb_connection.install(apk_path)
+
+        adb_connection.shell(["am", "start-foreground-service",
+                              "com.bugatone.mobileproduct2app/com.bugatone.mobileproduct2app.Mobileproduct2Service"])
 
 
 class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):

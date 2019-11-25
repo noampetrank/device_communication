@@ -87,8 +87,10 @@ class MediaPlayerUtils(IMediaPlayerUtils):
          :param str device_song_path: path to the song we want to play
         :return:
         """
-        media_cmd = 'am start -a android.intent.action.VIEW -d file://%s -t audio/wav --user 0%s' % (
-            device_song_path, (" -n " + self.activity) if self.activity is not None else "")
+        media_cmd = ['am', 'start', '-a', 'android.intent.action.VIEW', '-d', '"file://{}"'.format(device_song_path),
+                     '-t', 'audio/wav', '--user', '0']
+        if self.activity is not None:
+            media_cmd.extend(['-n', self.activity])
         self.connection.shell(media_cmd)
         # delay script (by sleeping) in an attempt to avoid media player crashes / red screens
         if self.delay:
@@ -144,6 +146,7 @@ class MediaPlayerUtils(IMediaPlayerUtils):
         """
         device_path = os.path.join(path, song)
         self.media_player_select_song(device_path)
+        self.media_player_play_song()
 
 
 class LinuxVlcMediaPlayerUtils(IMediaPlayerUtils):
@@ -211,3 +214,24 @@ class LinuxVlcMediaPlayerUtils(IMediaPlayerUtils):
         except subprocess.TimeoutExpired:
             print('Installation Successful, proceeding...')
             self.media_player_pause_song()
+
+
+class Mp2MediaPlayerUtils(MediaPlayerUtils):
+    def media_player_pause_song(self):
+        """
+        pause in the media player (like pressing the pause button)
+        if song is already paused, nothing happens
+        """
+        self.connection.shell(["am", "broadcast", "-a", "com.bugatone.mobileproduct2app.stopMusic"])
+
+    def media_player_stop_song(self):
+        """
+        stop to play in the media player - pauses and rewinds to beginning of song
+        """
+        self.connection.shell(["am", "broadcast", "-a", "com.bugatone.mobileproduct2app.stopMusic"])
+
+    def media_player_play_song(self):
+        """
+        Send the play button event
+        """
+        self.connection.shell(["am", "broadcast", "-a", "com.bugatone.mobileproduct2app.playMusic"])
