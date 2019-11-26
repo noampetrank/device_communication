@@ -269,6 +269,7 @@ class GRpcLibbugatoneLinuxClientFactory(_GRpcClientFactory):
     def install_executor(cls, so_path, rpc_id, device_id=None):
         pass
 
+
 class GRpcMp2AndroidClientFactory(_GRpcClientFactory):
     @classmethod
     def install_executor(cls, adb_connection, port, apk_path):
@@ -293,9 +294,6 @@ class GRpcMp2AndroidClientFactory(_GRpcClientFactory):
         print("Please open MobileProduct2 app on the phone and give it all permissions it requests.")
         print("Press ENTER to continue")
         raw_input()
-
-        adb_connection.shell(["am", "start-foreground-service",
-                              "com.bugatone.mobileproduct2app/com.bugatone.mobileproduct2app.Mobileproduct2Service"])
 
 
 class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):
