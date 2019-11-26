@@ -281,7 +281,11 @@ class GRpcMp2AndroidClientFactory(_GRpcClientFactory):
         :param str apk_path: Path for APK file to install
         """
         # Set RPC port on device
-        adb_connection.shell(["su", "-c", "setprop", "buga.rpc.libbugatone_executor_port", str(port)])
+        try:
+            adb_connection.shell(["su", "-c", "setprop", "buga.rpc.libbugatone_executor_port", str(port)])
+        except CommandFailedError:
+            # It's expected to fail in OnePlus. Run it then without 'su'.
+            adb_connection.shell(["setprop", "buga.rpc.libbugatone_executor_port", str(port)])
 
         install_apk = True
         try:
