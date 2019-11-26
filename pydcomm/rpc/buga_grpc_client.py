@@ -3,6 +3,7 @@ import grpc
 import sys
 import os
 import time
+import re
 
 from pydcomm.public.deviceutils.media_player_utils import DEVICE_MUSIC_PATH
 from pydcomm.public.ux_benchmarks.common_extra_stats import get_device_wifi_network_name
@@ -281,19 +282,38 @@ class GRpcMp2AndroidClientFactory(_GRpcClientFactory):
         """
         # Set RPC port on device
         adb_connection.shell(["su", "-c", "setprop", "buga.rpc.libbugatone_executor_port", str(port)])
-        try:
-            adb_connection.install(apk_path)
-        except CommandFailedError:
-            try:
-                adb_connection.uninstall("com.bugatone.mobileproduct2app")
-            except Exception:
-                import traceback
-                traceback.print_exc()
-            adb_connection.install(apk_path)
 
-        print("Please open MobileProduct2 app on the phone and give it all permissions it requests.")
-        print("Press ENTER to continue")
-        raw_input()
+        install_apk = True
+        try:
+            # Get APK version name to install
+            aapt_path = os.path.join(os.environ["ANDROID_HOME"], "build-tools", "28.0.3", "aapt")
+            apk_version_name = re.search("versionName='(.*?)'",
+                                          subprocess.check_output([aapt_path, "dump", "badging", apk_path])).group(1)
+
+            # Get APK version name on device
+            existing_apk_version_name = re.search("versionName=(.*?)\n", adb_connection.shell(
+                ["dumpsys", "package", "com.bugatone.mobileproduct2app"])).group(1)
+
+            install_apk = (apk_version_name != existing_apk_version_name)
+        except Exception:
+            pass
+
+        if install_apk:
+            try:
+                adb_connection.install(apk_path)
+            except CommandFailedError:
+                try:
+                    adb_connection.uninstall("com.bugatone.mobileproduct2app")
+                except Exception:
+                    import traceback
+                    traceback.print_exc()
+                adb_connection.install(apk_path)
+
+            print("Please open MobileProduct2 app on the phone and give it all permissions it requests.")
+            print("Press ENTER to continue")
+            raw_input()
+        else:
+            print("Skipping APK installation because it's already installed on the device")
 
 
 class GRpcLibbugatoneAndroidClientFactory(_GRpcClientFactory):
