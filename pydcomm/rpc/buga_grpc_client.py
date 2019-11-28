@@ -312,10 +312,6 @@ class GRpcMp2AndroidClientFactory(_GRpcClientFactory):
                     import traceback
                     traceback.print_exc()
                 adb_connection.install(apk_path)
-
-            print("Please open MobileProduct2 app on the phone and give it all permissions it requests.")
-            print("Press ENTER to continue")
-            raw_input()
         else:
             print("Skipping APK installation because it's already installed on the device")
 
