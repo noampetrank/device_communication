@@ -145,6 +145,8 @@ target_link_libraries(rpc_bugatone_proxy proto rpc_server)
 target_compile_definitions(rpc_bugatone_proxy PRIVATE
         REAL_LIB_NAME="libbugatone.so"
         )
+set_target_properties(rpc_bugatone_proxy PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
+set_target_properties(rpc_bugatone_proxy PROPERTIES INSTALL_RPATH "$ORIGIN")
 
 
 # Daemon RPC proxy library
@@ -163,6 +165,8 @@ target_link_libraries(rpc_authdemo_proxy proto rpc_server)
 target_compile_definitions(rpc_authdemo_proxy PRIVATE
         REAL_LIB_NAME="libauthdemo.so"
         )
+set_target_properties(rpc_authdemo_proxy PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
+set_target_properties(rpc_authdemo_proxy PROPERTIES INSTALL_RPATH "$ORIGIN")
 
 
 # Daemon RPC proxy library
@@ -183,6 +187,8 @@ target_compile_definitions(rpc_mobileproduct2_proxy PRIVATE
         RUN_CREATE_BUGATONE_API_ON_INIT=1
         USE_REAL_NAME_ON_ANDROID=1
         )
+set_target_properties(rpc_mobileproduct2_proxy PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
+set_target_properties(rpc_mobileproduct2_proxy PROPERTIES INSTALL_RPATH "$ORIGIN")
 
 
 # Daemon RPC main library
